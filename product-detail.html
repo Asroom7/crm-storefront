@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سرم ویتامین C</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-top">
+      <span class="icon">☰</span>
+      <div class="logo">Lumière</div>
+      <a href="cart.html" class="icon">🛍</a>
+    </div>
+  </header>
+
+  <section class="page-title">
+    <a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a>
+  </section>
+
+  <section class="detail-block">
+    <div class="detail-img">
+      <span class="badge badge-dark">پرفروش</span>
+    </div>
+
+    <h1 class="detail-title">سرم ویتامین C</h1>
+    <div class="rating">★★★★☆ <span>(۴۲ نظر)</span></div>
+    <div class="detail-price">۲۸۰,۰۰۰ تومان</div>
+
+    <p class="detail-desc">
+      سرم روشن‌کننده و آبرسان با ویتامین C خالص، مناسب برای انواع پوست. با استفاده روزانه، جلوه‌ای شفاف و یکدست به پوست شما می‌بخشد و از آسیب‌های محیطی جلوگیری می‌کند.
+    </p>
+
+    <div class="qty-row">
+      <span>تعداد:</span>
+      <div class="qty-control">
+        <button class="qty-btn">−</button>
+        <span>۱</span>
+        <button class="qty-btn">+</button>
+      </div>
+    </div>
+
+    <a href="cart.html" class="btn-dark btn-full">افزودن به سبد خرید</a>
+  </section>
+
+  <section class="section-block">
+    <div class="section-head">
+      <h2>نظرات مشتریان</h2>
+    </div>
+
+    <div class="review-item">
+      <div class="review-top">
+        <span class="review-name">سارا . م</span>
+        <span class="review-stars">★★★★★</span>
+      </div>
+      <p>واقعا محصول خوبی بود، پوستم بعد از دو هفته شفاف‌تر شده.</p>
+    </div>
+
+    <div class="review-item">
+      <div class="review-top">
+        <span class="review-name">نگار . ک</span>
+        <span class="review-stars">★★★★☆</span>
+      </div>
+      <p>بافتش سبک و زود جذب میشه، فقط بسته‌بندی میتونست بهتر باشه.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="#">تماس با ما</a>
+      <a href="#">قوانین بازگشت کالا</a>
+    </div>
+    <div class="footer-social">
+      <span>📷</span><span>✈️</span><span>💬</span>
+    </div>
+  </footer>
+
+  <script>
+    function toPersianDigits(num) {
+      var persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      return String(num).replace(/[0-9]/g, function (d) { return persian[d]; });
+    }
+    document.querySelectorAll('.qty-control').forEach(function (control) {
+      var display = control.querySelector('span');
+      var btns = control.querySelectorAll('.qty-btn');
+      var count = 1;
+      btns[0].addEventListener('click', function () {
+        if (count > 1) { count--; display.textContent = toPersianDigits(count); }
+      });
+      btns[1].addEventListener('click', function () {
+        count++; display.textContent = toPersianDigits(count);
+      });
+    });
+  </script>
+</body>
+</html>
