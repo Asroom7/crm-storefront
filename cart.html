@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبد خرید</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-top">
+      <span class="icon menu-toggle">☰</span>
+      <div class="logo">Lumière</div>
+      <a href="cart.html" class="icon">🛍</a>
+    </div>
+  </header>
+  <div class="side-menu-overlay"></div>
+  <nav class="side-menu">
+    <div class="side-menu-head">
+      <span class="logo">Lumière</span>
+      <span class="icon close-menu">✕</span>
+    </div>
+    <a href="login.html">👤 ورود / ثبت‌نام</a>
+    <a href="profile.html">📦 سفارش‌های من</a>
+    <a href="cart.html">🛍 سبد خرید</a>
+    <a href="index.html">🏠 صفحه نخست</a>
+    <div class="side-menu-sep"></div>
+    <a href="products.html?cat=skin">مراقبت پوست</a>
+    <a href="products.html?cat=hair">مراقبت مو</a>
+    <a href="products.html?cat=makeup">آرایش</a>
+    <a href="products.html?cat=perfume">عطر و ادکلن</a>
+  </nav>
+
+
+  <section class="page-title">
+    <h1>سبد خرید شما</h1>
+    <a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a>
+  </section>
+
+  <section class="cart-block">
+
+    <div class="cart-item">
+      <div class="cart-item-img"></div>
+      <div class="cart-item-info">
+        <h3>سرم ویتامین C</h3>
+        <div class="price">۲۸۰,۰۰۰ تومان</div>
+      </div>
+      <div class="qty-control small">
+        <button class="qty-btn">−</button>
+        <span>۱</span>
+        <button class="qty-btn">+</button>
+      </div>
+    </div>
+
+    <div class="cart-item">
+      <div class="cart-item-img"></div>
+      <div class="cart-item-info">
+        <h3>رژ لب مخملی</h3>
+        <div class="price">۹۸,۰۰۰ تومان</div>
+      </div>
+      <div class="qty-control small">
+        <button class="qty-btn">−</button>
+        <span>۱</span>
+        <button class="qty-btn">+</button>
+      </div>
+    </div>
+
+    <div class="cart-summary">
+      <div class="summary-row">
+        <span>جمع کالاها</span>
+        <span>۳۷۸,۰۰۰ تومان</span>
+      </div>
+      <div class="summary-row">
+        <span>هزینه ارسال</span>
+        <span class="free-tag">رایگان</span>
+      </div>
+      <div class="summary-row total">
+        <span>مبلغ قابل پرداخت</span>
+        <span>۳۷۸,۰۰۰ تومان</span>
+      </div>
+    </div>
+
+    <a href="checkout.html" class="btn-dark btn-full">ادامه فرآیند خرید</a>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="#">تماس با ما</a>
+      <a href="#">قوانین بازگشت کالا</a>
+    </div>
+    <div class="footer-social">
+      <span>📷</span><span>✈️</span><span>💬</span>
+    </div>
+  </footer>
+
+  <script>
+    var toggle = document.querySelector('.menu-toggle');
+    var closeBtn = document.querySelector('.close-menu');
+    var overlay = document.querySelector('.side-menu-overlay');
+    var menu = document.querySelector('.side-menu');
+    function openMenu() { menu.classList.add('open'); overlay.classList.add('open'); }
+    function closeMenu() { menu.classList.remove('open'); overlay.classList.remove('open'); }
+    if (toggle) toggle.addEventListener('click', openMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+    if (overlay) overlay.addEventListener('click', closeMenu);
+
+    function toPersianDigits(num) {
+      var persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      return String(num).replace(/[0-9]/g, function (d) { return persian[d]; });
+    }
+    document.querySelectorAll('.qty-control').forEach(function (control) {
+      var display = control.querySelector('span');
+      var btns = control.querySelectorAll('.qty-btn');
+      var count = 1;
+      btns[0].addEventListener('click', function () {
+        if (count > 1) { count--; display.textContent = toPersianDigits(count); }
+      });
+      btns[1].addEventListener('click', function () {
+        count++; display.textContent = toPersianDigits(count);
+      });
+    });
+  </script>
+</body>
+</html>

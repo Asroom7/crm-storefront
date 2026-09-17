@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حساب کاربری</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-top">
+      <span class="icon menu-toggle">☰</span>
+      <div class="logo">Lumière</div>
+      <a href="cart.html" class="icon">🛍</a>
+    </div>
+  </header>
+
+  <div class="side-menu-overlay"></div>
+  <nav class="side-menu">
+    <div class="side-menu-head">
+      <span class="logo">Lumière</span>
+      <span class="icon close-menu">✕</span>
+    </div>
+    <a href="login.html">👤 ورود / ثبت‌نام</a>
+    <a href="cart.html">🛍 سبد خرید</a>
+    <a href="index.html">🏠 صفحه نخست</a>
+    <div class="side-menu-sep"></div>
+    <a href="products.html?cat=skin">مراقبت پوست</a>
+    <a href="products.html?cat=hair">مراقبت مو</a>
+    <a href="products.html?cat=makeup">آرایش</a>
+    <a href="products.html?cat=perfume">عطر و ادکلن</a>
+  </nav>
+
+  <section class="profile-head">
+    <div class="profile-avatar">س</div>
+    <div>
+      <div class="profile-name">سارا محمدی</div>
+      <div class="profile-phone">۰۹۱۲۳۴۵۶۷۸۹</div>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-head">
+      <h2>سفارش‌های من</h2>
+    </div>
+
+    <a href="order-status.html" class="order-item">
+      <div>
+        <div class="order-id">سفارش #10234</div>
+        <div class="order-date">۱۲ شهریور ۱۴۰۴</div>
+      </div>
+      <span class="status-badge small pending">در انتظار تایید</span>
+    </a>
+
+    <a href="order-status.html" class="order-item">
+      <div>
+        <div class="order-id">سفارش #10198</div>
+        <div class="order-date">۳ شهریور ۱۴۰۴</div>
+      </div>
+      <span class="status-badge small done">تحویل شد</span>
+    </a>
+
+    <a href="order-status.html" class="order-item">
+      <div>
+        <div class="order-id">سفارش #10142</div>
+        <div class="order-date">۲۱ مرداد ۱۴۰۴</div>
+      </div>
+      <span class="status-badge small done">تحویل شد</span>
+    </a>
+  </section>
+
+  <section class="section-block">
+    <div class="section-head">
+      <h2>اطلاعات حساب</h2>
+    </div>
+    <div class="account-list">
+      <a href="#" class="account-row">✏️ ویرایش اطلاعات شخصی</a>
+      <a href="#" class="account-row">📍 آدرس‌های من</a>
+      <a href="#" class="account-row">🔒 تغییر رمز عبور</a>
+      <a href="index.html" class="account-row logout">🚪 خروج از حساب</a>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="#">تماس با ما</a>
+      <a href="#">قوانین بازگشت کالا</a>
+    </div>
+    <div class="footer-social">
+      <span>📷</span><span>✈️</span><span>💬</span>
+    </div>
+  </footer>
+
+  <script>
+    var toggle = document.querySelector('.menu-toggle');
+    var closeBtn = document.querySelector('.close-menu');
+    var overlay = document.querySelector('.side-menu-overlay');
+    var menu = document.querySelector('.side-menu');
+    function openMenu() { menu.classList.add('open'); overlay.classList.add('open'); }
+    function closeMenu() { menu.classList.remove('open'); overlay.classList.remove('open'); }
+    if (toggle) toggle.addEventListener('click', openMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+    if (overlay) overlay.addEventListener('click', closeMenu);
+  </script>
+</body>
+</html>

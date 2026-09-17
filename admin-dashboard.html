@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل مدیریت</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+
+  <header class="admin-header">
+    <div>
+      <div class="admin-store-name">Lumière</div>
+      <div class="admin-store-tag">پنل مدیریت فروشگاه</div>
+    </div>
+    <span class="icon">🔔</span>
+  </header>
+
+  <section class="admin-stats">
+    <div class="stat-card">
+      <div class="stat-label">فروش امروز</div>
+      <div class="stat-value">۴,۲۸۰,۰۰۰ <span>ت</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">سفارش جدید</div>
+      <div class="stat-value">۷</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">مشتری جدید</div>
+      <div class="stat-value">۳</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">در انتظار تایید</div>
+      <div class="stat-value warn">۴</div>
+    </div>
+  </section>
+
+  <section class="admin-section">
+    <div class="section-head">
+      <h2>سفارش‌های اخیر</h2>
+      <a href="admin-orders.html">مشاهده همه</a>
+    </div>
+
+    <a href="admin-order-detail.html" class="admin-order-row">
+      <div>
+        <div class="order-id">سفارش #10234</div>
+        <div class="order-date">مریم احمدی · ۲ محصول</div>
+      </div>
+      <div class="admin-order-end">
+        <span class="status-badge small pending">در انتظار تایید</span>
+        <div class="order-amount">۳۷۸,۰۰۰ ت</div>
+      </div>
+    </a>
+
+    <a href="admin-order-detail.html" class="admin-order-row">
+      <div>
+        <div class="order-id">سفارش #10233</div>
+        <div class="order-date">نگار کریمی · ۱ محصول</div>
+      </div>
+      <div class="admin-order-end">
+        <span class="status-badge small done">تایید شده</span>
+        <div class="order-amount">۱۵۰,۰۰۰ ت</div>
+      </div>
+    </a>
+
+    <a href="admin-order-detail.html" class="admin-order-row">
+      <div>
+        <div class="order-id">سفارش #10232</div>
+        <div class="order-date">سارا محمدی · ۳ محصول</div>
+      </div>
+      <div class="admin-order-end">
+        <span class="status-badge small pending">در انتظار تایید</span>
+        <div class="order-amount">۵۹۰,۰۰۰ ت</div>
+      </div>
+    </a>
+  </section>
+
+  <section class="admin-section">
+    <div class="section-head">
+      <h2>محصولات کم‌موجود</h2>
+      <a href="admin-products.html">مدیریت محصولات</a>
+    </div>
+    <div class="low-stock-row">
+      <span>رژ لب مخملی</span>
+      <span class="stock-tag">۳ عدد باقی‌مانده</span>
+    </div>
+    <div class="low-stock-row">
+      <span>شامپو ضدریزش مو</span>
+      <span class="stock-tag">۵ عدد باقی‌مانده</span>
+    </div>
+  </section>
+
+  <nav class="admin-tabbar">
+    <a href="admin-dashboard.html" class="tab active">
+      <span>🏠</span>داشبورد
+    </a>
+    <a href="admin-products.html" class="tab">
+      <span>🧴</span>محصولات
+    </a>
+    <a href="admin-orders.html" class="tab">
+      <span>🧾</span>سفارش‌ها
+    </a>
+    <a href="admin-customers.html" class="tab">
+      <span>👥</span>مشتریان
+    </a>
+    <a href="admin-settings.html" class="tab">
+      <span>⚙️</span>تنظیمات
+    </a>
+  </nav>
+
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>افزودن محصول</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+
+  <header class="admin-header">
+    <a href="admin-products.html" class="admin-back">→</a>
+    <div>
+      <div class="admin-store-name">افزودن محصول</div>
+    </div>
+    <span></span>
+  </header>
+
+  <section class="admin-form-block">
+    <label class="upload-label">
+      <span>📷 آپلود تصویر محصول</span>
+      <input type="file" accept="image/*">
+    </label>
+
+    <label>نام محصول</label>
+    <input type="text" placeholder="مثال: سرم ویتامین C">
+
+    <label>دسته‌بندی</label>
+    <select>
+      <option>پوست</option>
+      <option>مو</option>
+      <option>آرایش</option>
+      <option>عطر</option>
+    </select>
+
+    <label>قیمت (تومان)</label>
+    <input type="text" placeholder="مثال: 280000">
+
+    <label>قیمت با تخفیف (اختیاری)</label>
+    <input type="text" placeholder="مثال: 250000">
+
+    <label>موجودی انبار</label>
+    <input type="text" placeholder="مثال: 24">
+
+    <label>توضیحات محصول</label>
+    <textarea rows="4" placeholder="توضیح کامل محصول را بنویسید..."></textarea>
+
+    <a href="admin-products.html" class="btn-dark btn-full">ذخیره محصول</a>
+  </section>
+
+</body>
+</html>
