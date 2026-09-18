@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تکمیل خرید</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireCustomerAuth();</script>
 </head>
 <body>
 
@@ -42,27 +44,27 @@
 
     <div class="trust-note">
       <span class="trust-icon">🛡</span>
-      <p>سفارش شما پس از بررسی و تایید رسید پرداخت توسط تیم ما نهایی می‌شود (معمولاً کمتر از ۲ ساعت). لطفاً بعد از واریز، تصویر رسید و شماره پیگیری تراکنش را ثبت کنید.</p>
+      <p>سفارش شما پس از بررسی و تایید رسید پرداخت توسط تیم ما نهایی می‌شود (معمولاً کمتر از ۲ ساعت). لطفاً بعد از واریز، شماره پیگیری تراکنش را ثبت کنید.</p>
     </div>
 
     <div class="card-info">
       <h2>اطلاعات واریز</h2>
-      <div class="card-number">۶۰۳۷-XXXX-XXXX-XXXX</div>
-      <div class="card-owner">به نام: علی رضایی</div>
-      <div class="card-amount">مبلغ قابل پرداخت: ۳۷۸,۰۰۰ تومان</div>
+      <div class="card-number" id="card-number">۶۰۳۷-XXXX-XXXX-XXXX</div>
+      <div class="card-owner" id="card-owner">به نام: علی رضایی</div>
+      <div class="card-amount">مبلغ قابل پرداخت: <span id="checkout-amount">...</span> تومان</div>
     </div>
 
     <div class="receipt-form">
-      <h2>ثبت رسید پرداخت</h2>
+      <h2>آدرس ارسال</h2>
+      <label>آدرس کامل</label>
+      <textarea rows="2" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
+
+      <h2 style="margin-top:16px;">ثبت رسید پرداخت</h2>
+      <p id="checkout-error" style="color:#c0392b; display:none;"></p>
       <label>شماره پیگیری تراکنش</label>
-      <input type="text" placeholder="مثال: 123456789">
+      <input type="text" id="f-tracking" placeholder="مثال: 123456789">
 
-      <label class="upload-label">
-        <span>📎 آپلود تصویر رسید</span>
-        <input type="file" accept="image/*">
-      </label>
-
-      <a href="order-status.html" class="btn-dark btn-full">ثبت سفارش</a>
+      <button id="submit-order-btn" class="btn-dark btn-full">ثبت سفارش</button>
     </div>
 
   </section>
@@ -87,6 +89,74 @@
     if (toggle) toggle.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
+
+    // 👇 برای تغییر شماره کارت و نام صاحب حساب، همین دو خط رو ویرایش کن
+    var SELLER_CARD_NUMBER = '۶۰۳۷-XXXX-XXXX-XXXX';
+    var SELLER_CARD_OWNER = 'به نام: علی رضایی';
+    document.getElementById('card-number').textContent = SELLER_CARD_NUMBER;
+    document.getElementById('card-owner').textContent = SELLER_CARD_OWNER;
+
+    var cart = getCart();
+    var errorBox = document.getElementById('checkout-error');
+    var submitBtn = document.getElementById('submit-order-btn');
+    var amountEl = document.getElementById('checkout-amount');
+
+    if (cart.length === 0) {
+      window.location.href = 'cart.html';
+    }
+
+    var cartProducts = [];
+    apiFetch('/products/public/' + SELLER_ID).then(function (products) {
+      cartProducts = cart.map(function (ci) {
+        var product = products.find(function (p) { return p.id === ci.productId; });
+        return product ? { product: product, quantity: ci.quantity } : null;
+      }).filter(Boolean);
+
+      var total = cartProducts.reduce(function (sum, ci) {
+        return sum + getProductMinPrice(ci.product) * ci.quantity;
+      }, 0);
+      amountEl.textContent = formatPrice(total);
+    });
+
+    submitBtn.addEventListener('click', function () {
+      errorBox.style.display = 'none';
+      var address = document.getElementById('f-address').value.trim();
+      var tracking = document.getElementById('f-tracking').value.trim();
+
+      if (!address || address.length < 5) {
+        errorBox.textContent = 'آدرس کامل رو وارد کن';
+        errorBox.style.display = 'block';
+        return;
+      }
+      if (!tracking || tracking.length < 3) {
+        errorBox.textContent = 'شماره پیگیری تراکنش رو وارد کن';
+        errorBox.style.display = 'block';
+        return;
+      }
+      if (cartProducts.length === 0) {
+        errorBox.textContent = 'سبد خریدت خالیه';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      submitBtn.textContent = 'در حال ثبت...';
+
+      apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: cartProducts.map(function (ci) { return { productId: ci.product.id, quantity: ci.quantity }; }),
+          shippingAddress: address,
+          trackingNumber: tracking
+        })
+      }).then(function (data) {
+        clearCart();
+        window.location.href = 'order-status.html?id=' + data.orderId;
+      }).catch(function (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        submitBtn.textContent = 'ثبت سفارش';
+      });
+    });
   </script>
 </body>
 </html>

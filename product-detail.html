@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سرم ویتامین C</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
 </head>
 <body>
 
@@ -37,18 +38,13 @@
     <a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a>
   </section>
 
-  <section class="detail-block">
-    <div class="detail-img">
-      <span class="badge badge-dark">پرفروش</span>
-    </div>
+  <section class="detail-block" id="detail-block">
+    <div class="detail-img" id="detail-img"></div>
 
-    <h1 class="detail-title">سرم ویتامین C</h1>
-    <div class="rating">★★★★☆ <span>(۴۲ نظر)</span></div>
-    <div class="detail-price">۲۸۰,۰۰۰ تومان</div>
+    <h1 class="detail-title" id="detail-title">در حال بارگذاری...</h1>
+    <div class="detail-price" id="detail-price"></div>
 
-    <p class="detail-desc">
-      سرم روشن‌کننده و آبرسان با ویتامین C خالص، مناسب برای انواع پوست. با استفاده روزانه، جلوه‌ای شفاف و یکدست به پوست شما می‌بخشد و از آسیب‌های محیطی جلوگیری می‌کند.
-    </p>
+    <p class="detail-desc" id="detail-desc"></p>
 
     <div class="qty-row">
       <span>تعداد:</span>
@@ -59,29 +55,14 @@
       </div>
     </div>
 
-    <a href="cart.html" class="btn-dark btn-full">افزودن به سبد خرید</a>
+    <button id="add-to-cart-btn" class="btn-dark btn-full">افزودن به سبد خرید</button>
   </section>
 
   <section class="section-block">
     <div class="section-head">
       <h2>نظرات مشتریان</h2>
     </div>
-
-    <div class="review-item">
-      <div class="review-top">
-        <span class="review-name">سارا . م</span>
-        <span class="review-stars">★★★★★</span>
-      </div>
-      <p>واقعا محصول خوبی بود، پوستم بعد از دو هفته شفاف‌تر شده.</p>
-    </div>
-
-    <div class="review-item">
-      <div class="review-top">
-        <span class="review-name">نگار . ک</span>
-        <span class="review-stars">★★★★☆</span>
-      </div>
-      <p>بافتش سبک و زود جذب میشه، فقط بسته‌بندی میتونست بهتر باشه.</p>
-    </div>
+    <p style="color:#888; padding:10px 0;">هنوز نظری برای این محصول ثبت نشده.</p>
   </section>
 
   <footer class="site-footer">
@@ -105,21 +86,47 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
-    function toPersianDigits(num) {
-      var persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-      return String(num).replace(/[0-9]/g, function (d) { return persian[d]; });
-    }
+    var count = 1;
+    var currentProduct = null;
+
     document.querySelectorAll('.qty-control').forEach(function (control) {
       var display = control.querySelector('span');
       var btns = control.querySelectorAll('.qty-btn');
-      var count = 1;
       btns[0].addEventListener('click', function () {
-        if (count > 1) { count--; display.textContent = toPersianDigits(count); }
+        if (count > 1) { count--; display.textContent = toFaDigits(count); }
       });
       btns[1].addEventListener('click', function () {
-        count++; display.textContent = toPersianDigits(count);
+        count++; display.textContent = toFaDigits(count);
       });
     });
+
+    var productId = Number(new URLSearchParams(window.location.search).get('id'));
+    var addBtn = document.getElementById('add-to-cart-btn');
+
+    if (!productId) {
+      document.getElementById('detail-title').textContent = 'محصول پیدا نشد';
+      addBtn.style.display = 'none';
+    } else {
+      apiFetch('/products/public/' + SELLER_ID + '/' + productId)
+        .then(function (product) {
+          currentProduct = product;
+          document.title = product.name;
+          document.getElementById('detail-title').textContent = product.name;
+          document.getElementById('detail-price').textContent = formatPrice(getProductMinPrice(product)) + ' تومان';
+          document.getElementById('detail-desc').textContent = product.description || '';
+        })
+        .catch(function (err) {
+          document.getElementById('detail-title').textContent = 'محصول پیدا نشد';
+          document.getElementById('detail-desc').textContent = err.message;
+          addBtn.style.display = 'none';
+        });
+
+      addBtn.addEventListener('click', function () {
+        if (!currentProduct) return;
+        addToCart(currentProduct.id, count);
+        window.location.href = 'cart.html';
+      });
+    }
   </script>
 </body>
 </html>

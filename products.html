@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>محصولات</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
 </head>
 <body>
 
@@ -47,51 +48,16 @@
   </section>
 
   <section class="sort-bar">
-    <span>۴ محصول</span>
-    <select class="sort-select">
-      <option>مرتب‌سازی: پیش‌فرض</option>
-      <option>ارزان‌ترین</option>
-      <option>گران‌ترین</option>
-      <option>پرفروش‌ترین</option>
+    <span id="product-count">در حال بارگذاری...</span>
+    <select class="sort-select" id="sort-select">
+      <option value="default">مرتب‌سازی: پیش‌فرض</option>
+      <option value="cheap">ارزان‌ترین</option>
+      <option value="expensive">گران‌ترین</option>
     </select>
   </section>
 
   <section class="section-block">
-    <div class="product-grid">
-      <a href="product-detail.html" class="product-card">
-        <div class="product-img">
-          <span class="badge badge-dark">پرفروش</span>
-        </div>
-        <h3>سرم ویتامین C</h3>
-        <div class="rating">★★★★☆ <span>(۴۲)</span></div>
-        <div class="price">۲۸۰,۰۰۰ تومان</div>
-      </a>
-
-      <a href="product-detail.html" class="product-card">
-        <div class="product-img">
-          <span class="badge badge-pink">۲۰٪</span>
-        </div>
-        <h3>رژ لب مخملی</h3>
-        <div class="rating">★★★★☆ <span>(۲۸)</span></div>
-        <div class="price">۹۸,۰۰۰ <s>۱۲۲,۰۰۰</s></div>
-      </a>
-
-      <a href="product-detail.html" class="product-card">
-        <div class="product-img"></div>
-        <h3>کرم آبرسان روز</h3>
-        <div class="rating">★★★★★ <span>(۱۵)</span></div>
-        <div class="price">۱۵۰,۰۰۰ تومان</div>
-      </a>
-
-      <a href="product-detail.html" class="product-card">
-        <div class="product-img">
-          <span class="badge badge-pink">۱۵٪</span>
-        </div>
-        <h3>شامپو ضدریزش مو</h3>
-        <div class="rating">★★★★☆ <span>(۹)</span></div>
-        <div class="price">۱۷۵,۰۰۰ <s>۲۰۵,۰۰۰</s></div>
-      </a>
-    </div>
+    <div class="product-grid" id="product-grid"></div>
   </section>
 
   <footer class="site-footer">
@@ -115,14 +81,74 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
+    var allProducts = [];
+    var currentCategory = 'همه';
+    var grid = document.getElementById('product-grid');
+    var countEl = document.getElementById('product-count');
+    var sortSelect = document.getElementById('sort-select');
+
+    var catSlugMap = { skin: 'پوست', hair: 'مو', makeup: 'آرایش', perfume: 'عطر' };
+    var catFromUrl = new URLSearchParams(window.location.search).get('cat');
+    if (catFromUrl && catSlugMap[catFromUrl]) {
+      currentCategory = catSlugMap[catFromUrl];
+    }
+
+    function renderProducts() {
+      var list = allProducts.filter(function (p) {
+        if (currentCategory === 'همه') return true;
+        return p.category && p.category.name === currentCategory;
+      });
+
+      var sortVal = sortSelect.value;
+      if (sortVal === 'cheap') {
+        list = list.slice().sort(function (a, b) { return getProductMinPrice(a) - getProductMinPrice(b); });
+      } else if (sortVal === 'expensive') {
+        list = list.slice().sort(function (a, b) { return getProductMinPrice(b) - getProductMinPrice(a); });
+      }
+
+      countEl.textContent = toFaDigits(list.length) + ' محصول';
+
+      if (list.length === 0) {
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:30px 0; color:#888;">هنوز محصولی توی این دسته اضافه نشده</p>';
+        return;
+      }
+
+      grid.innerHTML = list.map(function (p) {
+        var price = getProductMinPrice(p);
+        var priceLabel = formatPrice(price) + ' تومان';
+        return '' +
+          '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
+          '  <div class="product-img"></div>' +
+          '  <h3>' + p.name + '</h3>' +
+          '  <div class="price">' + priceLabel + '</div>' +
+          '</a>';
+      }).join('');
+    }
+
     document.querySelectorAll('.filter-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         document.querySelectorAll('.filter-chip').forEach(function (c) {
           c.classList.remove('active');
         });
         chip.classList.add('active');
+        currentCategory = chip.textContent.trim();
+        renderProducts();
       });
     });
+    sortSelect.addEventListener('change', renderProducts);
+
+    apiFetch('/products/public/' + SELLER_ID)
+      .then(function (products) {
+        allProducts = products;
+        document.querySelectorAll('.filter-chip').forEach(function (c) {
+          c.classList.toggle('active', c.textContent.trim() === currentCategory);
+        });
+        renderProducts();
+      })
+      .catch(function (err) {
+        countEl.textContent = '';
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:30px 0; color:#c0392b;">خطا در بارگذاری محصولات: ' + err.message + '</p>';
+      });
   </script>
 </body>
 </html>

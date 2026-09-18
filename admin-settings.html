@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تنظیمات فروشگاه</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
 </head>
 <body class="admin-body">
 
@@ -36,7 +38,7 @@
 
   <section class="admin-section">
     <div class="account-list">
-      <a href="admin-login.html" class="account-row">🚪 خروج از پنل مدیریت</a>
+      <a href="admin-login.html" class="account-row" onclick="logoutSeller()">🚪 خروج از پنل مدیریت</a>
     </div>
   </section>
 

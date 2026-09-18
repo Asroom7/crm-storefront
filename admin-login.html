@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ورود به پنل مدیریت</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
 </head>
 <body class="admin-body">
 
@@ -13,17 +14,49 @@
     <div class="admin-login-tag">پنل مدیریت فروشگاه</div>
 
     <div class="auth-form">
+      <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
+
       <label>شماره موبایل</label>
-      <input type="text" placeholder="09xxxxxxxxx">
+      <input type="text" id="phone" placeholder="09xxxxxxxxx">
 
       <label>رمز عبور</label>
-      <input type="password" placeholder="رمز عبور خود را وارد کنید">
+      <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
 
-      <a href="admin-dashboard.html" class="btn-dark btn-full">ورود به پنل</a>
+      <button id="admin-login-btn" class="btn-dark btn-full">ورود به پنل</button>
     </div>
 
     <p class="admin-login-switch">این پنل مخصوص صاحبان کسب‌وکار است.<br>مشتری هستید؟ <a href="index.html">بازگشت به فروشگاه</a></p>
   </section>
 
+  <script>
+    var loginBtn = document.getElementById('admin-login-btn');
+    var errorBox = document.getElementById('auth-error');
+
+    loginBtn.addEventListener('click', function () {
+      var phone = document.getElementById('phone').value.trim();
+      var password = document.getElementById('password').value;
+      errorBox.style.display = 'none';
+
+      if (!phone || !password) {
+        errorBox.textContent = 'شماره موبایل و رمز عبور رو وارد کن';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      loginBtn.textContent = 'در حال ورود...';
+
+      apiFetch('/auth/seller/login', {
+        method: 'POST',
+        body: JSON.stringify({ phone: phone, password: password })
+      }).then(function (data) {
+        saveSellerSession(data.token, data.seller);
+        window.location.href = 'admin-dashboard.html';
+      }).catch(function (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        loginBtn.textContent = 'ورود به پنل';
+      });
+    });
+  </script>
 </body>
 </html>

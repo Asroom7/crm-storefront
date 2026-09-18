@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>حساب کاربری</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireCustomerAuth();</script>
 </head>
 <body>
 
@@ -33,10 +35,10 @@
   </nav>
 
   <section class="profile-head">
-    <div class="profile-avatar">س</div>
+    <div class="profile-avatar" id="profile-avatar">س</div>
     <div>
-      <div class="profile-name">سارا محمدی</div>
-      <div class="profile-phone">۰۹۱۲۳۴۵۶۷۸۹</div>
+      <div class="profile-name" id="profile-name"></div>
+      <div class="profile-phone" id="profile-phone"></div>
     </div>
   </section>
 
@@ -44,30 +46,9 @@
     <div class="section-head">
       <h2>سفارش‌های من</h2>
     </div>
-
-    <a href="order-status.html" class="order-item">
-      <div>
-        <div class="order-id">سفارش #10234</div>
-        <div class="order-date">۱۲ شهریور ۱۴۰۴</div>
-      </div>
-      <span class="status-badge small pending">در انتظار تایید</span>
-    </a>
-
-    <a href="order-status.html" class="order-item">
-      <div>
-        <div class="order-id">سفارش #10198</div>
-        <div class="order-date">۳ شهریور ۱۴۰۴</div>
-      </div>
-      <span class="status-badge small done">تحویل شد</span>
-    </a>
-
-    <a href="order-status.html" class="order-item">
-      <div>
-        <div class="order-id">سفارش #10142</div>
-        <div class="order-date">۲۱ مرداد ۱۴۰۴</div>
-      </div>
-      <span class="status-badge small done">تحویل شد</span>
-    </a>
+    <div id="orders-list">
+      <p style="color:#888; padding:10px 0;">در حال بارگذاری...</p>
+    </div>
   </section>
 
   <section class="section-block">
@@ -78,7 +59,7 @@
       <a href="#" class="account-row">✏️ ویرایش اطلاعات شخصی</a>
       <a href="#" class="account-row">📍 آدرس‌های من</a>
       <a href="#" class="account-row">🔒 تغییر رمز عبور</a>
-      <a href="index.html" class="account-row logout">🚪 خروج از حساب</a>
+      <a href="index.html" class="account-row logout" onclick="logoutCustomer()">🚪 خروج از حساب</a>
     </div>
   </section>
 
@@ -102,6 +83,38 @@
     if (toggle) toggle.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
+
+    var session = getCustomerSession();
+    if (session) {
+      var fullName = session.customer.firstName || '';
+      document.getElementById('profile-name').textContent = fullName || 'کاربر';
+      document.getElementById('profile-avatar').textContent = fullName ? fullName[0] : '؟';
+      document.getElementById('profile-phone').textContent = session.customer.phone || '';
+    }
+
+    var ordersList = document.getElementById('orders-list');
+    apiFetch('/orders/mine')
+      .then(function (orders) {
+        if (orders.length === 0) {
+          ordersList.innerHTML = '<p style="color:#888; padding:10px 0;">هنوز سفارشی ثبت نکردی.</p>';
+          return;
+        }
+        ordersList.innerHTML = orders.map(function (o) {
+          var dateStr = new Date(o.createdAt).toLocaleDateString('fa-IR-u-ca-persian');
+          var badgeClass = o.status === 'confirmed' || o.status === 'shipped' ? 'done' : (o.status === 'rejected' ? 'rejected' : 'pending');
+          return '' +
+            '<a href="order-status.html?id=' + o.id + '" class="order-item">' +
+            '  <div>' +
+            '    <div class="order-id">سفارش #' + o.id + '</div>' +
+            '    <div class="order-date">' + dateStr + '</div>' +
+            '  </div>' +
+            '  <span class="status-badge small ' + badgeClass + '">' + getOrderStatusLabel(o.status) + '</span>' +
+            '</a>';
+        }).join('');
+      })
+      .catch(function (err) {
+        ordersList.innerHTML = '<p style="color:#c0392b; padding:10px 0;">خطا: ' + err.message + '</p>';
+      });
   </script>
 </body>
 </html>

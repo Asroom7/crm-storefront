@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>فروشگاه آرایشی و بهداشتی</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
 </head>
 <body>
 
@@ -60,26 +61,11 @@
 
   <section class="section-block">
     <div class="section-head">
-      <h2>پرفروش‌ترین محصولات</h2>
+      <h2>جدیدترین محصولات</h2>
       <a href="products.html">مشاهده همه</a>
     </div>
-    <div class="product-grid">
-      <div class="product-card">
-        <div class="product-img">
-          <span class="badge badge-dark">پرفروش</span>
-        </div>
-        <h3>سرم ویتامین C</h3>
-        <div class="rating">★★★★☆ <span>(۴۲)</span></div>
-        <div class="price">۲۸۰,۰۰۰ تومان</div>
-      </div>
-      <div class="product-card">
-        <div class="product-img">
-          <span class="badge badge-pink">۲۰٪</span>
-        </div>
-        <h3>رژ لب مخملی</h3>
-        <div class="rating">★★★★☆ <span>(۲۸)</span></div>
-        <div class="price">۹۸,۰۰۰ <s>۱۲۲,۰۰۰</s></div>
-      </div>
+    <div class="product-grid" id="featured-grid">
+      <p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">در حال بارگذاری...</p>
     </div>
   </section>
 
@@ -156,6 +142,27 @@
     if (toggle) toggle.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
+
+    var featuredGrid = document.getElementById('featured-grid');
+    apiFetch('/products/public/' + SELLER_ID)
+      .then(function (products) {
+        var list = products.slice(0, 4);
+        if (list.length === 0) {
+          featuredGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">هنوز محصولی اضافه نشده</p>';
+          return;
+        }
+        featuredGrid.innerHTML = list.map(function (p) {
+          return '' +
+            '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
+            '  <div class="product-img"></div>' +
+            '  <h3>' + p.name + '</h3>' +
+            '  <div class="price">' + formatPrice(getProductMinPrice(p)) + ' تومان</div>' +
+            '</a>';
+        }).join('');
+      })
+      .catch(function () {
+        featuredGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">محصولات در دسترس نیست</p>';
+      });
   </script>
 </body>
 </html>

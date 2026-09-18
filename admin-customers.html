@@ -5,49 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>مشتریان</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
 </head>
 <body class="admin-body">
 
   <header class="admin-header">
     <div>
       <div class="admin-store-name">مشتریان</div>
-      <div class="admin-store-tag">۸۶ مشتری</div>
+      <div class="admin-store-tag" id="customers-count-tag">در حال بارگذاری...</div>
     </div>
     <span class="icon">🔔</span>
   </header>
 
-  <section class="admin-section">
-    <div class="admin-customer-row">
-      <div class="profile-avatar small">م</div>
-      <div class="admin-product-info">
-        <h3>مریم احمدی</h3>
-        <div class="admin-product-meta">۵ سفارش · ۰۹۱۲۸۸۸۷۷۶۶</div>
-      </div>
-    </div>
-
-    <div class="admin-customer-row">
-      <div class="profile-avatar small">ن</div>
-      <div class="admin-product-info">
-        <h3>نگار کریمی</h3>
-        <div class="admin-product-meta">۲ سفارش · ۰۹۱۳۴۴۴۵۵۶۶</div>
-      </div>
-    </div>
-
-    <div class="admin-customer-row">
-      <div class="profile-avatar small">س</div>
-      <div class="admin-product-info">
-        <h3>سارا محمدی</h3>
-        <div class="admin-product-meta">۸ سفارش · ۰۹۱۲۳۴۵۶۷۸۹</div>
-      </div>
-    </div>
-
-    <div class="admin-customer-row">
-      <div class="profile-avatar small">ا</div>
-      <div class="admin-product-info">
-        <h3>الهام رضایی</h3>
-        <div class="admin-product-meta">۱ سفارش · ۰۹۳۵۱۱۲۲۳۳۴</div>
-      </div>
-    </div>
+  <section class="admin-section" id="customers-list">
   </section>
 
   <nav class="admin-tabbar">
@@ -68,5 +39,35 @@
     </a>
   </nav>
 
+  <script>
+    var statusLabels = { lead: 'سرنخ', customer: 'مشتری', burned: 'غیرفعال' };
+    var listBox = document.getElementById('customers-list');
+    var countTag = document.getElementById('customers-count-tag');
+
+    sellerApiFetch('/customers')
+      .then(function (customers) {
+        countTag.textContent = toFaDigits(customers.length) + ' مشتری';
+
+        if (customers.length === 0) {
+          listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#888;">هنوز مشتری‌ای ثبت‌نام نکرده</p>';
+          return;
+        }
+
+        listBox.innerHTML = customers.map(function (c) {
+          var fullName = c.firstName + ' ' + c.lastName;
+          return '' +
+            '<div class="admin-customer-row">' +
+            '  <div class="profile-avatar small">' + (c.firstName ? c.firstName[0] : '؟') + '</div>' +
+            '  <div class="admin-product-info">' +
+            '    <h3>' + fullName + '</h3>' +
+            '    <div class="admin-product-meta">' + (statusLabels[c.status] || c.status) + ' · ' + c.phone + '</div>' +
+            '  </div>' +
+            '</div>';
+        }).join('');
+      })
+      .catch(function (err) {
+        listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#c0392b;">خطا: ' + err.message + '</p>';
+      });
+  </script>
 </body>
 </html>

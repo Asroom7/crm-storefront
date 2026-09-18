@@ -5,48 +5,118 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>افزودن محصول</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
 </head>
 <body class="admin-body">
 
   <header class="admin-header">
     <a href="admin-products.html" class="admin-back">→</a>
     <div>
-      <div class="admin-store-name">افزودن محصول</div>
+      <div class="admin-store-name" id="form-title">افزودن محصول</div>
     </div>
     <span></span>
   </header>
 
   <section class="admin-form-block">
+    <p id="form-error" style="color:#c0392b; display:none;"></p>
+
     <label class="upload-label">
-      <span>📷 آپلود تصویر محصول</span>
-      <input type="file" accept="image/*">
+      <span>📷 آپلود تصویر محصول (به‌زودی فعال می‌شود)</span>
+      <input type="file" accept="image/*" disabled>
     </label>
 
     <label>نام محصول</label>
-    <input type="text" placeholder="مثال: سرم ویتامین C">
-
-    <label>دسته‌بندی</label>
-    <select>
-      <option>پوست</option>
-      <option>مو</option>
-      <option>آرایش</option>
-      <option>عطر</option>
-    </select>
+    <input type="text" id="f-name" placeholder="مثال: سرم ویتامین C">
 
     <label>قیمت (تومان)</label>
-    <input type="text" placeholder="مثال: 280000">
-
-    <label>قیمت با تخفیف (اختیاری)</label>
-    <input type="text" placeholder="مثال: 250000">
+    <input type="text" inputmode="numeric" id="f-price" placeholder="مثال: 280000">
 
     <label>موجودی انبار</label>
-    <input type="text" placeholder="مثال: 24">
+    <input type="text" inputmode="numeric" id="f-stock" placeholder="مثال: 24">
+
+    <label>حد هشدار کم‌موجودی</label>
+    <input type="text" inputmode="numeric" id="f-lowstock" placeholder="مثال: 5">
 
     <label>توضیحات محصول</label>
-    <textarea rows="4" placeholder="توضیح کامل محصول را بنویسید..."></textarea>
+    <textarea rows="4" id="f-desc" placeholder="توضیح کامل محصول را بنویسید..."></textarea>
 
-    <a href="admin-products.html" class="btn-dark btn-full">ذخیره محصول</a>
+    <label class="checkbox-row" style="display:flex; align-items:center; gap:8px; margin:14px 0;">
+      <input type="checkbox" id="f-published" checked style="width:auto;">
+      <span>در فروشگاه نمایش داده بشه (منتشر شود)</span>
+    </label>
+
+    <button id="save-btn" class="btn-dark btn-full">ذخیره محصول</button>
+    <button id="delete-btn" class="btn-full" style="display:none; background:#fff; color:#c0392b; border:1px solid #c0392b; margin-top:10px;">حذف محصول</button>
   </section>
 
+  <script>
+    var productId = Number(new URLSearchParams(window.location.search).get('id')) || null;
+    var errorBox = document.getElementById('form-error');
+    var saveBtn = document.getElementById('save-btn');
+    var deleteBtn = document.getElementById('delete-btn');
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+
+    if (productId) {
+      document.getElementById('form-title').textContent = 'ویرایش محصول';
+      deleteBtn.style.display = '';
+
+      sellerApiFetch('/products').then(function (products) {
+        var product = products.find(function (p) { return p.id === productId; });
+        if (!product) { showError('محصول پیدا نشد'); return; }
+        document.getElementById('f-name').value = product.name || '';
+        document.getElementById('f-price').value = product.costPrice || '';
+        document.getElementById('f-stock').value = product.stockQty || 0;
+        document.getElementById('f-lowstock').value = product.lowStockAt || 0;
+        document.getElementById('f-desc').value = product.description || '';
+        document.getElementById('f-published').checked = !!product.isPublished;
+      }).catch(function (err) { showError(err.message); });
+
+      deleteBtn.addEventListener('click', function () {
+        if (!confirm('مطمئنی می‌خوای این محصول رو حذف کنی؟')) return;
+        sellerApiFetch('/products/' + productId, { method: 'DELETE' })
+          .then(function () { window.location.href = 'admin-products.html'; })
+          .catch(function (err) { showError(err.message); });
+      });
+    }
+
+    saveBtn.addEventListener('click', function () {
+      errorBox.style.display = 'none';
+      var name = document.getElementById('f-name').value.trim();
+      var price = Number(document.getElementById('f-price').value);
+      var stock = Number(document.getElementById('f-stock').value) || 0;
+      var lowStock = Number(document.getElementById('f-lowstock').value) || 0;
+      var desc = document.getElementById('f-desc').value.trim();
+      var published = document.getElementById('f-published').checked;
+
+      if (!name) { showError('نام محصول رو وارد کن'); return; }
+      if (!price || price <= 0) { showError('قیمت معتبر وارد کن'); return; }
+
+      var payload = {
+        name: name,
+        description: desc,
+        costPrice: price,
+        stockQty: stock,
+        lowStockAt: lowStock,
+        isPublished: published
+      };
+
+      saveBtn.textContent = 'در حال ذخیره...';
+      var request = productId
+        ? sellerApiFetch('/products/' + productId, { method: 'PATCH', body: JSON.stringify(payload) })
+        : sellerApiFetch('/products', { method: 'POST', body: JSON.stringify(payload) });
+
+      request.then(function () {
+        window.location.href = 'admin-products.html';
+      }).catch(function (err) {
+        showError(err.message);
+        saveBtn.textContent = 'ذخیره محصول';
+      });
+    });
+  </script>
 </body>
 </html>

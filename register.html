@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ثبت‌نام</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
 </head>
 <body>
 
@@ -38,16 +39,21 @@
     <p class="auth-sub">برای شروع خرید، اطلاعاتت رو وارد کن</p>
 
     <div class="auth-form">
-      <label>نام و نام خانوادگی</label>
-      <input type="text" placeholder="نام خود را وارد کنید">
+      <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
+
+      <label>نام</label>
+      <input type="text" id="first-name" placeholder="نام">
+
+      <label>نام خانوادگی</label>
+      <input type="text" id="last-name" placeholder="نام خانوادگی">
 
       <label>شماره موبایل</label>
-      <input type="text" placeholder="09xxxxxxxxx">
+      <input type="text" id="phone" placeholder="09xxxxxxxxx">
 
       <label>رمز عبور</label>
-      <input type="password" placeholder="یک رمز عبور بسازید">
+      <input type="password" id="password" placeholder="یک رمز عبور بسازید (حداقل ۶ کاراکتر)">
 
-      <a href="index.html" class="btn-dark btn-full">ثبت‌نام</a>
+      <button id="register-btn" class="btn-dark btn-full">ثبت‌نام</button>
     </div>
 
     <p class="auth-switch">حساب کاربری داری؟ <a href="login.html">وارد شو</a></p>
@@ -73,6 +79,48 @@
     if (toggle) toggle.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
+
+    var registerBtn = document.getElementById('register-btn');
+    var errorBox = document.getElementById('auth-error');
+
+    registerBtn.addEventListener('click', function () {
+      var firstName = document.getElementById('first-name').value.trim();
+      var lastName = document.getElementById('last-name').value.trim();
+      var phone = document.getElementById('phone').value.trim();
+      var password = document.getElementById('password').value;
+      errorBox.style.display = 'none';
+
+      if (!firstName || !lastName || !phone || !password) {
+        errorBox.textContent = 'همه فیلدها رو پر کن';
+        errorBox.style.display = 'block';
+        return;
+      }
+      if (password.length < 6) {
+        errorBox.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشه';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      registerBtn.textContent = 'در حال ثبت‌نام...';
+
+      apiFetch('/customer/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          sellerId: SELLER_ID,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          password: password
+        })
+      }).then(function (data) {
+        saveCustomerSession(data.token, data.customer);
+        window.location.href = 'index.html';
+      }).catch(function (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+        registerBtn.textContent = 'ثبت‌نام';
+      });
+    });
   </script>
 </body>
 </html>

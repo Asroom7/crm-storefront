@@ -5,53 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>مدیریت محصولات</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
 </head>
 <body class="admin-body">
 
   <header class="admin-header">
     <div>
       <div class="admin-store-name">محصولات</div>
-      <div class="admin-store-tag">۴ محصول ثبت‌شده</div>
+      <div class="admin-store-tag" id="product-count-tag">در حال بارگذاری...</div>
     </div>
     <a href="admin-product-edit.html" class="admin-add-btn">+ افزودن</a>
   </header>
 
-  <section class="admin-section">
-    <a href="admin-product-edit.html" class="admin-product-row">
-      <div class="admin-product-img"></div>
-      <div class="admin-product-info">
-        <h3>سرم ویتامین C</h3>
-        <div class="admin-product-meta">موجودی: ۲۴ عدد · ۲۸۰,۰۰۰ ت</div>
-      </div>
-      <span class="stock-ok">فعال</span>
-    </a>
-
-    <a href="admin-product-edit.html" class="admin-product-row">
-      <div class="admin-product-img"></div>
-      <div class="admin-product-info">
-        <h3>رژ لب مخملی</h3>
-        <div class="admin-product-meta">موجودی: ۳ عدد · ۹۸,۰۰۰ ت</div>
-      </div>
-      <span class="stock-low">کم‌موجود</span>
-    </a>
-
-    <a href="admin-product-edit.html" class="admin-product-row">
-      <div class="admin-product-img"></div>
-      <div class="admin-product-info">
-        <h3>کرم آبرسان روز</h3>
-        <div class="admin-product-meta">موجودی: ۱۸ عدد · ۱۵۰,۰۰۰ ت</div>
-      </div>
-      <span class="stock-ok">فعال</span>
-    </a>
-
-    <a href="admin-product-edit.html" class="admin-product-row">
-      <div class="admin-product-img"></div>
-      <div class="admin-product-info">
-        <h3>شامپو ضدریزش مو</h3>
-        <div class="admin-product-meta">موجودی: ۵ عدد · ۱۷۵,۰۰۰ ت</div>
-      </div>
-      <span class="stock-low">کم‌موجود</span>
-    </a>
+  <section class="admin-section" id="product-list">
   </section>
 
   <nav class="admin-tabbar">
@@ -72,5 +39,42 @@
     </a>
   </nav>
 
+  <script>
+    var listBox = document.getElementById('product-list');
+    var countTag = document.getElementById('product-count-tag');
+
+    sellerApiFetch('/products')
+      .then(function (products) {
+        countTag.textContent = toFaDigits(products.length) + ' محصول ثبت‌شده';
+
+        if (products.length === 0) {
+          listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#888;">هنوز محصولی اضافه نکردی. از دکمه «+ افزودن» شروع کن.</p>';
+          return;
+        }
+
+        listBox.innerHTML = products.map(function (p) {
+          var statusHtml;
+          if (!p.isPublished) {
+            statusHtml = '<span class="stock-low">پیش‌نویس</span>';
+          } else if (p.stockQty <= p.lowStockAt) {
+            statusHtml = '<span class="stock-low">کم‌موجود</span>';
+          } else {
+            statusHtml = '<span class="stock-ok">فعال</span>';
+          }
+          return '' +
+            '<a href="admin-product-edit.html?id=' + p.id + '" class="admin-product-row">' +
+            '  <div class="admin-product-img"></div>' +
+            '  <div class="admin-product-info">' +
+            '    <h3>' + p.name + '</h3>' +
+            '    <div class="admin-product-meta">موجودی: ' + toFaDigits(p.stockQty) + ' عدد · ' + formatPrice(p.costPrice) + ' ت</div>' +
+            '  </div>' +
+            '  ' + statusHtml +
+            '</a>';
+        }).join('');
+      })
+      .catch(function (err) {
+        listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#c0392b;">خطا: ' + err.message + '</p>';
+      });
+  </script>
 </body>
 </html>

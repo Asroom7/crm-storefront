@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>وضعیت سفارش</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireCustomerAuth();</script>
 </head>
 <body>
 
@@ -34,13 +36,13 @@
 
 
   <section class="status-block">
-    <div class="status-icon">✓</div>
-    <h1>سفارش شما ثبت شد</h1>
-    <div class="status-code">کد پیگیری سفارش: #10234</div>
+    <div class="status-icon" id="status-icon">✓</div>
+    <h1 id="status-title">در حال بارگذاری...</h1>
+    <div class="status-code" id="status-code"></div>
 
-    <div class="status-pending">
-      <span class="status-badge">در انتظار تایید</span>
-      <p>رسید پرداخت شما دریافت شد و در حال بررسی توسط تیم ماست. به محض تایید، پیامک اطلاع‌رسانی برای شما ارسال می‌شود.</p>
+    <div class="status-pending" id="status-pending" style="display:none;">
+      <span class="status-badge" id="status-badge"></span>
+      <p id="status-desc"></p>
     </div>
 
     <a href="index.html" class="btn-dark btn-full">بازگشت به صفحه اصلی</a>
@@ -66,6 +68,37 @@
     if (toggle) toggle.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
+
+    var statusDescriptions = {
+      pending_review: 'رسید پرداخت شما دریافت شد و در حال بررسی توسط فروشگاه است. به محض تایید، وضعیت سفارش به‌روز می‌شود.',
+      confirmed: 'پرداخت شما تایید شد و سفارشتون در حال آماده‌سازیه.',
+      shipped: 'سفارش شما ارسال شد.',
+      rejected: 'متاسفانه پرداخت این سفارش تایید نشد. اگه فکر می‌کنی اشتباهیه، با پشتیبانی تماس بگیر.'
+    };
+
+    var orderId = new URLSearchParams(window.location.search).get('id');
+
+    if (!orderId) {
+      document.getElementById('status-title').textContent = 'سفارشی پیدا نشد';
+    } else {
+      apiFetch('/orders/mine/' + orderId)
+        .then(function (order) {
+          document.getElementById('status-title').textContent =
+            order.status === 'rejected' ? 'سفارش شما تایید نشد' : 'سفارش شما ثبت شد';
+          document.getElementById('status-icon').textContent = order.status === 'rejected' ? '✕' : '✓';
+          document.getElementById('status-code').textContent = 'کد پیگیری سفارش: #' + order.id;
+
+          var pendingBox = document.getElementById('status-pending');
+          pendingBox.style.display = '';
+          document.getElementById('status-badge').textContent = getOrderStatusLabel(order.status);
+          document.getElementById('status-badge').className = 'status-badge ' + (order.status === 'rejected' ? 'rejected' : '');
+          document.getElementById('status-desc').textContent = statusDescriptions[order.status] || '';
+        })
+        .catch(function (err) {
+          document.getElementById('status-title').textContent = 'خطا در بارگذاری سفارش';
+          document.getElementById('status-code').textContent = err.message;
+        });
+    }
   </script>
 </body>
 </html>

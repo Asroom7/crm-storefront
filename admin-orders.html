@@ -5,68 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سفارش‌ها</title>
   <link rel="stylesheet" href="style.css">
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
 </head>
 <body class="admin-body">
 
   <header class="admin-header">
     <div>
       <div class="admin-store-name">سفارش‌ها</div>
-      <div class="admin-store-tag">۱۲ سفارش این ماه</div>
+      <div class="admin-store-tag" id="orders-count-tag">در حال بارگذاری...</div>
     </div>
     <span class="icon">🔔</span>
   </header>
 
   <section class="filter-bar">
-    <div class="filter-chip active">همه</div>
-    <div class="filter-chip">در انتظار تایید</div>
-    <div class="filter-chip">تایید شده</div>
-    <div class="filter-chip">ارسال شده</div>
+    <div class="filter-chip active" data-status="">همه</div>
+    <div class="filter-chip" data-status="pending_review">در انتظار تایید</div>
+    <div class="filter-chip" data-status="confirmed">تایید شده</div>
+    <div class="filter-chip" data-status="shipped">ارسال شده</div>
   </section>
 
-  <section class="admin-section">
-    <a href="admin-order-detail.html" class="admin-order-row">
-      <div>
-        <div class="order-id">سفارش #10234</div>
-        <div class="order-date">مریم احمدی · ۲ محصول</div>
-      </div>
-      <div class="admin-order-end">
-        <span class="status-badge small pending">در انتظار تایید</span>
-        <div class="order-amount">۳۷۸,۰۰۰ ت</div>
-      </div>
-    </a>
-
-    <a href="admin-order-detail.html" class="admin-order-row">
-      <div>
-        <div class="order-id">سفارش #10233</div>
-        <div class="order-date">نگار کریمی · ۱ محصول</div>
-      </div>
-      <div class="admin-order-end">
-        <span class="status-badge small done">تایید شده</span>
-        <div class="order-amount">۱۵۰,۰۰۰ ت</div>
-      </div>
-    </a>
-
-    <a href="admin-order-detail.html" class="admin-order-row">
-      <div>
-        <div class="order-id">سفارش #10232</div>
-        <div class="order-date">سارا محمدی · ۳ محصول</div>
-      </div>
-      <div class="admin-order-end">
-        <span class="status-badge small pending">در انتظار تایید</span>
-        <div class="order-amount">۵۹۰,۰۰۰ ت</div>
-      </div>
-    </a>
-
-    <a href="admin-order-detail.html" class="admin-order-row">
-      <div>
-        <div class="order-id">سفارش #10229</div>
-        <div class="order-date">الهام رضایی · ۱ محصول</div>
-      </div>
-      <div class="admin-order-end">
-        <span class="status-badge small done">تایید شده</span>
-        <div class="order-amount">۲۸۰,۰۰۰ ت</div>
-      </div>
-    </a>
+  <section class="admin-section" id="orders-list">
   </section>
 
   <nav class="admin-tabbar">
@@ -87,5 +46,53 @@
     </a>
   </nav>
 
+  <script>
+    var allOrders = [];
+    var listBox = document.getElementById('orders-list');
+    var countTag = document.getElementById('orders-count-tag');
+
+    function renderOrders(status) {
+      var list = status ? allOrders.filter(function (o) { return o.status === status; }) : allOrders;
+
+      if (list.length === 0) {
+        listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#888;">سفارشی در این وضعیت نیست</p>';
+        return;
+      }
+
+      listBox.innerHTML = list.map(function (o) {
+        var badgeClass = o.status === 'confirmed' || o.status === 'shipped' ? 'done' : (o.status === 'rejected' ? 'rejected' : 'pending');
+        var customerName = o.customer ? (o.customer.firstName + ' ' + o.customer.lastName) : 'مشتری';
+        return '' +
+          '<a href="admin-order-detail.html?id=' + o.id + '" class="admin-order-row">' +
+          '  <div>' +
+          '    <div class="order-id">سفارش #' + o.id + '</div>' +
+          '    <div class="order-date">' + customerName + ' · ' + toFaDigits(o.items.length) + ' محصول</div>' +
+          '  </div>' +
+          '  <div class="admin-order-end">' +
+          '    <span class="status-badge small ' + badgeClass + '">' + getOrderStatusLabel(o.status) + '</span>' +
+          '    <div class="order-amount">' + formatPrice(o.totalAmount) + ' ت</div>' +
+          '  </div>' +
+          '</a>';
+      }).join('');
+    }
+
+    document.querySelectorAll('.filter-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        renderOrders(chip.dataset.status);
+      });
+    });
+
+    sellerApiFetch('/orders/seller')
+      .then(function (orders) {
+        allOrders = orders;
+        countTag.textContent = toFaDigits(orders.length) + ' سفارش';
+        renderOrders('');
+      })
+      .catch(function (err) {
+        listBox.innerHTML = '<p style="text-align:center; padding:30px 0; color:#c0392b;">خطا: ' + err.message + '</p>';
+      });
+  </script>
 </body>
 </html>
