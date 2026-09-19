@@ -50,7 +50,7 @@
         body: JSON.stringify({ phone: phone, password: password })
       }).then(function (data) {
         saveSellerSession(data.token, data.seller);
-        window.location.href = 'admin-dashboard.html';
+        window.location.href = 'panel/index.html';
       }).catch(function (err) {
         errorBox.textContent = err.message;
         errorBox.style.display = 'block';
