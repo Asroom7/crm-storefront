@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>پنل مدیریت</title>
+<meta name="theme-color" content="#0F5257">
+<link rel="stylesheet" href="app.css">
+<script src="../api.js"></script>
+<script>requireSellerAuth();</script>
+<script>
+  /* اعمال زودهنگام حالت تاریک/روشن قبل از رندر، تا صفحه چشمک نزند */
+  (function () {
+    try {
+      var t = localStorage.getItem('crm-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* در صورت غیرفعال بودن ذخیره‌سازی، حالت روشن پیش‌فرض است */ }
+  })();
+</script>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="topbar__title">پنل مدیریت</div>
+    <div class="topbar__date" id="topbarDate"></div>
+  </header>
+
+  <main class="view" id="view"></main>
+
+  <nav class="bottom-nav" id="bottomNav"></nav>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
