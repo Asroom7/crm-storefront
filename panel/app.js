@@ -161,7 +161,11 @@ const STATUS_BADGE = { 'جدید': 'st-new', 'تماس گرفته شده': 'st-c
 
 const state = {
   customers: [], products: [], sales: [], payments: [], conversations: [], orders: [],
-  filters: { customers: { status: '', q: '', due: '', sort: '', created: '', tag: '' }, sales: { view: '' } },
+  filters: {
+    customers: { status: '', q: '', due: '', sort: '', created: '', tag: '' },
+    sales: { view: '' },
+    conversations: { view: '' },
+  },
 };
 
 /* ========================================================================
@@ -419,11 +423,16 @@ function computeSalesNavDot() {
 function computeDashboardNavDot() {
   return state.payments.some((p) => p.status === 'pending') ? 'static' : 'none';
 }
+function computeConversationsNavDot() {
+  const today = todayISO();
+  return state.conversations.some((c) => c.status === 'open' && c.nextFollowUp && c.nextFollowUp <= today) ? 'static' : 'none';
+}
 function renderNav(active) {
   const nav = document.getElementById('bottomNav');
   const custDot = computeCustomersNavDot();
   const salesDot = computeSalesNavDot();
   const dashDot = computeDashboardNavDot();
+  const convDot = computeConversationsNavDot();
   nav.innerHTML = NAV_ITEMS.map((it) => `
     <button class="nav-item ${active === it.key ? 'active' : ''}" data-nav="${it.key}">
       <span class="nav-item__icon">
@@ -431,6 +440,7 @@ function renderNav(active) {
         ${it.key === 'customers' && custDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
         ${it.key === 'sales' && salesDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
         ${it.key === 'dashboard' && dashDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
+        ${it.key === 'conversations' && convDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
       </span>
       <span>${it.label}</span>
     </button>`).join('');
@@ -443,18 +453,20 @@ function renderNav(active) {
 }
 
 async function loadAll() {
-  const [customers, products, sales, payments, orders] = await Promise.all([
+  const [customers, products, sales, payments, orders, conversations] = await Promise.all([
     sellerApiFetch('/customers'),
     sellerApiFetch('/products'),
     sellerApiFetch('/sales'),
     sellerApiFetch('/payments'),
     sellerApiFetch('/orders/seller'),
+    sellerApiFetch('/conversations'),
   ]);
   state.customers = customers;
   state.products = products;
   state.sales = sales;
   state.payments = payments;
   state.orders = orders;
+  state.conversations = conversations;
 }
 
 async function router() {
@@ -546,10 +558,11 @@ function featuredProductHTML(top) {
 function todayRemindersHTML() {
   const today = todayISO();
   const custRows = state.customers.filter((c) => c.nextFollowUp === today);
-  if (!custRows.length) {
+  const convRows = state.conversations.filter((c) => c.status === 'open' && c.nextFollowUp === today);
+  if (!custRows.length && !convRows.length) {
     return `<div class="today-panel"><div class="today-empty">${ic('check')} امروز هیچ پیگیری‌ای ثبت نشده</div></div>`;
   }
-  return `<div class="today-panel">${custRows.map((c) => `
+  const custHTML = custRows.map((c) => `
     <button class="today-row" data-cust="${c.id}">
       <div class="today-row__icon tp-cust">${ic('users')}</div>
       <div class="today-row__body">
@@ -557,7 +570,17 @@ function todayRemindersHTML() {
         <div class="today-row__sub">پیگیری مشتری ${c.phone ? '· ' + esc(c.phone) : ''}</div>
       </div>
       <div class="today-row__chev">${ic('chevL')}</div>
-    </button>`).join('')}</div>`;
+    </button>`).join('');
+  const convHTML = convRows.map((cv) => `
+    <button class="today-row" data-conv-cust="${cv.customerId}">
+      <div class="today-row__icon tp-conv">${ic('chat')}</div>
+      <div class="today-row__body">
+        <div class="today-row__title">${esc(cv.customer ? customerFullName(cv.customer) : '')}</div>
+        <div class="today-row__sub">پیگیری گفتگو ${cv.notes ? '· ' + esc(cv.notes.slice(0, 30)) : ''}</div>
+      </div>
+      <div class="today-row__chev">${ic('chevL')}</div>
+    </button>`).join('');
+  return `<div class="today-panel">${custHTML}${convHTML}</div>`;
 }
 function renderDashboard(view) {
   const today = todayISO();
@@ -575,6 +598,8 @@ function renderDashboard(view) {
     .sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([pid, count]) => ({ product: byId(state.products, Number(pid)), count }))
     .filter((x) => x.product);
+
+  const convToday = state.conversations.filter((c) => c.status === 'open' && c.nextFollowUp === today).length;
 
   view.innerHTML = `
     ${paymentsTodayPanelHTML()}
@@ -598,7 +623,7 @@ function renderDashboard(view) {
       </div>
     </div>
 
-    <div class="section-title">${ic('clock')} یادآوری‌های امروز<span class="cnt">${faDigits(followupCustomersToday.length)}</span></div>
+    <div class="section-title">${ic('clock')} یادآوری‌های امروز<span class="cnt">${faDigits(followupCustomersToday.length + convToday)}</span></div>
     ${todayRemindersHTML()}
 
     <div class="section-title">${ic('spark')} روند فروش ۷ روز اخیر</div>
@@ -624,6 +649,7 @@ function renderDashboard(view) {
   `;
   view.querySelectorAll('[data-go]').forEach((card) => card.addEventListener('click', () => goDashboardShortcut(card.dataset.go)));
   view.querySelectorAll('[data-cust]').forEach((row) => row.addEventListener('click', () => { location.hash = `#/customer-detail/${row.dataset.cust}/sales`; }));
+  view.querySelectorAll('[data-conv-cust]').forEach((row) => row.addEventListener('click', () => { location.hash = `#/customer-detail/${row.dataset.convCust}/conversations`; }));
   view.querySelectorAll('[data-product]').forEach((row) => { row.style.cursor = 'default'; });
   wirePaymentsTodayPanel(view);
 }
@@ -1065,6 +1091,7 @@ function renderCustomerDetail(view, id, tab) {
   if (!c) { location.hash = '#/customers'; return; }
   const sales = state.sales.filter((x) => x.customerId === id);
   const payments = state.payments.filter((x) => x.customerId === id);
+  const conversations = state.conversations.filter((x) => x.customerId === id);
   view.innerHTML = `
     <div class="detail-header">
       <button class="back-btn" id="backBtn">${ic('chevR')}</button>
@@ -1076,7 +1103,7 @@ function renderCustomerDetail(view, id, tab) {
     <div class="tabs">
       <button data-tab="sales" class="${tab === 'sales' ? 'active' : ''}">خریدها (${faDigits(sales.length)})</button>
       <button data-tab="payments" class="${tab === 'payments' ? 'active' : ''}">واریزی‌ها (${faDigits(payments.length)})</button>
-      <button data-tab="conversations" class="${tab === 'conversations' ? 'active' : ''}">گفتگوها</button>
+      <button data-tab="conversations" class="${tab === 'conversations' ? 'active' : ''}">گفتگوها (${faDigits(conversations.length)})</button>
     </div>
     <div id="detailList" class="list"></div>
   `;
@@ -1086,16 +1113,23 @@ function renderCustomerDetail(view, id, tab) {
   if (tab === 'payments') {
     listEl.innerHTML = payments.length ? payments.map(paymentMiniRowHTML).join('') : `<div class="empty-state">${ic('wallet')}<div class="empty-state__desc">واریزی‌ای ثبت نشده</div></div>`;
   } else if (tab === 'conversations') {
-    listEl.innerHTML = `<div class="empty-state">${ic('chat')}<div class="empty-state__title">به‌زودی</div><div class="empty-state__desc">ثبت گفتگو و پیگیری در فاز بعدی اضافه می‌شود</div></div>`;
+    const sorted = conversations.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    listEl.innerHTML = sorted.length ? sorted.map((cv) => conversationRowHTML(cv, { hideCustomer: true })).join('') : `<div class="empty-state">${ic('chat')}<div class="empty-state__desc">هنوز گفتگویی ثبت نشده</div></div>`;
+    wireConversationRows(listEl);
   } else {
     listEl.innerHTML = sales.length ? sales.map((s) => saleRowHTML(s, { hideCustomer: true })).join('') : `<div class="empty-state">${ic('cart')}<div class="empty-state__desc">هنوز خریدی ثبت نشده</div></div>`;
     wireSaleRows(listEl);
   }
-  const editBtn = document.createElement('button');
-  editBtn.className = 'fab';
-  editBtn.innerHTML = ic('edit');
-  editBtn.addEventListener('click', () => openCustomerForm(id));
-  view.appendChild(editBtn);
+  const fab = document.createElement('button');
+  fab.className = 'fab';
+  if (tab === 'conversations') {
+    fab.innerHTML = ic('plus');
+    fab.addEventListener('click', () => openConversationForm(id));
+  } else {
+    fab.innerHTML = ic('edit');
+    fab.addEventListener('click', () => openCustomerForm(id));
+  }
+  view.appendChild(fab);
 }
 
 /* ========================================================================
@@ -1119,10 +1153,152 @@ function renderSales(view) {
 }
 
 /* ========================================================================
-   ۱۲) گفتگوها (فاز بعدی)
+   ۱۲) گفتگوها
    ======================================================================== */
+function conversationRowHTML(cv, opts) {
+  opts = opts || {};
+  const isOpen = cv.status === 'open';
+  const due = isOpen && cv.nextFollowUp && cv.nextFollowUp <= todayISO();
+  return `
+    <div class="rec-card ${due ? 'due-today' : ''}" style="border-right-color:${isOpen ? 'var(--info)' : 'var(--ink-faint)'};" data-conv="${cv.id}">
+      <div class="rec-card__body">
+        <div class="rec-card__top">
+          <span class="rec-card__title">${!opts.hideCustomer && cv.customer ? esc(customerFullName(cv.customer)) : formatJalaliDisplay(cv.date)}</span>
+          <span class="badge ${isOpen ? 'st-followup' : 'st-bought'}">${isOpen ? 'باز' : 'بسته'}</span>
+          ${due ? `<span class="due-glow">${ic('bell')}پیگیری</span>` : ''}
+        </div>
+        <div class="rec-card__id">${fmtId('CV', cv.id)}${!opts.hideCustomer ? ' · ' + formatJalaliDisplay(cv.date) : ''}${cv.product ? ' · ' + esc(cv.product.name) : ''}</div>
+        ${cv.notes ? `<div class="rec-card__desc">${esc(cv.notes)}</div>` : ''}
+        ${cv.nextFollowUp ? `<div class="rec-card__meta"><span>${ic('calendar')}پیگیری بعدی: ${formatJalaliDisplay(cv.nextFollowUp)}</span></div>` : ''}
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button type="button" class="btn secondary" data-toggle-conv="${cv.id}" style="padding:8px 12px;font-size:12px;">${ic(isOpen ? 'check' : 'chat')}${isOpen ? 'بستن' : 'بازکردن'}</button>
+          <button type="button" class="btn danger" data-del-conv="${cv.id}" style="padding:8px 12px;font-size:12px;">${ic('trash')}حذف</button>
+        </div>
+      </div>
+    </div>`;
+}
+function wireConversationRows(container) {
+  container.querySelectorAll('[data-toggle-conv]').forEach((btn) => btn.addEventListener('click', () => toggleConversationStatus(Number(btn.dataset.toggleConv))));
+  container.querySelectorAll('[data-del-conv]').forEach((btn) => btn.addEventListener('click', () => deleteConversation(Number(btn.dataset.delConv))));
+}
+async function toggleConversationStatus(id) {
+  const cv = byId(state.conversations, id);
+  if (!cv) return;
+  try {
+    await sellerApiFetch(`/conversations/${id}`, { method: 'PATCH', body: JSON.stringify({ status: cv.status === 'open' ? 'closed' : 'open' }) });
+    await loadAll();
+    router();
+  } catch (err) { toast(err.message); }
+}
+function deleteConversation(id) {
+  confirmDialog('حذف گفتگو', 'این گفتگو حذف خواهد شد.', async () => {
+    try {
+      await sellerApiFetch(`/conversations/${id}`, { method: 'DELETE' });
+      await loadAll();
+      toast('گفتگو حذف شد');
+      router();
+    } catch (err) { toast(err.message); }
+  });
+}
+function openConversationForm(fixedCustomerId) {
+  const formData = { date: todayISO(), customerId: fixedCustomerId || null, nextFollowUp: null };
+  const fixedCustomer = fixedCustomerId ? byId(state.customers, fixedCustomerId) : null;
+  const html = `
+    <div class="modal__handle"></div>
+    <h3 class="modal__title">ثبت گفتگوی جدید</h3>
+    <form id="convForm">
+      ${fixedCustomer ? `
+      <div class="field"><label>مشتری</label><div class="combo-selected">${ic('user')}${esc(customerFullName(fixedCustomer))}</div></div>` : `
+      <div class="field">
+        <label>مشتری *</label>
+        <div class="combo">
+          <input type="text" id="convCustInput" placeholder="جستجوی نام یا شماره تماس" autocomplete="off">
+          <div class="combo-list" id="convCustList"></div>
+        </div>
+        <div id="convCustSelectedBox"></div>
+      </div>`}
+      ${dateFieldHTML('date', formData.date, 'تاریخ گفتگو', true)}
+      <div class="field"><label>یادداشت</label><textarea name="notes" placeholder="خلاصه‌ی گفتگو..."></textarea></div>
+      ${dateFieldHTML('nextFollowUp', formData.nextFollowUp, 'پیگیری بعدی (اختیاری)')}
+      <div class="modal__actions">
+        <button type="button" class="btn secondary block" data-close-modal>انصراف</button>
+        <button type="submit" class="btn primary block">${ic('check')}ثبت گفتگو</button>
+      </div>
+    </form>`;
+  const wrap = openModal(html);
+  initDateFields(wrap, formData);
+
+  if (!fixedCustomer) {
+    const comboInput = wrap.querySelector('#convCustInput');
+    const comboList = wrap.querySelector('#convCustList');
+    const selectedBox = wrap.querySelector('#convCustSelectedBox');
+    function renderSelected() {
+      const c = formData.customerId ? byId(state.customers, formData.customerId) : null;
+      selectedBox.innerHTML = c ? `<div class="combo-selected">${ic('user')}${esc(customerFullName(c))}<button type="button" id="convCustClearBtn">${ic('x')}</button></div>` : '';
+      comboInput.parentElement.style.display = c ? 'none' : '';
+      if (c) selectedBox.querySelector('#convCustClearBtn').addEventListener('click', () => { formData.customerId = null; renderSelected(); });
+    }
+    renderSelected();
+    comboInput.addEventListener('input', () => {
+      const q = comboInput.value.trim();
+      if (!q) { comboList.classList.remove('open'); comboList.innerHTML = ''; return; }
+      const matches = state.customers.filter((c) => customerFullName(c).includes(q) || (c.phone || '').includes(q)).slice(0, 8);
+      comboList.innerHTML = matches.length
+        ? matches.map((c) => `<div class="combo-item" data-id="${c.id}"><span class="combo-item__name">${esc(customerFullName(c))}</span><span class="combo-item__sub">${esc(c.phone || '')}</span></div>`).join('')
+        : `<div class="combo-empty">مشتری‌ای پیدا نشد</div>`;
+      comboList.classList.add('open');
+      comboList.querySelectorAll('[data-id]').forEach((item) => {
+        item.addEventListener('click', () => {
+          formData.customerId = Number(item.dataset.id);
+          comboInput.value = '';
+          comboList.classList.remove('open');
+          renderSelected();
+        });
+      });
+    });
+  }
+
+  wrap.querySelector('#convForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const custId = fixedCustomerId || formData.customerId;
+    if (!custId) { toast('یک مشتری انتخاب کن'); return; }
+    if (!formData.date) { toast('تاریخ گفتگو رو وارد کن'); return; }
+    const notes = wrap.querySelector('textarea[name="notes"]').value.trim();
+    try {
+      await sellerApiFetch('/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ customerId: custId, date: formData.date, notes, nextFollowUp: formData.nextFollowUp || null }),
+      });
+      await loadAll();
+      closeModal();
+      toast('گفتگو ثبت شد');
+      router();
+    } catch (err) { toast(err.message); }
+  });
+}
 function renderConversations(view) {
-  view.innerHTML = `<div class="empty-state" style="padding-top:80px;">${ic('chat')}<div class="empty-state__title">به‌زودی</div><div class="empty-state__desc">این بخش در فاز بعدی اضافه می‌شود — از جمله اتصال به پنل پیامکی</div></div>`;
+  const filters = state.filters.conversations;
+  let list = state.conversations.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const today = todayISO();
+  if (filters.view === 'due') list = list.filter((c) => c.status === 'open' && c.nextFollowUp && c.nextFollowUp <= today);
+  if (filters.view === 'open') list = list.filter((c) => c.status === 'open');
+  if (filters.view === 'closed') list = list.filter((c) => c.status === 'closed');
+  const dueCount = state.conversations.filter((c) => c.status === 'open' && c.nextFollowUp && c.nextFollowUp <= today).length;
+
+  const viewOpts = [['', 'همه'], ['due', `نیاز به پیگیری${dueCount ? ` (${faDigits(dueCount)})` : ''}`], ['open', 'باز'], ['closed', 'بسته']];
+  view.innerHTML = `
+    <div class="section-title">${ic('chat')} گفتگوها<span class="cnt">${faDigits(list.length)}</span></div>
+    <div class="filter-chips" id="convViewChips">${viewOpts.map(([v, l]) => `<button class="chip ${filters.view === v ? 'active' : ''}" data-v="${v}">${l}</button>`).join('')}</div>
+    <div class="list" id="convList">${list.length ? list.map((cv) => conversationRowHTML(cv)).join('') : `<div class="empty-state">${ic('chat')}<div class="empty-state__title">گفتگویی ثبت نشده</div><div class="empty-state__desc">با دکمه + یک گفتگوی جدید ثبت کن</div></div>`}</div>
+  `;
+  view.querySelectorAll('#convViewChips .chip').forEach((chip) => chip.addEventListener('click', () => { filters.view = chip.dataset.v; renderConversations(view); }));
+  wireConversationRows(view.querySelector('#convList'));
+
+  const fab = document.createElement('button');
+  fab.className = 'fab';
+  fab.innerHTML = ic('plus');
+  fab.addEventListener('click', () => openConversationForm());
+  view.appendChild(fab);
 }
 
 /* ========================================================================
