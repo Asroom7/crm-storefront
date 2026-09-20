@@ -160,8 +160,8 @@ const STATUS_LIST = ['جدید', 'تماس گرفته شده', 'نیاز به پ
 const STATUS_BADGE = { 'جدید': 'st-new', 'تماس گرفته شده': 'st-called', 'نیاز به پیگیری': 'st-followup', 'خرید کرده': 'st-bought', 'منصرف شده': 'st-lost' };
 
 const state = {
-  customers: [], products: [], sales: [], payments: [], conversations: [],
-  filters: { customers: { status: '', q: '', due: '', sort: '', created: '', tag: '' } },
+  customers: [], products: [], sales: [], payments: [], conversations: [], orders: [],
+  filters: { customers: { status: '', q: '', due: '', sort: '', created: '', tag: '' }, sales: { view: '' } },
 };
 
 /* ========================================================================
@@ -413,14 +413,24 @@ function computeCustomersNavDot() {
   const today = todayISO();
   return state.customers.some((c) => c.nextFollowUp && c.nextFollowUp <= today) ? 'static' : 'none';
 }
+function computeSalesNavDot() {
+  return state.orders.some((o) => o.status === 'confirmed') ? 'static' : 'none';
+}
+function computeDashboardNavDot() {
+  return state.payments.some((p) => p.status === 'pending') ? 'static' : 'none';
+}
 function renderNav(active) {
   const nav = document.getElementById('bottomNav');
   const custDot = computeCustomersNavDot();
+  const salesDot = computeSalesNavDot();
+  const dashDot = computeDashboardNavDot();
   nav.innerHTML = NAV_ITEMS.map((it) => `
     <button class="nav-item ${active === it.key ? 'active' : ''}" data-nav="${it.key}">
       <span class="nav-item__icon">
         ${ic(it.icon)}
         ${it.key === 'customers' && custDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
+        ${it.key === 'sales' && salesDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
+        ${it.key === 'dashboard' && dashDot !== 'none' ? '<span class="nav-dot"></span>' : ''}
       </span>
       <span>${it.label}</span>
     </button>`).join('');
@@ -433,16 +443,18 @@ function renderNav(active) {
 }
 
 async function loadAll() {
-  const [customers, products, sales, payments] = await Promise.all([
+  const [customers, products, sales, payments, orders] = await Promise.all([
     sellerApiFetch('/customers'),
     sellerApiFetch('/products'),
     sellerApiFetch('/sales'),
     sellerApiFetch('/payments'),
+    sellerApiFetch('/orders/seller'),
   ]);
   state.customers = customers;
   state.products = products;
   state.sales = sales;
   state.payments = payments;
+  state.orders = orders;
 }
 
 async function router() {
@@ -1003,20 +1015,37 @@ function deleteCustomer(id) {
 }
 function saleRowHTML(s, opts) {
   opts = opts || {};
+  const order = s.orderId ? byId(state.orders, s.orderId) : null;
+  const isShipped = order && order.status === 'shipped';
+  const needsShip = order && order.status === 'confirmed';
   return `
-    <div class="rec-card" style="border-right-color:var(--success);">
+    <div class="rec-card" style="border-right-color:var(--success);" data-sale="${s.id}">
       <div class="rec-card__body">
         <div class="rec-card__top">
           <span class="rec-card__title">${s.product ? esc(s.product.name) : 'فروش'}</span>
+          ${order ? `<span class="badge ${isShipped ? 'pay-completed' : 'pay-pending'}">${isShipped ? 'ارسال شده' : 'نیاز به ارسال'}</span>` : ''}
         </div>
-        <div class="rec-card__id">${formatJalaliDisplay(s.date)} · ${fmtId('S', s.id)}</div>
+        <div class="rec-card__id">${formatJalaliDisplay(s.date)} · ${fmtId('S', s.id)}${order ? ' · از سایت' : ' · دستی'}</div>
         <div class="rec-card__meta">
           <span>${ic('wallet')}${fmtPrice(s.price)}</span>
           <span>${esc(s.saleType)}</span>
           ${!opts.hideCustomer && s.customer ? `<span>${ic('user')}${esc(`${s.customer.firstName} ${s.customer.lastName}`.trim())}</span>` : ''}
         </div>
+        ${order && order.shippingAddress ? `<div class="rec-card__desc">${ic('pin')} ${esc(order.shippingAddress)}</div>` : ''}
+        ${needsShip ? `<div style="margin-top:10px;"><button type="button" class="btn primary" data-ship="${order.id}" style="padding:9px 14px;font-size:12.5px;">${ic('check')}ثبت ارسال</button></div>` : ''}
       </div>
     </div>`;
+}
+function wireSaleRows(container) {
+  container.querySelectorAll('[data-ship]').forEach((btn) => btn.addEventListener('click', () => shipOrder(Number(btn.dataset.ship))));
+}
+async function shipOrder(orderId) {
+  try {
+    await sellerApiFetch(`/orders/seller/${orderId}/ship`, { method: 'POST' });
+    await loadAll();
+    toast('سفارش ارسال‌شده ثبت شد');
+    router();
+  } catch (err) { toast(err.message); }
 }
 function paymentMiniRowHTML(p) {
   const color = p.status === 'pending' ? 'var(--danger)' : (p.status === 'rejected' ? 'var(--ink-faint)' : 'var(--success)');
@@ -1060,6 +1089,7 @@ function renderCustomerDetail(view, id, tab) {
     listEl.innerHTML = `<div class="empty-state">${ic('chat')}<div class="empty-state__title">به‌زودی</div><div class="empty-state__desc">ثبت گفتگو و پیگیری در فاز بعدی اضافه می‌شود</div></div>`;
   } else {
     listEl.innerHTML = sales.length ? sales.map((s) => saleRowHTML(s, { hideCustomer: true })).join('') : `<div class="empty-state">${ic('cart')}<div class="empty-state__desc">هنوز خریدی ثبت نشده</div></div>`;
+    wireSaleRows(listEl);
   }
   const editBtn = document.createElement('button');
   editBtn.className = 'fab';
@@ -1069,13 +1099,23 @@ function renderCustomerDetail(view, id, tab) {
 }
 
 /* ========================================================================
-   ۱۱) فروش‌ها (فهرست کامل)
+   ۱۱) فروش‌ها (فهرست کامل، شامل وضعیت ارسال سفارش‌های سایتی)
    ======================================================================== */
 function renderSales(view) {
-  const list = state.sales.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const f = state.filters.sales;
+  let list = state.sales.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if (f.view === 'manual') list = list.filter((s) => !s.orderId);
+  if (f.view === 'need-ship') list = list.filter((s) => s.orderId && byId(state.orders, s.orderId) && byId(state.orders, s.orderId).status === 'confirmed');
+  if (f.view === 'shipped') list = list.filter((s) => s.orderId && byId(state.orders, s.orderId) && byId(state.orders, s.orderId).status === 'shipped');
+  const needShipCount = state.sales.filter((s) => s.orderId && byId(state.orders, s.orderId) && byId(state.orders, s.orderId).status === 'confirmed').length;
+
+  const viewOpts = [['', 'همه'], ['need-ship', `نیاز به ارسال${needShipCount ? ` (${faDigits(needShipCount)})` : ''}`], ['shipped', 'ارسال شده'], ['manual', 'دستی']];
   view.innerHTML = `
     <div class="section-title">${ic('cart')} همه‌ی فروش‌ها<span class="cnt">${faDigits(list.length)}</span></div>
-    <div class="list">${list.length ? list.map((s) => saleRowHTML(s)).join('') : `<div class="empty-state">${ic('cart')}<div class="empty-state__title">هنوز فروشی ثبت نشده</div><div class="empty-state__desc">فروش‌ها بعد از تایید واریزی این‌جا نشان داده می‌شوند</div></div>`}</div>`;
+    <div class="filter-chips" id="salesViewChips">${viewOpts.map(([v, l]) => `<button class="chip ${f.view === v ? 'active' : ''}" data-v="${v}">${l}</button>`).join('')}</div>
+    <div class="list" id="salesList">${list.length ? list.map((s) => saleRowHTML(s)).join('') : `<div class="empty-state">${ic('cart')}<div class="empty-state__title">فروشی در این فیلتر نیست</div><div class="empty-state__desc">فروش‌ها بعد از تایید واریزی این‌جا نشان داده می‌شوند</div></div>`}</div>`;
+  view.querySelectorAll('#salesViewChips .chip').forEach((chip) => chip.addEventListener('click', () => { f.view = chip.dataset.v; renderSales(view); }));
+  wireSaleRows(view.querySelector('#salesList'));
 }
 
 /* ========================================================================
