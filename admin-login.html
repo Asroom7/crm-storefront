@@ -8,52 +8,46 @@
   <script src="api.js"></script>
 </head>
 <body class="admin-body">
-
   <section class="admin-login-block">
     <div class="admin-login-logo">Lumière</div>
-    <div class="admin-login-tag">پنل مدیریت فروشگاه</div>
-
-    <div class="auth-form">
+    <div class="admin-login-tag">پنل مدیریت یکپارچه</div>
+    <form class="auth-form" id="admin-login-form">
       <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
-
-      <label>شماره موبایل</label>
-      <input type="text" id="phone" placeholder="09xxxxxxxxx">
-
-      <label>رمز عبور</label>
-      <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
-
-      <button id="admin-login-btn" class="btn-dark btn-full">ورود به پنل</button>
-    </div>
-
-    <p class="admin-login-switch">این پنل مخصوص صاحبان کسب‌وکار است.<br>مشتری هستید؟ <a href="index.html">بازگشت به فروشگاه</a></p>
+      <label for="phone">شماره موبایل</label>
+      <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
+      <label for="password">رمز عبور</label>
+      <input type="password" autocomplete="current-password" id="password" placeholder="رمز عبور خود را وارد کنید" required>
+      <button id="admin-login-btn" class="btn-dark btn-full" type="submit">ورود به پنل</button>
+    </form>
+    <p class="admin-login-switch">مشتری هستید؟ <a href="index.html">بازگشت به فروشگاه</a></p>
   </section>
 
   <script>
+    if (getSellerSession()) window.location.replace('panel/index.html');
+
+    var form = document.getElementById('admin-login-form');
     var loginBtn = document.getElementById('admin-login-btn');
     var errorBox = document.getElementById('auth-error');
 
-    loginBtn.addEventListener('click', function () {
-      var phone = document.getElementById('phone').value.trim();
-      var password = document.getElementById('password').value;
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
       errorBox.style.display = 'none';
-
-      if (!phone || !password) {
-        errorBox.textContent = 'شماره موبایل و رمز عبور رو وارد کن';
-        errorBox.style.display = 'block';
-        return;
-      }
-
+      loginBtn.disabled = true;
       loginBtn.textContent = 'در حال ورود...';
 
       apiFetch('/auth/seller/login', {
         method: 'POST',
-        body: JSON.stringify({ phone: phone, password: password })
+        body: JSON.stringify({
+          phone: document.getElementById('phone').value.trim(),
+          password: document.getElementById('password').value
+        })
       }).then(function (data) {
         saveSellerSession(data.token, data.seller);
         window.location.href = 'panel/index.html';
       }).catch(function (err) {
         errorBox.textContent = err.message;
         errorBox.style.display = 'block';
+        loginBtn.disabled = false;
         loginBtn.textContent = 'ورود به پنل';
       });
     });

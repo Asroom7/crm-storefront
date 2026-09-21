@@ -3,77 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سرم ویتامین C</title>
+  <title>محصول</title>
   <link rel="stylesheet" href="style.css">
   <script src="api.js"></script>
 </head>
 <body>
-
-  <header class="site-header">
-    <div class="header-top">
-      <span class="icon menu-toggle">☰</span>
-      <div class="logo">Lumière</div>
-      <a href="cart.html" class="icon">🛍</a>
-    </div>
-  </header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
   <nav class="side-menu">
-    <div class="side-menu-head">
-      <span class="logo">Lumière</span>
-      <span class="icon close-menu">✕</span>
-    </div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a>
-    <a href="profile.html">📦 سفارش‌های من</a>
-    <a href="cart.html">🛍 سبد خرید</a>
-    <a href="index.html">🏠 صفحه نخست</a>
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+    <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a>
-    <a href="products.html?cat=hair">مراقبت مو</a>
-    <a href="products.html?cat=makeup">آرایش</a>
-    <a href="products.html?cat=perfume">عطر و ادکلن</a>
+    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
-
-  <section class="page-title">
-    <a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a>
-  </section>
-
+  <section class="page-title"><a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a></section>
   <section class="detail-block" id="detail-block">
     <div class="detail-img" id="detail-img"></div>
-
     <h1 class="detail-title" id="detail-title">در حال بارگذاری...</h1>
     <div class="detail-price" id="detail-price"></div>
-
     <p class="detail-desc" id="detail-desc"></p>
-
+    <p id="stock-note" style="font-size:12px;color:#777;margin:10px 0;"></p>
     <div class="qty-row">
       <span>تعداد:</span>
-      <div class="qty-control">
-        <button class="qty-btn">−</button>
-        <span>۱</span>
-        <button class="qty-btn">+</button>
-      </div>
+      <div class="qty-control"><button class="qty-btn" id="qty-minus" type="button">−</button><span id="qty-value">۱</span><button class="qty-btn" id="qty-plus" type="button">+</button></div>
     </div>
-
     <button id="add-to-cart-btn" class="btn-dark btn-full">افزودن به سبد خرید</button>
   </section>
 
-  <section class="section-block">
-    <div class="section-head">
-      <h2>نظرات مشتریان</h2>
-    </div>
-    <p style="color:#888; padding:10px 0;">هنوز نظری برای این محصول ثبت نشده.</p>
-  </section>
-
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="#">تماس با ما</a>
-      <a href="#">قوانین بازگشت کالا</a>
-    </div>
-    <div class="footer-social">
-      <span>📷</span><span>✈️</span><span>💬</span>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
     var toggle = document.querySelector('.menu-toggle');
@@ -88,42 +46,50 @@
 
     var count = 1;
     var currentProduct = null;
-
-    document.querySelectorAll('.qty-control').forEach(function (control) {
-      var display = control.querySelector('span');
-      var btns = control.querySelectorAll('.qty-btn');
-      btns[0].addEventListener('click', function () {
-        if (count > 1) { count--; display.textContent = toFaDigits(count); }
-      });
-      btns[1].addEventListener('click', function () {
-        count++; display.textContent = toFaDigits(count);
-      });
-    });
-
-    var productId = Number(new URLSearchParams(window.location.search).get('id'));
+    var qtyDisplay = document.getElementById('qty-value');
     var addBtn = document.getElementById('add-to-cart-btn');
+    var productId = Number(new URLSearchParams(window.location.search).get('id'));
+
+    document.getElementById('qty-minus').addEventListener('click', function () {
+      if (count > 1) count--;
+      qtyDisplay.textContent = toFaDigits(count);
+    });
+    document.getElementById('qty-plus').addEventListener('click', function () {
+      if (!currentProduct || count < currentProduct.stockQty) count++;
+      qtyDisplay.textContent = toFaDigits(count);
+    });
 
     if (!productId) {
       document.getElementById('detail-title').textContent = 'محصول پیدا نشد';
       addBtn.style.display = 'none';
     } else {
-      apiFetch('/products/public/' + SELLER_ID + '/' + productId)
-        .then(function (product) {
-          currentProduct = product;
-          document.title = product.name;
-          document.getElementById('detail-title').textContent = product.name;
-          document.getElementById('detail-price').textContent = formatPrice(getProductMinPrice(product)) + ' تومان';
-          document.getElementById('detail-desc').textContent = product.description || '';
-        })
-        .catch(function (err) {
-          document.getElementById('detail-title').textContent = 'محصول پیدا نشد';
-          document.getElementById('detail-desc').textContent = err.message;
-          addBtn.style.display = 'none';
-        });
+      apiFetch('/products/public/' + SELLER_ID + '/' + productId).then(function (product) {
+        currentProduct = product;
+        document.title = product.name;
+        document.getElementById('detail-title').textContent = product.name;
+        document.getElementById('detail-price').textContent = formatPrice(getProductMinPrice(product)) + ' تومان';
+        document.getElementById('detail-desc').textContent = product.description || '';
+        var imageUrl = getProductImageUrl(product);
+        if (imageUrl) {
+          document.getElementById('detail-img').innerHTML = '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">';
+        }
+        var stock = Number(product.stockQty || 0);
+        document.getElementById('stock-note').textContent = stock > 0 ? ('موجودی: ' + toFaDigits(stock) + ' عدد') : 'این محصول فعلاً ناموجود است';
+        if (stock <= 0) {
+          addBtn.disabled = true;
+          addBtn.textContent = 'ناموجود';
+          document.getElementById('qty-plus').disabled = true;
+          document.getElementById('qty-minus').disabled = true;
+        }
+      }).catch(function (err) {
+        document.getElementById('detail-title').textContent = 'محصول پیدا نشد';
+        document.getElementById('detail-desc').textContent = err.message;
+        addBtn.style.display = 'none';
+      });
 
       addBtn.addEventListener('click', function () {
-        if (!currentProduct) return;
-        addToCart(currentProduct.id, count);
+        if (!currentProduct || Number(currentProduct.stockQty || 0) <= 0) return;
+        addToCart(currentProduct.id, Math.min(count, currentProduct.stockQty));
         window.location.href = 'cart.html';
       });
     }
