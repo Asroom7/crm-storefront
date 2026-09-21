@@ -472,7 +472,7 @@ async function loadAll() {
 async function router() {
   closeMenu();
   const route = parseRoute();
-  const topActive = route.name === 'customer-detail' ? 'customers' : route.name === 'payments-history' ? 'dashboard' : route.name;
+  const topActive = route.name === 'customer-detail' ? 'customers' : route.name === 'payments-history' ? 'dashboard' : route.name === 'reports' ? 'settings' : route.name;
   renderNav(topActive);
   const view = document.getElementById('view');
   view.scrollTop = 0;
@@ -483,6 +483,8 @@ async function router() {
   if (route.name === 'conversations') return renderConversations(view);
   if (route.name === 'settings') return renderSettings(view);
   if (route.name === 'payments-history') return renderPaymentsHistory(view);
+  if (route.name === 'reports') return renderReports(view);
+  if (route.name === 'search') return renderSearch(view);
   return renderDashboard(view);
 }
 window.addEventListener('hashchange', router);
@@ -1302,7 +1304,131 @@ function renderConversations(view) {
 }
 
 /* ========================================================================
-   ۱۳) تنظیمات
+   ۱۳) گزارش‌ها
+   ======================================================================== */
+function statBar(label, count, max, colorVar) {
+  const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 0;
+  return `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;">
+        <span>${esc(label)}</span><span style="color:var(--ink-soft);">${faDigits(count)}</span>
+      </div>
+      <div style="height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden;">
+        <div style="height:100%;width:${pct}%;border-radius:5px;background:${colorVar};"></div>
+      </div>
+    </div>`;
+}
+function renderReports(view) {
+  const today = todayISO();
+  const week = weekRangeISO(today);
+  const month = monthRangeISO(today);
+  const revToday = state.sales.filter((s) => s.date === today).reduce((sum, s) => sum + s.price, 0);
+  const revWeek = state.sales.filter((s) => s.date >= week.start && s.date <= week.end).reduce((sum, s) => sum + s.price, 0);
+  const revMonth = state.sales.filter((s) => s.date >= month.start && s.date <= month.end).reduce((sum, s) => sum + s.price, 0);
+
+  const totalCustomers = state.customers.length;
+  const boughtCustomers = state.customers.filter((c) => c.status === 'خرید کرده').length;
+  const conversionRate = totalCustomers ? Math.round((boughtCustomers / totalCustomers) * 100) : 0;
+
+  const statusCounts = STATUS_LIST.map((s) => ({ label: s, count: state.customers.filter((c) => c.status === s).length }));
+  const maxStatusCount = Math.max(1, ...statusCounts.map((s) => s.count));
+  const statusColors = { 'جدید': 'var(--primary)', 'تماس گرفته شده': 'var(--info)', 'نیاز به پیگیری': 'var(--accent)', 'خرید کرده': 'var(--success)', 'منصرف شده': 'var(--ink-faint)' };
+
+  const spendByCustomer = {};
+  state.sales.forEach((s) => { if (s.customerId) spendByCustomer[s.customerId] = (spendByCustomer[s.customerId] || 0) + s.price; });
+  const topCustomers = Object.entries(spendByCustomer)
+    .sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([cid, total]) => ({ customer: byId(state.customers, Number(cid)), total }))
+    .filter((x) => x.customer);
+
+  view.innerHTML = `
+    <div class="section-title">${ic('spark')} گزارش‌ها</div>
+    <div class="dash-grid">
+      <div class="dash-card c-green"><div class="dash-card__icon">${ic('wallet')}</div><div><div class="dash-card__value" style="font-size:14px;">${fmtPrice(revToday)}</div><div class="dash-card__label">فروش امروز</div></div></div>
+      <div class="dash-card c-green"><div class="dash-card__icon">${ic('wallet')}</div><div><div class="dash-card__value" style="font-size:14px;">${fmtPrice(revWeek)}</div><div class="dash-card__label">فروش این هفته</div></div></div>
+      <div class="dash-card c-teal"><div class="dash-card__icon">${ic('wallet')}</div><div><div class="dash-card__value" style="font-size:14px;">${fmtPrice(revMonth)}</div><div class="dash-card__label">فروش این ماه</div></div></div>
+      <div class="dash-card c-amber"><div class="dash-card__icon">${ic('target')}</div><div><div class="dash-card__value">${faDigits(conversionRate)}٪</div><div class="dash-card__label">نرخ تبدیل مشتری</div></div></div>
+    </div>
+
+    <div class="section-title">${ic('users')} مشتریان بر اساس وضعیت</div>
+    <div class="chart-card">${statusCounts.map((s) => statBar(s.label, s.count, maxStatusCount, statusColors[s.label])).join('')}</div>
+
+    <div class="section-title">${ic('star')} مشتریان برتر (بر اساس خرید)</div>
+    ${topCustomers.length ? `<div class="list">${topCustomers.map((tc, i) => `
+      <button class="today-row" data-cust="${tc.customer.id}">
+        <div class="today-row__icon tp-cust">${faDigits(i + 1)}</div>
+        <div class="today-row__body">
+          <div class="today-row__title">${esc(customerFullName(tc.customer))}</div>
+          <div class="today-row__sub">${fmtPrice(tc.total)}</div>
+        </div>
+        <div class="today-row__chev">${ic('chevL')}</div>
+      </button>`).join('')}</div>` : `<div class="empty-state">${ic('cart')}<div class="empty-state__desc">هنوز فروشی ثبت نشده</div></div>`}
+    <div style="height:6px;"></div>
+  `;
+  view.querySelectorAll('[data-cust]').forEach((row) => row.addEventListener('click', () => { location.hash = `#/customer-detail/${row.dataset.cust}/sales`; }));
+}
+
+/* ========================================================================
+   ۱۴) جستجوی سراسری
+   ======================================================================== */
+function renderSearch(view) {
+  view.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">${ic('search')}<input id="globalSearchInput" placeholder="جستجو در مشتریان، محصولات، گفتگوها..." autofocus></div>
+    </div>
+    <div id="searchResults"></div>
+  `;
+  const input = document.getElementById('globalSearchInput');
+  const resultsEl = document.getElementById('searchResults');
+  function runSearch(q) {
+    if (!q || !q.trim()) { resultsEl.innerHTML = ''; return; }
+    const term = q.trim();
+    const custMatches = state.customers.filter((c) => customerFullName(c).includes(term) || (c.phone || '').includes(term));
+    const productMatches = state.products.filter((p) => p.name.includes(term));
+    const convMatches = state.conversations.filter((cv) => cv.notes && cv.notes.includes(term));
+
+    if (!custMatches.length && !productMatches.length && !convMatches.length) {
+      resultsEl.innerHTML = `<div class="empty-state">${ic('search')}<div class="empty-state__desc">نتیجه‌ای پیدا نشد</div></div>`;
+      return;
+    }
+    let html = '';
+    if (custMatches.length) {
+      html += `<div class="section-title">${ic('users')} مشتریان<span class="cnt">${faDigits(custMatches.length)}</span></div><div class="list">`;
+      html += custMatches.map((c) => `
+        <button class="today-row" data-go-cust="${c.id}">
+          <div class="today-row__icon tp-cust">${ic('users')}</div>
+          <div class="today-row__body"><div class="today-row__title">${esc(customerFullName(c))}</div><div class="today-row__sub">${esc(c.phone || '')}</div></div>
+          <div class="today-row__chev">${ic('chevL')}</div>
+        </button>`).join('');
+      html += '</div>';
+    }
+    if (productMatches.length) {
+      html += `<div class="section-title">${ic('box')} محصولات<span class="cnt">${faDigits(productMatches.length)}</span></div><div class="list">`;
+      html += productMatches.map((p) => `
+        <div class="today-row" style="cursor:default;">
+          <div class="today-row__icon tp-conv">${ic('box')}</div>
+          <div class="today-row__body"><div class="today-row__title">${esc(p.name)}</div><div class="today-row__sub">${fmtProductPrice(p)}</div></div>
+        </div>`).join('');
+      html += '</div>';
+    }
+    if (convMatches.length) {
+      html += `<div class="section-title">${ic('chat')} گفتگوها<span class="cnt">${faDigits(convMatches.length)}</span></div><div class="list">`;
+      html += convMatches.map((cv) => `
+        <button class="today-row" data-go-cust="${cv.customerId}">
+          <div class="today-row__icon tp-conv">${ic('chat')}</div>
+          <div class="today-row__body"><div class="today-row__title">${esc(cv.notes.slice(0, 40))}</div><div class="today-row__sub">${cv.customer ? esc(customerFullName(cv.customer)) : ''} · ${formatJalaliDisplay(cv.date)}</div></div>
+          <div class="today-row__chev">${ic('chevL')}</div>
+        </button>`).join('');
+      html += '</div>';
+    }
+    resultsEl.innerHTML = html;
+    resultsEl.querySelectorAll('[data-go-cust]').forEach((row) => row.addEventListener('click', () => { location.hash = `#/customer-detail/${row.dataset.goCust}/sales`; }));
+  }
+  input.addEventListener('input', () => runSearch(input.value));
+}
+
+/* ========================================================================
+   ۱۵) تنظیمات
    ======================================================================== */
 function renderSettings(view) {
   const session = getSellerSession();
@@ -1317,6 +1443,14 @@ function renderSettings(view) {
           <div class="settings-row__desc">${esc(seller.brandName || '')}</div>
         </div>
       </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group__title">ابزارها</div>
+      <a href="#/reports" class="settings-row" style="text-decoration:none;color:inherit;">
+        <div class="settings-row__icon">${ic('spark')}</div>
+        <div class="settings-row__text"><div class="settings-row__title">گزارش‌ها</div></div>
+        <div class="settings-row__chev">${ic('chevL')}</div>
+      </a>
     </div>
     <div class="settings-group">
       <div class="settings-group__title">مدیریت فروشگاه</div>
@@ -1351,6 +1485,8 @@ async function boot() {
   const dateEl = document.getElementById('topbarDate');
   const j = isoToJalali(todayISO());
   dateEl.textContent = `${faDigits(j.jd)} ${MONTHS_FA[j.jm - 1]}`;
+  document.getElementById('topbarSearchBtn').innerHTML = ic('search');
+  document.getElementById('topbarSearchBtn').addEventListener('click', () => { location.hash = '#/search'; });
   try {
     await loadAll();
   } catch (err) {

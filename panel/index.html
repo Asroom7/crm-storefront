@@ -22,7 +22,10 @@
 <div id="app">
   <header class="topbar">
     <div class="topbar__title">پنل مدیریت</div>
-    <div class="topbar__date" id="topbarDate"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="topbarSearchBtn" style="background:none;border:none;color:inherit;padding:4px;cursor:pointer;display:flex;" aria-label="جستجو"></button>
+      <div class="topbar__date" id="topbarDate"></div>
+    </div>
   </header>
 
   <main class="view" id="view"></main>
