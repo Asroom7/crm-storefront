@@ -6,6 +6,17 @@
   <title>محصول</title>
   <link rel="stylesheet" href="style.css">
   <script src="api.js"></script>
+  <style>
+    .detail-media-wrap { margin-bottom: 14px; }
+    .detail-media-wrap .detail-img { overflow: hidden; }
+    .detail-media-wrap .detail-img img,
+    .detail-media-wrap .detail-img video { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; background:#f3f3f3; }
+    .detail-media-thumbs { display:flex; gap:8px; overflow-x:auto; padding:9px 1px 2px; scrollbar-width:thin; }
+    .detail-media-thumb { flex:0 0 64px; width:64px; height:64px; border:1px solid #ddd; border-radius:10px; padding:0; overflow:hidden; background:#f7f7f7; cursor:pointer; }
+    .detail-media-thumb.active { border-color:#0F5257; box-shadow:0 0 0 1px #0F5257 inset; }
+    .detail-media-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .detail-media-video-thumb { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#555; gap:3px; }
+  </style>
 </head>
 <body>
   <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
@@ -19,7 +30,10 @@
 
   <section class="page-title"><a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a></section>
   <section class="detail-block" id="detail-block">
-    <div class="detail-img" id="detail-img"></div>
+    <div class="detail-media-wrap">
+      <div class="detail-img" id="detail-img"></div>
+      <div class="detail-media-thumbs" id="detail-media-thumbs" hidden></div>
+    </div>
     <h1 class="detail-title" id="detail-title">در حال بارگذاری...</h1>
     <div class="detail-price" id="detail-price"></div>
     <p class="detail-desc" id="detail-desc"></p>
@@ -50,6 +64,54 @@
     var addBtn = document.getElementById('add-to-cart-btn');
     var productId = Number(new URLSearchParams(window.location.search).get('id'));
 
+    function productMediaList(product) {
+      return (Array.isArray(product && product.media) ? product.media : []).filter(function (media) {
+        return media && (media.kind === 'image' || media.kind === 'video') && safeMediaUrl(media.url);
+      }).map(function (media) {
+        return { kind: media.kind, url: safeMediaUrl(media.url) };
+      });
+    }
+
+    function renderProductGallery(product) {
+      var media = productMediaList(product);
+      var main = document.getElementById('detail-img');
+      var thumbs = document.getElementById('detail-media-thumbs');
+      if (!media.length) {
+        main.innerHTML = '';
+        thumbs.hidden = true;
+        return;
+      }
+
+      function selectMedia(index) {
+        var item = media[index];
+        if (item.kind === 'video') {
+          main.innerHTML = '<video src="' + escapeHtml(item.url) + '" controls playsinline preload="metadata"></video>';
+        } else {
+          main.innerHTML = '<img src="' + escapeHtml(item.url) + '" alt="' + escapeHtml(product.name) + '">';
+        }
+        thumbs.querySelectorAll('[data-media-index]').forEach(function (button) {
+          button.classList.toggle('active', Number(button.dataset.mediaIndex) === index);
+        });
+      }
+
+      if (media.length > 1) {
+        thumbs.hidden = false;
+        thumbs.innerHTML = media.map(function (item, index) {
+          var body = item.kind === 'image'
+            ? '<img src="' + escapeHtml(item.url) + '" alt="">'
+            : '<span class="detail-media-video-thumb">▶ ویدیو</span>';
+          return '<button type="button" class="detail-media-thumb' + (index === 0 ? ' active' : '') + '" data-media-index="' + index + '">' + body + '</button>';
+        }).join('');
+        thumbs.querySelectorAll('[data-media-index]').forEach(function (button) {
+          button.addEventListener('click', function () { selectMedia(Number(button.dataset.mediaIndex)); });
+        });
+      } else {
+        thumbs.hidden = true;
+        thumbs.innerHTML = '';
+      }
+      selectMedia(0);
+    }
+
     document.getElementById('qty-minus').addEventListener('click', function () {
       if (count > 1) count--;
       qtyDisplay.textContent = toFaDigits(count);
@@ -69,10 +131,7 @@
         document.getElementById('detail-title').textContent = product.name;
         document.getElementById('detail-price').textContent = formatPrice(getProductMinPrice(product)) + ' تومان';
         document.getElementById('detail-desc').textContent = product.description || '';
-        var imageUrl = getProductImageUrl(product);
-        if (imageUrl) {
-          document.getElementById('detail-img').innerHTML = '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">';
-        }
+        renderProductGallery(product);
         var stock = Number(product.stockQty || 0);
         document.getElementById('stock-note').textContent = stock > 0 ? ('موجودی: ' + toFaDigits(stock) + ' عدد') : 'این محصول فعلاً ناموجود است';
         if (stock <= 0) {
