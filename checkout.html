@@ -9,75 +9,38 @@
   <script>requireCustomerAuth();</script>
 </head>
 <body>
-
-  <header class="site-header">
-    <div class="header-top">
-      <span class="icon menu-toggle">☰</span>
-      <div class="logo">Lumière</div>
-      <a href="cart.html" class="icon">🛍</a>
-    </div>
-  </header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
   <nav class="side-menu">
-    <div class="side-menu-head">
-      <span class="logo">Lumière</span>
-      <span class="icon close-menu">✕</span>
-    </div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a>
-    <a href="profile.html">📦 سفارش‌های من</a>
-    <a href="cart.html">🛍 سبد خرید</a>
-    <a href="index.html">🏠 صفحه نخست</a>
-    <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a>
-    <a href="products.html?cat=hair">مراقبت مو</a>
-    <a href="products.html?cat=makeup">آرایش</a>
-    <a href="products.html?cat=perfume">عطر و ادکلن</a>
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+    <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
   </nav>
 
-
-  <section class="page-title">
-    <h1>تکمیل خرید</h1>
-    <a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a>
-  </section>
+  <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
 
   <section class="checkout-block">
-
-    <div class="trust-note">
-      <span class="trust-icon">🛡</span>
-      <p>سفارش شما پس از بررسی و تایید رسید پرداخت توسط تیم ما نهایی می‌شود (معمولاً کمتر از ۲ ساعت). لطفاً بعد از واریز، شماره پیگیری تراکنش را ثبت کنید.</p>
-    </div>
+    <div class="trust-note"><span class="trust-icon">🛡</span><p>بعد از واریز، شماره پیگیری تراکنش را ثبت کنید. سفارش پس از تایید پرداخت آماده ارسال می‌شود.</p></div>
 
     <div class="card-info">
       <h2>اطلاعات واریز</h2>
-      <div class="card-number" id="card-number">۶۰۳۷-XXXX-XXXX-XXXX</div>
-      <div class="card-owner" id="card-owner">به نام: علی رضایی</div>
+      <div class="card-number" id="card-number">در حال دریافت...</div>
+      <div class="card-owner" id="card-owner"></div>
       <div class="card-amount">مبلغ قابل پرداخت: <span id="checkout-amount">...</span> تومان</div>
     </div>
 
     <div class="receipt-form">
       <h2>آدرس ارسال</h2>
-      <label>آدرس کامل</label>
+      <label for="f-address">آدرس کامل</label>
       <textarea rows="2" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
-
       <h2 style="margin-top:16px;">ثبت رسید پرداخت</h2>
-      <p id="checkout-error" style="color:#c0392b; display:none;"></p>
-      <label>شماره پیگیری تراکنش</label>
-      <input type="text" id="f-tracking" placeholder="مثال: 123456789">
-
-      <button id="submit-order-btn" class="btn-dark btn-full">ثبت سفارش</button>
+      <p id="checkout-error" style="color:#c0392b;display:none;"></p>
+      <label for="f-tracking">شماره پیگیری تراکنش</label>
+      <input type="text" inputmode="numeric" id="f-tracking" placeholder="مثال: 123456789">
+      <button id="submit-order-btn" class="btn-dark btn-full" disabled>ثبت سفارش</button>
     </div>
-
   </section>
 
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="#">تماس با ما</a>
-      <a href="#">قوانین بازگشت کالا</a>
-    </div>
-    <div class="footer-social">
-      <span>📷</span><span>✈️</span><span>💬</span>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
     var toggle = document.querySelector('.menu-toggle');
@@ -90,57 +53,70 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
-    // 👇 برای تغییر شماره کارت و نام صاحب حساب، همین دو خط رو ویرایش کن
-    var SELLER_CARD_NUMBER = '۶۰۳۷-XXXX-XXXX-XXXX';
-    var SELLER_CARD_OWNER = 'به نام: علی رضایی';
-    document.getElementById('card-number').textContent = SELLER_CARD_NUMBER;
-    document.getElementById('card-owner').textContent = SELLER_CARD_OWNER;
-
     var cart = getCart();
     var errorBox = document.getElementById('checkout-error');
     var submitBtn = document.getElementById('submit-order-btn');
     var amountEl = document.getElementById('checkout-amount');
+    var cartProducts = [];
+    var paymentReady = false;
+    var productsReady = false;
 
-    if (cart.length === 0) {
-      window.location.href = 'cart.html';
+    if (!cart.length) window.location.href = 'cart.html';
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+    }
+    function updateReadyState() {
+      submitBtn.disabled = !(paymentReady && productsReady && cartProducts.length);
     }
 
-    var cartProducts = [];
+    apiFetch('/store/public/' + SELLER_ID).then(function (config) {
+      if (config.seller && config.seller.brandName) {
+        document.querySelectorAll('.logo').forEach(function (el) { el.textContent = config.seller.brandName; });
+      }
+      if (!config.payment || !config.payment.cardNumber || !config.payment.cardOwner) {
+        document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
+        showError('اطلاعات کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
+        return;
+      }
+      document.getElementById('card-number').textContent = config.payment.cardNumber;
+      document.getElementById('card-owner').textContent = 'به نام: ' + config.payment.cardOwner;
+      paymentReady = true;
+      updateReadyState();
+    }).catch(function (err) {
+      document.getElementById('card-number').textContent = 'خطا در دریافت اطلاعات پرداخت';
+      showError(err.message);
+    });
+
     apiFetch('/products/public/' + SELLER_ID).then(function (products) {
       cartProducts = cart.map(function (ci) {
         var product = products.find(function (p) { return p.id === ci.productId; });
-        return product ? { product: product, quantity: ci.quantity } : null;
+        if (!product || product.stockQty < ci.quantity) return null;
+        return { product: product, quantity: ci.quantity };
       }).filter(Boolean);
 
-      var total = cartProducts.reduce(function (sum, ci) {
-        return sum + getProductMinPrice(ci.product) * ci.quantity;
-      }, 0);
+      if (cartProducts.length !== cart.length) {
+        showError('موجودی بعضی کالاها تغییر کرده است؛ لطفاً سبد خرید را دوباره بررسی کنید.');
+        return;
+      }
+
+      var total = cartProducts.reduce(function (sum, ci) { return sum + getProductMinPrice(ci.product) * ci.quantity; }, 0);
       amountEl.textContent = formatPrice(total);
-    });
+      productsReady = total > 0;
+      updateReadyState();
+    }).catch(function (err) { showError(err.message); });
 
     submitBtn.addEventListener('click', function () {
       errorBox.style.display = 'none';
       var address = document.getElementById('f-address').value.trim();
       var tracking = document.getElementById('f-tracking').value.trim();
+      if (address.length < 5) { showError('آدرس کامل را وارد کن'); return; }
+      if (tracking.length < 3) { showError('شماره پیگیری تراکنش را وارد کن'); return; }
+      if (!paymentReady || !productsReady || !cartProducts.length) { showError('اطلاعات سفارش کامل نیست'); return; }
 
-      if (!address || address.length < 5) {
-        errorBox.textContent = 'آدرس کامل رو وارد کن';
-        errorBox.style.display = 'block';
-        return;
-      }
-      if (!tracking || tracking.length < 3) {
-        errorBox.textContent = 'شماره پیگیری تراکنش رو وارد کن';
-        errorBox.style.display = 'block';
-        return;
-      }
-      if (cartProducts.length === 0) {
-        errorBox.textContent = 'سبد خریدت خالیه';
-        errorBox.style.display = 'block';
-        return;
-      }
-
+      submitBtn.disabled = true;
       submitBtn.textContent = 'در حال ثبت...';
-
       apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
@@ -152,8 +128,8 @@
         clearCart();
         window.location.href = 'order-status.html?id=' + data.orderId;
       }).catch(function (err) {
-        errorBox.textContent = err.message;
-        errorBox.style.display = 'block';
+        showError(err.message);
+        submitBtn.disabled = false;
         submitBtn.textContent = 'ثبت سفارش';
       });
     });
