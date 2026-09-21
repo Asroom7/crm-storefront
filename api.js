@@ -1,7 +1,22 @@
 // تنظیمات مرکزی اتصال به بک‌اند
-// چون فعلاً سایت تک‌فروشگاهیه، sellerId ثابت 1 (همون فروشنده تست/اصلی) است
-const API_BASE = 'https://crm-backend-apj4.onrender.com/api';
-const SELLER_ID = 1;
+const API_BASE = window.CRM_API_BASE || 'https://crm-backend-apj4.onrender.com/api';
+const SELLER_ID = Number(window.CRM_SELLER_ID || 1);
+
+function authRedirectPath() {
+  return window.location.pathname.includes('/panel/') ? '../admin-login.html' : 'admin-login.html';
+}
+
+async function parseApiResponse(res) {
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* پاسخ بدون JSON */ }
+  if (!res.ok) {
+    const err = new Error(data.error || 'خطایی رخ داد، دوباره تلاش کن');
+    err.status = res.status;
+    err.details = data.details;
+    throw err;
+  }
+  return data;
+}
 
 function apiFetch(path, options = {}) {
   options.headers = Object.assign(
@@ -9,17 +24,14 @@ function apiFetch(path, options = {}) {
     options.headers || {}
   );
   const token = localStorage.getItem('customerToken');
-  if (token) {
-    options.headers['Authorization'] = 'Bearer ' + token;
-  }
-  return fetch(API_BASE + path, options).then(async (res) => {
-    let data = {};
-    try { data = await res.json(); } catch (e) {}
-    if (!res.ok) {
-      throw new Error(data.error || 'خطایی رخ داد، دوباره تلاش کن');
-    }
-    return data;
-  });
+  if (token) options.headers.Authorization = 'Bearer ' + token;
+
+  return fetch(API_BASE + path, options)
+    .then(parseApiResponse)
+    .catch(function (err) {
+      if (err.status === 401) logoutCustomer();
+      throw err;
+    });
 }
 
 function saveCustomerSession(token, customer) {
@@ -52,22 +64,41 @@ function formatPrice(num) {
   return toFaDigits(Number(num || 0).toLocaleString('en-US'));
 }
 
-// قیمت واقعی فروش — چون orders.js فقط از costPrice استفاده می‌کنه (نه آرایه prices)،
-// همه‌جا همین رو به‌عنوان «قیمت» نمایش می‌دیم تا با مبلغ واقعی سفارش یکی باشه
-function getProductMinPrice(product) {
-  return product.costPrice || 0;
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+  });
 }
 
-// صفحاتی مثل پروفایل که فقط برای مشتری واردشده معنی دارن، اول این رو صدا بزنن
+function getProductMinPrice(product) {
+  var prices = Array.isArray(product && product.prices)
+    ? product.prices.map(function (p) { return Number(p.price); }).filter(function (p) { return Number.isFinite(p) && p > 0; })
+    : [];
+  if (prices.length) return Math.min.apply(null, prices);
+  return Number(product && product.costPrice || 0);
+}
+
+function safeMediaUrl(url) {
+  try {
+    var parsed = new URL(String(url || ''), window.location.href);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getProductImageUrl(product) {
+  if (!product || !Array.isArray(product.media)) return '';
+  var image = product.media.find(function (m) { return m && m.kind === 'image' && safeMediaUrl(m.url); });
+  return image ? safeMediaUrl(image.url) : '';
+}
+
 function requireCustomerAuth() {
   var session = getCustomerSession();
-  if (!session) {
-    window.location.href = 'login.html';
-  }
+  if (!session) window.location.href = 'login.html';
   return session;
 }
 
-// --- نشست فروشنده (پنل مدیریت) — کاملاً جدا از نشست مشتری ---
 function saveSellerSession(token, seller) {
   localStorage.setItem('sellerToken', token);
   localStorage.setItem('sellerInfo', JSON.stringify(seller));
@@ -89,10 +120,10 @@ function logoutSeller() {
   localStorage.removeItem('sellerInfo');
 }
 
-// --- سبد خرید (سمت مرورگر، تا لحظه ثبت نهایی سفارش) ---
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem('cart') || '[]');
+    var cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    return Array.isArray(cart) ? cart : [];
   } catch (e) {
     return [];
   }
@@ -103,13 +134,11 @@ function saveCart(cart) {
 }
 
 function addToCart(productId, quantity) {
+  var qty = Math.max(1, Number(quantity) || 1);
   var cart = getCart();
   var existing = cart.find(function (i) { return i.productId === productId; });
-  if (existing) {
-    existing.quantity += quantity;
-  } else {
-    cart.push({ productId: productId, quantity: quantity });
-  }
+  if (existing) existing.quantity += qty;
+  else cart.push({ productId: productId, quantity: qty });
   saveCart(cart);
 }
 
@@ -133,22 +162,22 @@ function clearCart() {
 }
 
 var ORDER_STATUS_LABELS = {
+  pending_payment: 'در انتظار پرداخت',
   pending_review: 'در انتظار تایید',
+  paid: 'پرداخت شده',
   confirmed: 'تایید شده',
   shipped: 'ارسال شده',
-  rejected: 'رد شده'
+  rejected: 'رد شده',
+  cancelled: 'لغو شده'
 };
 
 function getOrderStatusLabel(status) {
   return ORDER_STATUS_LABELS[status] || status;
 }
 
-// هر صفحه پنل مدیریت باید اول همین رو صدا بزنه؛ اگه لاگین نباشه می‌فرسته به admin-login
 function requireSellerAuth() {
   var session = getSellerSession();
-  if (!session) {
-    window.location.href = 'admin-login.html';
-  }
+  if (!session) window.location.href = authRedirectPath();
   return session;
 }
 
@@ -158,20 +187,15 @@ function sellerApiFetch(path, options = {}) {
     options.headers || {}
   );
   var session = getSellerSession();
-  if (session) {
-    options.headers['Authorization'] = 'Bearer ' + session.token;
-  }
-  return fetch(API_BASE + path, options).then(async (res) => {
-    let data = {};
-    try { data = await res.json(); } catch (e) {}
-    if (res.status === 401) {
-      logoutSeller();
-      window.location.href = 'admin-login.html';
-      throw new Error('نشست شما منقضی شده، دوباره وارد شو');
-    }
-    if (!res.ok) {
-      throw new Error(data.error || 'خطایی رخ داد، دوباره تلاش کن');
-    }
-    return data;
-  });
+  if (session) options.headers.Authorization = 'Bearer ' + session.token;
+
+  return fetch(API_BASE + path, options)
+    .then(parseApiResponse)
+    .catch(function (err) {
+      if (err.status === 401) {
+        logoutSeller();
+        window.location.href = authRedirectPath();
+      }
+      throw err;
+    });
 }
