@@ -66,27 +66,38 @@ function exportCustomersCsv() {
   toast('فایل مشتریان آماده شد');
 }
 
-function mediaLines(product, kind) {
-  return (Array.isArray(product && product.media) ? product.media : [])
-    .filter((media) => media.kind === kind)
-    .map((media) => media.url)
-    .filter(Boolean)
-    .join('\n');
+const PANEL_MEDIA_MAX_ITEMS = 20;
+const PANEL_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const PANEL_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
+const PANEL_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const PANEL_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+let panelMediaKeyCounter = 0;
+
+function nextPanelMediaKey() {
+  panelMediaKeyCounter += 1;
+  return `media-${Date.now()}-${panelMediaKeyCounter}`;
 }
 
-function validMediaLines(text) {
-  return String(text || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => {
-      try {
-        const parsed = new URL(line);
-        return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-      } catch (e) {
-        return false;
-      }
-    });
+function panelFormatBytes(bytes) {
+  const value = Number(bytes) || 0;
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function panelMediaElement(item) {
+  const src = esc(item.source === 'file' ? item.previewUrl : item.url);
+  if (item.kind === 'video') {
+    return `<video src="${src}" muted playsinline preload="metadata"></video>`;
+  }
+  return `<img src="${src}" alt="تصویر محصول" loading="lazy">`;
+}
+
+async function cleanupUploadedPanelMedia(uploaded) {
+  if (!uploaded.length) return;
+  await Promise.allSettled(uploaded.map((media) => sellerApiFetch('/products/media/delete', {
+    method: 'POST',
+    body: JSON.stringify({ publicId: media.publicId, kind: media.kind }),
+  })));
 }
 
 openProductForm = function (id) {
@@ -96,6 +107,14 @@ openProductForm = function (id) {
     isPublished: true, categoryId: null, prices: [], media: [],
   };
   const currentSalePrice = panelProductSalePrice(formData);
+  const mediaDraft = (Array.isArray(formData.media) ? formData.media : [])
+    .filter((media) => media && ['image', 'video'].includes(media.kind) && media.url)
+    .map((media) => ({
+      key: nextPanelMediaKey(),
+      source: 'remote',
+      kind: media.kind,
+      url: media.url,
+    }));
 
   const categoryOptions = state.categories.map((category) =>
     `<option value="${category.id}" ${formData.categoryId === category.id ? 'selected' : ''}>${esc(category.name)}</option>`
@@ -131,14 +150,21 @@ openProductForm = function (id) {
       </div>
 
       <div class="field"><label>توضیحات</label><textarea name="description">${esc(formData.description || '')}</textarea></div>
+
       <div class="field">
-        <label>آدرس تصاویر محصول</label>
-        <textarea name="imageUrls" placeholder="هر آدرس تصویر در یک خط">${esc(mediaLines(formData, 'image'))}</textarea>
-        <div class="field__hint">فعلاً رسانه روی فضای ذخیره‌سازی خارجی نگهداری می‌شود؛ هر URL را در یک خط وارد کن.</div>
-      </div>
-      <div class="field">
-        <label>آدرس ویدیوها (اختیاری)</label>
-        <textarea name="videoUrls" placeholder="هر آدرس ویدیو در یک خط">${esc(mediaLines(formData, 'video'))}</textarea>
+        <label>عکس و ویدیوی محصول</label>
+        <div class="media-upload-actions">
+          <label class="media-upload-btn">
+            ${ic('plus')}<span>افزودن عکس</span>
+            <input id="productImageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          </label>
+          <label class="media-upload-btn secondary-upload">
+            ${ic('plus')}<span>افزودن ویدیو</span>
+            <input id="productVideoFiles" type="file" accept="video/mp4,video/webm,video/quicktime" multiple hidden>
+          </label>
+        </div>
+        <div class="field__hint">عکس: JPG/PNG/WebP تا ۸ مگابایت · ویدیو: MP4/WebM/MOV تا ۲۵ مگابایت · حداکثر ۲۰ فایل. اولین عکس، تصویر اصلی فروشگاه است.</div>
+        <div id="productMediaGrid" class="product-media-grid"></div>
       </div>
 
       <label style="display:flex;align-items:center;gap:8px;margin:14px 0;">
@@ -157,10 +183,112 @@ openProductForm = function (id) {
   const form = wrap.querySelector('#modernProductForm');
   const saleInput = form.querySelector('input[name="salePrice"]');
   const costInput = form.querySelector('input[name="costPrice"]');
+  const mediaGrid = wrap.querySelector('#productMediaGrid');
+  const imageInput = wrap.querySelector('#productImageFiles');
+  const videoInput = wrap.querySelector('#productVideoFiles');
   wireMoneyInput(saleInput);
   wireMoneyInput(costInput);
   if (currentSalePrice) saleInput.value = formatThousandsStr(String(currentSalePrice));
   if (formData.costPrice) costInput.value = formatThousandsStr(String(formData.costPrice));
+
+  function cleanupLocalPreviews() {
+    mediaDraft.forEach((item) => {
+      if (item.source === 'file' && item.previewUrl) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (e) { /* noop */ }
+        item.previewUrl = '';
+      }
+    });
+  }
+
+  function renderMediaGrid() {
+    if (!mediaDraft.length) {
+      mediaGrid.innerHTML = '<div class="media-empty">هنوز رسانه‌ای برای این محصول انتخاب نشده است.</div>';
+      return;
+    }
+
+    const firstImage = mediaDraft.find((item) => item.kind === 'image');
+    mediaGrid.innerHTML = mediaDraft.map((item) => `
+      <div class="product-media-item ${firstImage && firstImage.key === item.key ? 'is-main' : ''}" data-media-key="${esc(item.key)}">
+        <div class="product-media-visual">${panelMediaElement(item)}</div>
+        <div class="product-media-meta">
+          <span>${item.kind === 'image' ? 'عکس' : 'ویدیو'}${item.source === 'file' ? ` · ${panelFormatBytes(item.file.size)}` : ''}</span>
+          ${firstImage && firstImage.key === item.key ? '<strong>تصویر اصلی</strong>' : ''}
+        </div>
+        <div class="product-media-actions">
+          ${item.kind === 'image' && (!firstImage || firstImage.key !== item.key) ? `<button type="button" class="media-mini-btn" data-main-media="${esc(item.key)}">اصلی</button>` : ''}
+          <button type="button" class="media-mini-btn danger" data-remove-media="${esc(item.key)}">حذف</button>
+        </div>
+      </div>`).join('');
+
+    mediaGrid.querySelectorAll('[data-remove-media]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const index = mediaDraft.findIndex((item) => item.key === button.dataset.removeMedia);
+        if (index < 0) return;
+        const [removed] = mediaDraft.splice(index, 1);
+        if (removed.source === 'file' && removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+        renderMediaGrid();
+      });
+    });
+
+    mediaGrid.querySelectorAll('[data-main-media]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const index = mediaDraft.findIndex((item) => item.key === button.dataset.mainMedia);
+        if (index < 0) return;
+        const [selected] = mediaDraft.splice(index, 1);
+        mediaDraft.unshift(selected);
+        renderMediaGrid();
+      });
+    });
+  }
+
+  function queueFiles(fileList, kind) {
+    const allowedTypes = kind === 'image' ? PANEL_IMAGE_TYPES : PANEL_VIDEO_TYPES;
+    const maxBytes = kind === 'image' ? PANEL_IMAGE_MAX_BYTES : PANEL_VIDEO_MAX_BYTES;
+    const maxLabel = kind === 'image' ? '۸' : '۲۵';
+
+    Array.from(fileList || []).forEach((file) => {
+      if (mediaDraft.length >= PANEL_MEDIA_MAX_ITEMS) {
+        toast('حداکثر ۲۰ عکس و ویدیو برای هر محصول قابل ثبت است');
+        return;
+      }
+      if (!allowedTypes.has(file.type)) {
+        toast(`فرمت «${file.name}» پشتیبانی نمی‌شود`);
+        return;
+      }
+      if (file.size > maxBytes) {
+        toast(`حجم «${file.name}» باید کمتر از ${maxLabel} مگابایت باشد`);
+        return;
+      }
+      const duplicate = mediaDraft.some((item) => item.source === 'file'
+        && item.file.name === file.name
+        && item.file.size === file.size
+        && item.file.lastModified === file.lastModified);
+      if (duplicate) return;
+
+      mediaDraft.push({
+        key: nextPanelMediaKey(),
+        source: 'file',
+        kind,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    });
+    renderMediaGrid();
+  }
+
+  imageInput.addEventListener('change', () => {
+    queueFiles(imageInput.files, 'image');
+    imageInput.value = '';
+  });
+  videoInput.addEventListener('change', () => {
+    queueFiles(videoInput.files, 'video');
+    videoInput.value = '';
+  });
+  renderMediaGrid();
+
+  wrap.addEventListener('click', (event) => {
+    if (event.target && event.target.hasAttribute('data-close-modal')) cleanupLocalPreviews();
+  });
 
   const categorySelect = wrap.querySelector('#modernCategorySelect');
   const newCategoryBox = wrap.querySelector('#modernNewCategoryBox');
@@ -187,6 +315,7 @@ openProductForm = function (id) {
 
   if (rec) {
     wrap.querySelector('#modernProductDeleteBtn').addEventListener('click', () => {
+      cleanupLocalPreviews();
       confirmDialog('حذف محصول', `«${rec.name}» حذف خواهد شد. اگر سابقه سفارش داشته باشد، برای حفظ تاریخچه حذف نمی‌شود.`, async () => {
         try {
           await sellerApiFetch(`/products/${rec.id}`, { method: 'DELETE' });
@@ -210,40 +339,69 @@ openProductForm = function (id) {
     const categoryValue = categorySelect.value;
     const errorBox = wrap.querySelector('#modernProductError');
 
+    errorBox.style.display = 'none';
     if (!name) { errorBox.textContent = 'نام محصول را وارد کن'; errorBox.style.display = 'block'; return; }
     if (!salePrice || salePrice <= 0) { errorBox.textContent = 'قیمت فروش معتبر وارد کن'; errorBox.style.display = 'block'; return; }
     if (categoryValue === '__new__') { errorBox.textContent = 'ابتدا دسته‌بندی جدید را اضافه کن'; errorBox.style.display = 'block'; return; }
 
-    const images = validMediaLines(fd.get('imageUrls'));
-    const videos = validMediaLines(fd.get('videoUrls'));
-    const payload = {
-      name,
-      description: fd.get('description').trim(),
-      categoryId: categoryValue ? Number(categoryValue) : null,
-      costPrice: costPrice || null,
-      stockQty,
-      lowStockAt,
-      isPublished: wrap.querySelector('#modernProductPublished').checked,
-      prices: [{ label: 'قیمت فروش', price: salePrice, stockQty }],
-      media: [
-        ...images.map((url) => ({ kind: 'image', url })),
-        ...videos.map((url) => ({ kind: 'video', url })),
-      ],
-    };
-
     const submit = form.querySelector('button[type="submit"]');
+    const submitDefaultHtml = submit.innerHTML;
+    const pendingCount = mediaDraft.filter((item) => item.source === 'file').length;
+    const uploaded = [];
+    const finalMedia = [];
+    let saved = false;
+    let uploadedCount = 0;
+
     submit.disabled = true;
     try {
+      for (const item of mediaDraft) {
+        if (item.source === 'remote') {
+          finalMedia.push({ kind: item.kind, url: item.url });
+          continue;
+        }
+
+        uploadedCount += 1;
+        submit.textContent = pendingCount > 1
+          ? `در حال آپلود ${faDigits(uploadedCount)} از ${faDigits(pendingCount)}...`
+          : 'در حال آپلود فایل...';
+        const uploadBody = new FormData();
+        uploadBody.append('file', item.file, item.file.name);
+        const uploadedMedia = await sellerApiFetch('/products/media/upload', {
+          method: 'POST',
+          body: uploadBody,
+        });
+        uploaded.push(uploadedMedia);
+        finalMedia.push({ kind: uploadedMedia.kind, url: uploadedMedia.url });
+      }
+
+      submit.textContent = 'در حال ذخیره محصول...';
+      const payload = {
+        name,
+        description: fd.get('description').trim(),
+        categoryId: categoryValue ? Number(categoryValue) : null,
+        costPrice: costPrice || null,
+        stockQty,
+        lowStockAt,
+        isPublished: wrap.querySelector('#modernProductPublished').checked,
+        prices: [{ label: 'قیمت فروش', price: salePrice, stockQty }],
+        media: finalMedia,
+      };
+
       if (rec) await sellerApiFetch(`/products/${rec.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
       else await sellerApiFetch('/products', { method: 'POST', body: JSON.stringify(payload) });
+      saved = true;
+
+      cleanupLocalPreviews();
       await loadAll();
       closeModal();
       toast(rec ? 'محصول ویرایش شد' : 'محصول اضافه شد');
       router();
     } catch (err) {
+      if (!saved) await cleanupUploadedPanelMedia(uploaded);
       errorBox.textContent = err.message;
       errorBox.style.display = 'block';
       submit.disabled = false;
+      submit.innerHTML = submitDefaultHtml;
     }
   });
 };

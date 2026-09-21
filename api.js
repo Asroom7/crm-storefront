@@ -18,11 +18,16 @@ async function parseApiResponse(res) {
   return data;
 }
 
-function apiFetch(path, options = {}) {
-  options.headers = Object.assign(
-    { 'Content-Type': 'application/json' },
+function apiRequestHeaders(options) {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  return Object.assign(
+    isFormData ? {} : { 'Content-Type': 'application/json' },
     options.headers || {}
   );
+}
+
+function apiFetch(path, options = {}) {
+  options.headers = apiRequestHeaders(options);
   const token = localStorage.getItem('customerToken');
   if (token) options.headers.Authorization = 'Bearer ' + token;
 
@@ -182,10 +187,7 @@ function requireSellerAuth() {
 }
 
 function sellerApiFetch(path, options = {}) {
-  options.headers = Object.assign(
-    { 'Content-Type': 'application/json' },
-    options.headers || {}
-  );
+  options.headers = apiRequestHeaders(options);
   var session = getSellerSession();
   if (session) options.headers.Authorization = 'Bearer ' + session.token;
 
