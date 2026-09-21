@@ -160,11 +160,12 @@ const STATUS_LIST = ['جدید', 'تماس گرفته شده', 'نیاز به پ
 const STATUS_BADGE = { 'جدید': 'st-new', 'تماس گرفته شده': 'st-called', 'نیاز به پیگیری': 'st-followup', 'خرید کرده': 'st-bought', 'منصرف شده': 'st-lost' };
 
 const state = {
-  customers: [], products: [], sales: [], payments: [], conversations: [], orders: [],
+  customers: [], products: [], sales: [], payments: [], conversations: [], orders: [], categories: [],
   filters: {
     customers: { status: '', q: '', due: '', sort: '', created: '', tag: '' },
     sales: { view: '' },
     conversations: { view: '' },
+    products: { categoryId: '' },
   },
 };
 
@@ -446,20 +447,20 @@ function renderNav(active) {
     </button>`).join('');
   nav.querySelectorAll('[data-nav]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.nav === 'products') { window.location.href = '../admin-products.html'; return; }
       location.hash = `#/${btn.dataset.nav}`;
     });
   });
 }
 
 async function loadAll() {
-  const [customers, products, sales, payments, orders, conversations] = await Promise.all([
+  const [customers, products, sales, payments, orders, conversations, categories] = await Promise.all([
     sellerApiFetch('/customers'),
     sellerApiFetch('/products'),
     sellerApiFetch('/sales'),
     sellerApiFetch('/payments'),
     sellerApiFetch('/orders/seller'),
     sellerApiFetch('/conversations'),
+    sellerApiFetch('/categories'),
   ]);
   state.customers = customers;
   state.products = products;
@@ -467,6 +468,7 @@ async function loadAll() {
   state.payments = payments;
   state.orders = orders;
   state.conversations = conversations;
+  state.categories = categories;
 }
 
 async function router() {
@@ -481,6 +483,7 @@ async function router() {
   if (route.name === 'customer-detail') return renderCustomerDetail(view, route.id, route.tab);
   if (route.name === 'sales') return renderSales(view);
   if (route.name === 'conversations') return renderConversations(view);
+  if (route.name === 'products') return renderProducts(view);
   if (route.name === 'settings') return renderSettings(view);
   if (route.name === 'payments-history') return renderPaymentsHistory(view);
   if (route.name === 'reports') return renderReports(view);
@@ -1428,7 +1431,175 @@ function renderSearch(view) {
 }
 
 /* ========================================================================
-   ۱۵) تنظیمات
+   ۱۵) محصولات
+   ======================================================================== */
+function productStatusInfo(p) {
+  if (!p.isPublished) return { label: 'پیش‌نویس', cls: 'st-lost' };
+  if (p.stockQty <= p.lowStockAt) return { label: 'کم‌موجود', cls: 'st-followup' };
+  return { label: 'فعال', cls: 'st-bought' };
+}
+function productRowHTML(p) {
+  const st = productStatusInfo(p);
+  return `
+    <div class="rec-card" data-prod="${p.id}" style="cursor:pointer;">
+      <div class="rec-card__body">
+        <div class="rec-card__top">
+          <span class="rec-card__title">${esc(p.name)}</span>
+          <span class="badge ${st.cls}" style="font-size:11px;">${st.label}</span>
+        </div>
+        <div class="rec-card__id">${fmtId('PR', p.id)}${p.category ? ' · ' + esc(p.category.name) : ''}</div>
+        <div class="rec-card__meta">
+          <span>${ic('wallet')}${fmtProductPrice(p)}</span>
+          <span>${ic('box')}موجودی: ${faDigits(p.stockQty)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+function renderProducts(view) {
+  const f = state.filters.products;
+  view.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">${ic('search')}<input id="prodSearch" placeholder="جستجوی نام محصول"></div>
+      <button class="tbtn tbtn-add" id="prodAddBtn">${ic('plus')}<span>افزودن</span></button>
+    </div>
+    ${state.categories.length ? `<div class="filter-chips" id="prodCatChips">
+      <button class="chip ${!f.categoryId ? 'active' : ''}" data-v="">همه</button>
+      ${state.categories.map((c) => `<button class="chip ${f.categoryId === c.id ? 'active' : ''}" data-v="${c.id}">${esc(c.name)}</button>`).join('')}
+    </div>` : ''}
+    <div class="list" id="prodList"></div>
+  `;
+  function renderList() {
+    let list = state.products.slice();
+    if (f.categoryId) list = list.filter((p) => p.categoryId === f.categoryId);
+    const q = document.getElementById('prodSearch').value.trim();
+    if (q) list = list.filter((p) => p.name.includes(q));
+    list.sort((a, b) => b.id - a.id);
+    const listEl = document.getElementById('prodList');
+    listEl.innerHTML = list.length ? list.map(productRowHTML).join('') : `<div class="empty-state">${ic('box')}<div class="empty-state__title">محصولی یافت نشد</div><div class="empty-state__desc">با دکمه + یک محصول جدید اضافه کن</div></div>`;
+    listEl.querySelectorAll('[data-prod]').forEach((row) => row.addEventListener('click', () => openProductForm(Number(row.dataset.prod))));
+  }
+  renderList();
+  document.getElementById('prodSearch').addEventListener('input', renderList);
+  document.getElementById('prodAddBtn').addEventListener('click', () => openProductForm());
+  const chipsBox = document.getElementById('prodCatChips');
+  if (chipsBox) chipsBox.querySelectorAll('.chip').forEach((chip) => chip.addEventListener('click', () => {
+    f.categoryId = chip.dataset.v ? Number(chip.dataset.v) : '';
+    renderProducts(view);
+  }));
+}
+function categorySelectHTML(selectedId) {
+  return `
+    <select id="prodCategorySelect">
+      <option value="">بدون دسته‌بندی</option>
+      ${state.categories.map((c) => `<option value="${c.id}" ${selectedId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+      <option value="__new__">+ دسته‌بندی جدید...</option>
+    </select>
+    <div id="newCatBox" style="display:none;margin-top:8px;display:flex;gap:8px;">
+      <input type="text" id="newCatInput" placeholder="نام دسته‌بندی" style="flex:1;">
+      <button type="button" class="btn secondary" id="newCatAddBtn" style="padding:8px 12px;font-size:12.5px;">افزودن</button>
+    </div>`;
+}
+function wireCategorySelect(wrap) {
+  const select = wrap.querySelector('#prodCategorySelect');
+  const box = wrap.querySelector('#newCatBox');
+  select.addEventListener('change', () => {
+    box.style.display = select.value === '__new__' ? 'flex' : 'none';
+  });
+  wrap.querySelector('#newCatAddBtn').addEventListener('click', async () => {
+    const input = wrap.querySelector('#newCatInput');
+    const name = input.value.trim();
+    if (!name) { toast('نام دسته‌بندی رو وارد کن'); return; }
+    try {
+      const cat = await sellerApiFetch('/categories', { method: 'POST', body: JSON.stringify({ name }) });
+      state.categories.push(cat);
+      const opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.name;
+      select.insertBefore(opt, select.lastElementChild);
+      select.value = cat.id;
+      box.style.display = 'none';
+      input.value = '';
+      toast('دسته‌بندی اضافه شد');
+    } catch (err) { toast(err.message); }
+  });
+}
+function openProductForm(id) {
+  const rec = id ? byId(state.products, id) : null;
+  const formData = rec ? { ...rec } : { name: '', description: '', costPrice: '', stockQty: 0, lowStockAt: 0, isPublished: true, categoryId: null };
+  const html = `
+    <div class="modal__handle"></div>
+    <h3 class="modal__title">${rec ? 'ویرایش محصول' : 'محصول جدید'}</h3>
+    <form id="prodForm">
+      <p id="prodError" style="color:var(--danger);display:none;font-size:12.5px;"></p>
+      <label style="display:block;margin-bottom:12px;color:var(--ink-soft);font-size:12.5px;">${ic('box')} آپلود تصویر محصول (به‌زودی فعال می‌شود)</label>
+      <div class="field"><label>نام محصول *</label><input name="name" required value="${esc(formData.name)}"></div>
+      <div class="field"><label>دسته‌بندی</label>${categorySelectHTML(formData.categoryId)}</div>
+      <div class="field"><label>قیمت (تومان) *</label><input name="costPrice" type="text" required value="${formData.costPrice || ''}"></div>
+      <div class="field-row">
+        <div class="field"><label>موجودی</label><input name="stockQty" type="text" value="${faDigits(formData.stockQty ?? 0)}"></div>
+        <div class="field"><label>حد هشدار کم‌موجودی</label><input name="lowStockAt" type="text" value="${faDigits(formData.lowStockAt ?? 0)}"></div>
+      </div>
+      <div class="field"><label>توضیحات</label><textarea name="description">${esc(formData.description || '')}</textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;margin:14px 0;">
+        <input type="checkbox" id="prodPublished" style="width:auto;" ${formData.isPublished ? 'checked' : ''}>
+        <span>در فروشگاه نمایش داده بشه (منتشر شود)</span>
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn secondary block" data-close-modal>انصراف</button>
+        <button type="submit" class="btn primary block">${ic('check')}ذخیره</button>
+      </div>
+      ${rec ? `<button type="button" class="btn danger block" id="prodDeleteBtn" style="margin-top:10px;">${ic('trash')}حذف محصول</button>` : ''}
+    </form>`;
+  const wrap = openModal(html);
+  wireCategorySelect(wrap);
+  const priceInput = wrap.querySelector('input[name="costPrice"]');
+  wireMoneyInput(priceInput);
+  if (formData.costPrice) priceInput.value = formatThousandsStr(String(formData.costPrice));
+  const errorBox = wrap.querySelector('#prodError');
+
+  if (rec) {
+    wrap.querySelector('#prodDeleteBtn').addEventListener('click', () => {
+      confirmDialog('حذف محصول', `«${rec.name}» حذف خواهد شد.`, async () => {
+        try {
+          await sellerApiFetch(`/products/${rec.id}`, { method: 'DELETE' });
+          await loadAll();
+          closeModal();
+          toast('محصول حذف شد');
+          router();
+        } catch (err) { toast(err.message); }
+      });
+    });
+  }
+
+  wrap.querySelector('#prodForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const name = fd.get('name').trim();
+    const price = getMoneyValue(priceInput);
+    const stockQty = Number(faToEnDigits(fd.get('stockQty'))) || 0;
+    const lowStockAt = Number(faToEnDigits(fd.get('lowStockAt'))) || 0;
+    const catVal = wrap.querySelector('#prodCategorySelect').value;
+    if (!name) { errorBox.textContent = 'نام محصول رو وارد کن'; errorBox.style.display = 'block'; return; }
+    if (!price || price <= 0) { errorBox.textContent = 'قیمت معتبر وارد کن'; errorBox.style.display = 'block'; return; }
+    const payload = {
+      name, description: fd.get('description').trim(),
+      costPrice: price, stockQty, lowStockAt,
+      isPublished: wrap.querySelector('#prodPublished').checked,
+      categoryId: catVal && catVal !== '__new__' ? Number(catVal) : undefined,
+    };
+    try {
+      if (rec) await sellerApiFetch(`/products/${rec.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      else await sellerApiFetch('/products', { method: 'POST', body: JSON.stringify(payload) });
+      await loadAll();
+      closeModal();
+      toast(rec ? 'محصول ویرایش شد' : 'محصول اضافه شد');
+      router();
+    } catch (err) { errorBox.textContent = err.message; errorBox.style.display = 'block'; }
+  });
+}
+
+/* ========================================================================
+   ۱۶) تنظیمات
    ======================================================================== */
 function renderSettings(view) {
   const session = getSellerSession();
@@ -1454,11 +1625,6 @@ function renderSettings(view) {
     </div>
     <div class="settings-group">
       <div class="settings-group__title">مدیریت فروشگاه</div>
-      <a href="../admin-products.html" class="settings-row" style="text-decoration:none;color:inherit;">
-        <div class="settings-row__icon">${ic('box')}</div>
-        <div class="settings-row__text"><div class="settings-row__title">مدیریت محصولات</div></div>
-        <div class="settings-row__chev">${ic('chevL')}</div>
-      </a>
       <a href="../index.html" class="settings-row" style="text-decoration:none;color:inherit;">
         <div class="settings-row__icon">${ic('cart')}</div>
         <div class="settings-row__text"><div class="settings-row__title">مشاهده‌ی سایت فروشگاهی</div></div>
