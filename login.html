@@ -25,23 +25,20 @@
   <section class="auth-block">
     <h1 class="auth-title">ورود به حساب کاربری</h1>
     <p class="auth-sub">برای ثبت سفارش و پیگیری خریدهایت وارد شو</p>
-    <form class="auth-form" id="login-form">
+    <form class="auth-form" id="login-form" novalidate>
       <p id="auth-error" class="form-error" hidden></p>
       <label for="phone">شماره موبایل</label>
-      <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
+      <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="مثلاً 09123456789" required maxlength="16">
       <label for="password">رمز عبور</label>
-      <input type="password" autocomplete="current-password" id="password" placeholder="رمز عبور خود را وارد کنید" required>
+      <input type="password" autocomplete="current-password" id="password" minlength="6" maxlength="200" placeholder="رمز عبور خود را وارد کنید" required>
       <button id="login-btn" class="btn-dark btn-full" type="submit">ورود</button>
     </form>
-    <p class="auth-switch">حساب کاربری نداری؟ <a href="register.html">ثبت‌نام کن</a></p>
+    <p class="auth-switch">حساب کاربری نداری؟ <a id="register-link" href="register.html">ثبت‌نام کن</a></p>
   </section>
 
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
-    var existingSession = getCustomerSession();
-    if (existingSession) window.location.replace(getRequestedNext('profile.html'));
-
     var toggle = document.querySelector('.menu-toggle');
     var closeBtn = document.querySelector('.close-menu');
     var overlay = document.querySelector('.side-menu-overlay');
@@ -55,26 +52,85 @@
     var form = document.getElementById('login-form');
     var loginBtn = document.getElementById('login-btn');
     var errorBox = document.getElementById('auth-error');
+    var phoneInput = document.getElementById('phone');
+    var registerLink = document.getElementById('register-link');
+
+    function normalizePhone(value) {
+      var fa = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+      var ar = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+      var phone = String(value || '')
+        .replace(/[۰-۹]/g, function (d) { return fa[d]; })
+        .replace(/[٠-٩]/g, function (d) { return ar[d]; })
+        .replace(/[^\d]/g, '');
+      if (phone.indexOf('0098') === 0) phone = '0' + phone.slice(4);
+      else if (phone.indexOf('98') === 0) phone = '0' + phone.slice(2);
+      else if (/^9\d{9}$/.test(phone)) phone = '0' + phone;
+      return phone;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+      errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function setBusy(busy) {
+      loginBtn.disabled = busy;
+      loginBtn.textContent = busy ? 'در حال ورود...' : 'ورود';
+    }
+
+    function updateRegisterLink(phone) {
+      var next = new URLSearchParams(window.location.search).get('next');
+      var params = new URLSearchParams();
+      if (phone) params.set('phone', phone);
+      if (next) params.set('next', safeNextTarget(next, 'index.html'));
+      registerLink.href = 'register.html' + (params.toString() ? '?' + params.toString() : '');
+    }
+
+    var phoneFromUrl = new URLSearchParams(window.location.search).get('phone');
+    if (phoneFromUrl) {
+      phoneInput.value = normalizePhone(phoneFromUrl);
+      updateRegisterLink(phoneInput.value);
+    }
+
+    phoneInput.addEventListener('blur', function () {
+      phoneInput.value = normalizePhone(phoneInput.value);
+      updateRegisterLink(phoneInput.value);
+    });
 
     form.addEventListener('submit', function (event) {
       event.preventDefault();
-      var phone = document.getElementById('phone').value.trim();
-      var password = document.getElementById('password').value;
       errorBox.hidden = true;
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'در حال ورود...';
 
+      var phone = normalizePhone(phoneInput.value);
+      var password = document.getElementById('password').value;
+      phoneInput.value = phone;
+      updateRegisterLink(phone);
+
+      if (!/^09\d{9}$/.test(phone)) return showError('شماره موبایل معتبر نیست؛ مثل 09123456789 وارد کنید.');
+      if (password.length < 6) return showError('رمز عبور باید حداقل ۶ کاراکتر باشد.');
+
+      setBusy(true);
       apiFetch('/auth/customer/login', {
         method: 'POST',
         body: JSON.stringify({ sellerId: SELLER_ID, phone: phone, password: password })
       }).then(function (data) {
+        if (!data || !data.token || !data.customer) throw new Error('پاسخ ورود ناقص بود؛ دوباره تلاش کنید.');
         saveCustomerSession(data.token, data.customer);
-        window.location.replace(getRequestedNext('index.html'));
+        return apiFetch('/auth/customer/me');
+      }).then(function (data) {
+        if (data && data.customer) {
+          var session = getCustomerSession();
+          if (session) saveCustomerSession(session.token, data.customer);
+        }
+        window.location.replace(getRequestedNext('profile.html'));
       }).catch(function (err) {
-        errorBox.textContent = err.message;
-        errorBox.hidden = false;
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'ورود';
+        setBusy(false);
+        if (err && err.name === 'TypeError') {
+          showError('ارتباط با سرور برقرار نشد. چند ثانیه صبر کنید و دوباره ورود را بزنید.');
+          return;
+        }
+        showError(err && err.message ? err.message : 'ورود انجام نشد؛ دوباره تلاش کنید.');
       });
     });
   </script>
