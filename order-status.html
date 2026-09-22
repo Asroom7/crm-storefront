@@ -34,6 +34,7 @@
       <p id="status-desc"></p>
     </div>
 
+    <div class="order-summary-card" id="support-card" hidden></div>
     <div class="order-summary-card" id="order-summary" hidden></div>
     <a href="profile.html" class="btn-outline btn-full">مشاهده همه سفارش‌ها</a>
     <a href="index.html" class="btn-dark btn-full status-home-btn">بازگشت به صفحه اصلی</a>
@@ -54,21 +55,43 @@
 
     var statusDescriptions = {
       pending_payment: 'سفارش ثبت شده و منتظر ثبت یا بررسی پرداخت است.',
-      pending_review: 'رسید پرداخت شما دریافت شد و در حال بررسی توسط فروشگاه است.',
+      pending_review: 'مدرک پرداخت شما دریافت شده و در انتظار تایید فروشگاه است.',
       paid: 'پرداخت این سفارش ثبت شده است.',
-      confirmed: 'پرداخت تایید شده و سفارش در حال آماده‌سازی است.',
-      shipped: 'سفارش از طرف فروشگاه ارسال شده است.',
+      confirmed: 'سفارش تایید شد و در حال آماده‌سازی برای ارسال است.',
+      shipped: 'سفارش شما ارسال شد.',
       rejected: 'پرداخت این سفارش تایید نشد. برای بررسی بیشتر با پشتیبانی تماس بگیرید.',
       cancelled: 'این سفارش لغو شده است.'
     };
 
     var orderId = Number(new URLSearchParams(window.location.search).get('id'));
 
+    function statusLabel(status) {
+      if (status === 'pending_review' || status === 'pending_payment') return 'در انتظار تایید';
+      if (status === 'confirmed' || status === 'paid') return 'سفارش تایید شد';
+      if (status === 'shipped') return 'سفارش ارسال شد';
+      if (status === 'rejected') return 'پرداخت رد شد';
+      return getOrderStatusLabel(status);
+    }
+
     function statusVisual(status) {
       if (status === 'rejected' || status === 'cancelled') return { icon: '✕', title: 'سفارش تایید نشد', className: 'rejected' };
-      if (status === 'shipped') return { icon: '✓', title: 'سفارش ارسال شده', className: 'done' };
-      if (status === 'confirmed' || status === 'paid') return { icon: '✓', title: 'سفارش تایید شده', className: 'done' };
-      return { icon: '⏳', title: 'سفارش در حال بررسی است', className: 'pending' };
+      if (status === 'shipped') return { icon: '✓', title: 'سفارش ارسال شد', className: 'done' };
+      if (status === 'confirmed' || status === 'paid') return { icon: '✓', title: 'سفارش تایید شد', className: 'done' };
+      return { icon: '⏳', title: 'در انتظار تایید پرداخت', className: 'pending' };
+    }
+
+    function renderSupport(config, status) {
+      var seller = config && config.seller ? config.seller : {};
+      var rubika = seller.supportRubika || '';
+      var phone = seller.supportPhone || '';
+      var showPhone = status === 'confirmed' || status === 'paid' || status === 'shipped' || status === 'rejected';
+      var lines = [];
+      if (rubika) lines.push('<div class="order-summary-meta"><span>آیدی پشتیبانی روبیکا</span><strong dir="ltr" style="unicode-bidi:isolate;user-select:all;">' + escapeHtml(rubika) + '</strong></div>');
+      if (showPhone && phone) lines.push('<div class="order-summary-meta"><span>شماره پشتیبانی</span><a href="tel:' + escapeHtml(String(phone).replace(/[^+\\d]/g, '')) + '" dir="ltr" style="unicode-bidi:isolate;font-weight:700;">' + escapeHtml(phone) + '</a></div>');
+      if (!lines.length) return;
+      var box = document.getElementById('support-card');
+      box.innerHTML = '<h2>پشتیبانی سفارش</h2>' + lines.join('');
+      box.hidden = false;
     }
 
     function renderOrderSummary(order) {
@@ -78,9 +101,11 @@
         return '<div class="order-summary-item"><span>' + escapeHtml(item.product ? item.product.name : 'محصول') + ' × ' + toFaDigits(item.quantity) + '</span><strong>' + formatPrice(Number(item.price || 0) * Number(item.quantity || 0)) + ' تومان</strong></div>';
       }).join('');
       var tracking = order.transaction && order.transaction.refId ? order.transaction.refId : '';
+      var receiptUrl = order.transaction && order.transaction.rawResponse ? safeMediaUrl(order.transaction.rawResponse.receiptUrl) : '';
       box.innerHTML = '<h2>جزئیات سفارش</h2>' + itemsHtml +
         '<div class="order-summary-total"><span>مبلغ ثبت‌شده سفارش</span><strong>' + formatPrice(order.totalAmount) + ' تومان</strong></div>' +
-        (tracking ? '<div class="order-summary-meta"><span>شماره پیگیری پرداخت</span><strong>' + escapeHtml(tracking) + '</strong></div>' : '') +
+        (tracking ? '<div class="order-summary-meta"><span>شماره پیگیری پرداخت</span><strong dir="ltr" style="unicode-bidi:isolate;">' + escapeHtml(tracking) + '</strong></div>' : '') +
+        (receiptUrl ? '<div class="order-summary-meta" style="display:block;"><span style="display:block;margin-bottom:8px;">تصویر رسید پرداخت</span><a href="' + escapeHtml(receiptUrl) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(receiptUrl) + '" alt="رسید پرداخت" style="display:block;max-width:100%;max-height:300px;margin:auto;border-radius:12px;object-fit:contain;"></a></div>' : '') +
         '<div class="order-summary-meta"><span>آدرس ارسال</span><strong>' + escapeHtml(order.shippingAddress || '') + '</strong></div>';
       box.hidden = false;
     }
@@ -99,10 +124,11 @@
 
           var pendingBox = document.getElementById('status-pending');
           pendingBox.style.display = '';
-          document.getElementById('status-badge').textContent = getOrderStatusLabel(order.status);
+          document.getElementById('status-badge').textContent = statusLabel(order.status);
           document.getElementById('status-badge').className = 'status-badge ' + visual.className;
           document.getElementById('status-desc').textContent = statusDescriptions[order.status] || 'وضعیت سفارش در حال به‌روزرسانی است.';
           renderOrderSummary(order);
+          fetchStoreConfig().then(function (config) { renderSupport(config, order.status); }).catch(function () {});
         })
         .catch(function (err) {
           document.getElementById('status-title').textContent = 'خطا در بارگذاری سفارش';

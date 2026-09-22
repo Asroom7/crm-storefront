@@ -20,11 +20,19 @@
   <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
 
   <section class="checkout-block">
-    <div class="trust-note"><span class="trust-icon">🛡</span><p>بعد از واریز، شماره پیگیری تراکنش را ثبت کنید. سفارش پس از تایید پرداخت آماده ارسال می‌شود.</p></div>
+    <div class="trust-note"><span class="trust-icon">🛡</span><p>بعد از واریز، حداقل یکی از «شماره پیگیری تراکنش» یا «تصویر رسید» را ثبت کنید. سفارش پس از بررسی فروشگاه آماده ارسال می‌شود.</p></div>
+
+    <div id="checkout-support" class="card-info" style="display:none; margin-bottom:16px;">
+      <h2>پشتیبانی ثبت سفارش</h2>
+      <div id="checkout-support-rubika" style="font-size:15px;line-height:2;"></div>
+    </div>
 
     <div class="card-info">
       <h2>اطلاعات واریز</h2>
-      <div class="card-number" id="card-number">در حال دریافت...</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <div class="card-number" id="card-number" dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;user-select:all;">در حال دریافت...</div>
+        <button type="button" id="copy-card-btn" class="btn-outline" style="padding:8px 12px;display:none;">کپی شماره کارت</button>
+      </div>
       <div class="card-owner" id="card-owner"></div>
       <div class="checkout-totals">
         <div class="summary-row"><span>جمع کالاها</span><span id="checkout-subtotal">...</span></div>
@@ -37,10 +45,22 @@
       <h2>آدرس ارسال</h2>
       <label for="f-address">آدرس کامل</label>
       <textarea rows="3" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
-      <h2 style="margin-top:16px;">ثبت رسید پرداخت</h2>
+      <h2 style="margin-top:16px;">ثبت مدرک پرداخت</h2>
+      <p style="color:#777;line-height:1.9;margin-top:0;">برای ثبت سفارش، پر کردن حداقل یکی از دو بخش زیر الزامی است.</p>
       <p id="checkout-error" style="color:#c0392b;display:none;"></p>
       <label for="f-tracking">شماره پیگیری تراکنش</label>
       <input type="text" inputmode="numeric" id="f-tracking" placeholder="مثال: 123456789" autocomplete="off">
+
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0;color:#888;"><span style="height:1px;background:#ddd;flex:1;"></span><strong>یا</strong><span style="height:1px;background:#ddd;flex:1;"></span></div>
+
+      <label for="f-receipt">تصویر رسید تراکنش</label>
+      <input type="file" id="f-receipt" accept="image/jpeg,image/png,image/webp" style="width:100%;box-sizing:border-box;">
+      <div id="receipt-preview-wrap" style="display:none;margin-top:10px;">
+        <img id="receipt-preview" alt="پیش‌نمایش رسید" style="display:block;max-width:100%;max-height:280px;margin:auto;border-radius:12px;border:1px solid #e4e4e4;object-fit:contain;">
+        <div id="receipt-file-name" style="text-align:center;color:#777;font-size:13px;margin-top:7px;"></div>
+      </div>
+      <p style="font-size:12.5px;color:#888;line-height:1.8;">فرمت‌های JPG، PNG و WebP تا حداکثر ۸ مگابایت.</p>
+
       <button id="submit-order-btn" class="btn-dark btn-full" disabled>ثبت سفارش</button>
     </div>
   </section>
@@ -62,11 +82,14 @@
     var errorBox = document.getElementById('checkout-error');
     var submitBtn = document.getElementById('submit-order-btn');
     var amountEl = document.getElementById('checkout-amount');
+    var receiptInput = document.getElementById('f-receipt');
     var cartProducts = [];
     var paymentReady = false;
     var productsReady = false;
     var storeConfig = null;
     var subtotal = 0;
+    var receiptPreviewUrl = null;
+    var rawCardNumber = '';
 
     var session = getCustomerSession();
     if (session && session.customer && session.customer.address) document.getElementById('f-address').value = session.customer.address;
@@ -75,6 +98,7 @@
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = 'block';
+      errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     function updateReadyState() {
       submitBtn.disabled = !(paymentReady && productsReady && cartProducts.length);
@@ -95,18 +119,75 @@
     }
     function formatCardNumber(value) {
       var digits = String(value || '').replace(/\D/g, '');
-      return digits.replace(/(.{4})/g, '$1 ').trim();
+      return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
     }
+    function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(value);
+      return new Promise(function (resolve, reject) {
+        var area = document.createElement('textarea');
+        area.value = value;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); resolve(); } catch (err) { reject(err); }
+        area.remove();
+      });
+    }
+    function renderSupport(config) {
+      var rubika = config && config.seller ? config.seller.supportRubika : '';
+      if (!rubika) return;
+      var box = document.getElementById('checkout-support');
+      document.getElementById('checkout-support-rubika').innerHTML = 'اگر هنگام ثبت سفارش مشکلی داشتی، در روبیکا پیام بده: <strong dir="ltr" style="unicode-bidi:isolate;user-select:all;">' + escapeHtml(rubika) + '</strong>';
+      box.style.display = '';
+    }
+
+    document.getElementById('copy-card-btn').addEventListener('click', function () {
+      var btn = this;
+      if (!rawCardNumber) return;
+      copyText(rawCardNumber).then(function () {
+        var old = btn.textContent;
+        btn.textContent = 'کپی شد ✓';
+        setTimeout(function () { btn.textContent = old; }, 1400);
+      }).catch(function () { showError('کپی خودکار انجام نشد؛ شماره کارت را لمس و کپی کنید.'); });
+    });
+
+    receiptInput.addEventListener('change', function () {
+      var file = receiptInput.files && receiptInput.files[0];
+      var wrap = document.getElementById('receipt-preview-wrap');
+      if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+      receiptPreviewUrl = null;
+      if (!file) { wrap.style.display = 'none'; return; }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        receiptInput.value = '';
+        wrap.style.display = 'none';
+        showError('فرمت تصویر رسید باید JPG، PNG یا WebP باشد.');
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        receiptInput.value = '';
+        wrap.style.display = 'none';
+        showError('حجم تصویر رسید باید حداکثر ۸ مگابایت باشد.');
+        return;
+      }
+      receiptPreviewUrl = URL.createObjectURL(file);
+      document.getElementById('receipt-preview').src = receiptPreviewUrl;
+      document.getElementById('receipt-file-name').textContent = file.name;
+      wrap.style.display = '';
+    });
 
     fetchStoreConfig().then(function (config) {
       storeConfig = config;
+      renderSupport(config);
       if (!config.payment || !config.payment.cardNumber) {
         document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
         showError('شماره کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
         return;
       }
-      document.getElementById('card-number').textContent = formatCardNumber(config.payment.cardNumber);
+      rawCardNumber = String(config.payment.cardNumber).replace(/\D/g, '');
+      document.getElementById('card-number').textContent = formatCardNumber(rawCardNumber);
       document.getElementById('card-owner').textContent = config.payment.cardOwner ? 'به نام: ' + config.payment.cardOwner : '';
+      document.getElementById('copy-card-btn').style.display = '';
       paymentReady = true;
       renderTotals();
       updateReadyState();
@@ -133,23 +214,41 @@
       updateReadyState();
     }).catch(function (err) { showError(err.message); });
 
+    function uploadReceiptIfNeeded() {
+      var file = receiptInput.files && receiptInput.files[0];
+      if (!file) return Promise.resolve(null);
+      var form = new FormData();
+      form.append('file', file);
+      submitBtn.textContent = 'در حال آپلود رسید...';
+      return apiFetch('/orders/receipt/upload', { method: 'POST', body: form }).then(function (data) {
+        if (!data || !data.url) throw new Error('آدرس رسید از سرور دریافت نشد');
+        return data.url;
+      });
+    }
+
     submitBtn.addEventListener('click', function () {
       errorBox.style.display = 'none';
       var address = document.getElementById('f-address').value.trim();
       var tracking = document.getElementById('f-tracking').value.trim();
+      var hasReceipt = Boolean(receiptInput.files && receiptInput.files[0]);
       if (address.length < 5) { showError('آدرس کامل را وارد کن'); return; }
-      if (tracking.length < 3) { showError('شماره پیگیری تراکنش را وارد کن'); return; }
+      if (tracking && tracking.length < 3) { showError('شماره پیگیری باید حداقل ۳ کاراکتر باشد'); return; }
+      if (!tracking && !hasReceipt) { showError('برای ثبت سفارش، حداقل شماره پیگیری یا تصویر رسید را وارد کن'); return; }
       if (!paymentReady || !productsReady || !cartProducts.length) { showError('اطلاعات سفارش کامل نیست'); return; }
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'در حال ثبت...';
-      apiFetch('/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          items: cartProducts.map(function (ci) { return { productId: ci.product.id, quantity: ci.quantity }; }),
-          shippingAddress: address,
-          trackingNumber: tracking
-        })
+      uploadReceiptIfNeeded().then(function (receiptUrl) {
+        submitBtn.textContent = 'در حال ثبت سفارش...';
+        return apiFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            items: cartProducts.map(function (ci) { return { productId: ci.product.id, quantity: ci.quantity }; }),
+            shippingAddress: address,
+            trackingNumber: tracking || undefined,
+            receiptUrl: receiptUrl || undefined
+          })
+        });
       }).then(function (data) {
         clearCart();
         window.location.href = 'order-status.html?id=' + data.orderId;
