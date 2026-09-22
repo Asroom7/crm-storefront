@@ -93,16 +93,20 @@
       document.getElementById('checkout-shipping').textContent = shippingFee ? formatPrice(shippingFee) + ' تومان' : 'رایگان';
       amountEl.textContent = formatPrice(total);
     }
+    function formatCardNumber(value) {
+      var digits = String(value || '').replace(/\D/g, '');
+      return digits.replace(/(.{4})/g, '$1 ').trim();
+    }
 
     fetchStoreConfig().then(function (config) {
       storeConfig = config;
-      if (!config.payment || !config.payment.cardNumber || !config.payment.cardOwner) {
+      if (!config.payment || !config.payment.cardNumber) {
         document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
-        showError('اطلاعات کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
+        showError('شماره کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
         return;
       }
-      document.getElementById('card-number').textContent = config.payment.cardNumber;
-      document.getElementById('card-owner').textContent = 'به نام: ' + config.payment.cardOwner;
+      document.getElementById('card-number').textContent = formatCardNumber(config.payment.cardNumber);
+      document.getElementById('card-owner').textContent = config.payment.cardOwner ? 'به نام: ' + config.payment.cardOwner : '';
       paymentReady = true;
       renderTotals();
       updateReadyState();
