@@ -16,3 +16,4 @@ jobs:
       - run: node --check api.js
       - run: node --check panel/app.js
       - run: node --check panel/modernize.js
+      - run: node --check panel/modal-scroll-fix.js
