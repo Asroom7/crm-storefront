@@ -9,11 +9,12 @@
   <script>requireCustomerAuth();</script>
 </head>
 <body>
-  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
+    <div class="side-menu-sep"></div>
   </nav>
 
   <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
@@ -25,17 +26,21 @@
       <h2>اطلاعات واریز</h2>
       <div class="card-number" id="card-number">در حال دریافت...</div>
       <div class="card-owner" id="card-owner"></div>
-      <div class="card-amount">مبلغ قابل پرداخت: <span id="checkout-amount">...</span> تومان</div>
+      <div class="checkout-totals">
+        <div class="summary-row"><span>جمع کالاها</span><span id="checkout-subtotal">...</span></div>
+        <div class="summary-row"><span>هزینه ارسال</span><span id="checkout-shipping">...</span></div>
+        <div class="summary-row total"><span>مبلغ قابل پرداخت</span><span><span id="checkout-amount">...</span> تومان</span></div>
+      </div>
     </div>
 
     <div class="receipt-form">
       <h2>آدرس ارسال</h2>
       <label for="f-address">آدرس کامل</label>
-      <textarea rows="2" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
+      <textarea rows="3" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
       <h2 style="margin-top:16px;">ثبت رسید پرداخت</h2>
       <p id="checkout-error" style="color:#c0392b;display:none;"></p>
       <label for="f-tracking">شماره پیگیری تراکنش</label>
-      <input type="text" inputmode="numeric" id="f-tracking" placeholder="مثال: 123456789">
+      <input type="text" inputmode="numeric" id="f-tracking" placeholder="مثال: 123456789" autocomplete="off">
       <button id="submit-order-btn" class="btn-dark btn-full" disabled>ثبت سفارش</button>
     </div>
   </section>
@@ -60,8 +65,12 @@
     var cartProducts = [];
     var paymentReady = false;
     var productsReady = false;
+    var storeConfig = null;
+    var subtotal = 0;
 
-    if (!cart.length) window.location.href = 'cart.html';
+    var session = getCustomerSession();
+    if (session && session.customer && session.customer.address) document.getElementById('f-address').value = session.customer.address;
+    if (!cart.length) window.location.replace('cart.html');
 
     function showError(message) {
       errorBox.textContent = message;
@@ -70,11 +79,23 @@
     function updateReadyState() {
       submitBtn.disabled = !(paymentReady && productsReady && cartProducts.length);
     }
+    function shippingFeeFor(value) {
+      var shipping = storeConfig && storeConfig.shipping ? storeConfig.shipping : {};
+      var fee = Math.max(0, Number(shipping.fee || 0));
+      var freeAbove = Math.max(0, Number(shipping.freeAbove || 0));
+      if (!fee || (freeAbove > 0 && value >= freeAbove)) return 0;
+      return fee;
+    }
+    function renderTotals() {
+      var shippingFee = shippingFeeFor(subtotal);
+      var total = subtotal + shippingFee;
+      document.getElementById('checkout-subtotal').textContent = formatPrice(subtotal) + ' تومان';
+      document.getElementById('checkout-shipping').textContent = shippingFee ? formatPrice(shippingFee) + ' تومان' : 'رایگان';
+      amountEl.textContent = formatPrice(total);
+    }
 
-    apiFetch('/store/public/' + SELLER_ID).then(function (config) {
-      if (config.seller && config.seller.brandName) {
-        document.querySelectorAll('.logo').forEach(function (el) { el.textContent = config.seller.brandName; });
-      }
+    fetchStoreConfig().then(function (config) {
+      storeConfig = config;
       if (!config.payment || !config.payment.cardNumber || !config.payment.cardOwner) {
         document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
         showError('اطلاعات کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
@@ -83,6 +104,7 @@
       document.getElementById('card-number').textContent = config.payment.cardNumber;
       document.getElementById('card-owner').textContent = 'به نام: ' + config.payment.cardOwner;
       paymentReady = true;
+      renderTotals();
       updateReadyState();
     }).catch(function (err) {
       document.getElementById('card-number').textContent = 'خطا در دریافت اطلاعات پرداخت';
@@ -91,19 +113,19 @@
 
     apiFetch('/products/public/' + SELLER_ID).then(function (products) {
       cartProducts = cart.map(function (ci) {
-        var product = products.find(function (p) { return p.id === ci.productId; });
-        if (!product || product.stockQty < ci.quantity) return null;
+        var product = products.find(function (p) { return Number(p.id) === Number(ci.productId); });
+        if (!product || product.stockQty < ci.quantity || getProductMinPrice(product) <= 0) return null;
         return { product: product, quantity: ci.quantity };
       }).filter(Boolean);
 
       if (cartProducts.length !== cart.length) {
-        showError('موجودی بعضی کالاها تغییر کرده است؛ لطفاً سبد خرید را دوباره بررسی کنید.');
+        showError('موجودی یا قیمت بعضی کالاها تغییر کرده است؛ لطفاً سبد خرید را دوباره بررسی کنید.');
         return;
       }
 
-      var total = cartProducts.reduce(function (sum, ci) { return sum + getProductMinPrice(ci.product) * ci.quantity; }, 0);
-      amountEl.textContent = formatPrice(total);
-      productsReady = total > 0;
+      subtotal = cartProducts.reduce(function (sum, ci) { return sum + getProductMinPrice(ci.product) * ci.quantity; }, 0);
+      productsReady = subtotal > 0;
+      renderTotals();
       updateReadyState();
     }).catch(function (err) { showError(err.message); });
 

@@ -12,65 +12,91 @@
 
   <header class="site-header">
     <div class="header-top">
-      <span class="icon menu-toggle">☰</span>
+      <span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span>
       <div class="logo">Lumière</div>
-      <a href="cart.html" class="icon">🛍</a>
+      <a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a>
     </div>
   </header>
 
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
+  <nav class="side-menu" aria-label="منوی اصلی">
     <div class="side-menu-head">
       <span class="logo">Lumière</span>
-      <span class="icon close-menu">✕</span>
+      <span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span>
     </div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a>
+    <a href="profile.html">👤 حساب کاربری</a>
     <a href="cart.html">🛍 سبد خرید</a>
     <a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a>
-    <a href="products.html?cat=hair">مراقبت مو</a>
-    <a href="products.html?cat=makeup">آرایش</a>
-    <a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="profile-head">
-    <div class="profile-avatar" id="profile-avatar">س</div>
+    <div class="profile-avatar" id="profile-avatar">؟</div>
     <div>
-      <div class="profile-name" id="profile-name"></div>
+      <div class="profile-name" id="profile-name">در حال بارگذاری...</div>
       <div class="profile-phone" id="profile-phone"></div>
     </div>
   </section>
 
   <section class="section-block">
-    <div class="section-head">
-      <h2>سفارش‌های من</h2>
-    </div>
-    <div id="orders-list">
-      <p style="color:#888; padding:10px 0;">در حال بارگذاری...</p>
-    </div>
+    <div class="section-head"><h2>سفارش‌های من</h2></div>
+    <div id="orders-list"><p style="color:#888; padding:10px 0;">در حال بارگذاری...</p></div>
   </section>
 
   <section class="section-block">
-    <div class="section-head">
-      <h2>اطلاعات حساب</h2>
-    </div>
+    <div class="section-head"><h2>اطلاعات حساب</h2></div>
     <div class="account-list">
-      <a href="#" class="account-row">✏️ ویرایش اطلاعات شخصی</a>
-      <a href="#" class="account-row">📍 آدرس‌های من</a>
-      <a href="#" class="account-row">🔒 تغییر رمز عبور</a>
-      <a href="index.html" class="account-row logout" onclick="logoutCustomer()">🚪 خروج از حساب</a>
+      <button type="button" class="account-row account-row-button" data-profile-panel="personal">✏️ ویرایش اطلاعات شخصی</button>
+      <button type="button" class="account-row account-row-button" data-profile-panel="address">📍 آدرس ارسال</button>
+      <button type="button" class="account-row account-row-button" data-profile-panel="password">🔒 تغییر رمز عبور</button>
+      <button type="button" class="account-row account-row-button logout" id="logout-customer">🚪 خروج از حساب</button>
+    </div>
+
+    <div id="personal-panel" class="profile-edit-panel" hidden>
+      <h3>اطلاعات شخصی</h3>
+      <form id="personal-form" class="profile-form">
+        <p class="form-error" id="personal-error" hidden></p>
+        <p class="form-success" id="personal-success" hidden></p>
+        <label for="profile-first-name">نام</label>
+        <input id="profile-first-name" type="text" maxlength="100" required>
+        <label for="profile-last-name">نام خانوادگی</label>
+        <input id="profile-last-name" type="text" maxlength="100" required>
+        <label for="profile-email">ایمیل (اختیاری)</label>
+        <input id="profile-email" type="email" autocomplete="email" maxlength="320" placeholder="example@email.com">
+        <button class="btn-dark btn-full" type="submit">ذخیره اطلاعات</button>
+      </form>
+    </div>
+
+    <div id="address-panel" class="profile-edit-panel" hidden>
+      <h3>آدرس ارسال</h3>
+      <form id="address-form" class="profile-form">
+        <p class="form-error" id="address-error" hidden></p>
+        <p class="form-success" id="address-success" hidden></p>
+        <label for="profile-address">آدرس کامل</label>
+        <textarea id="profile-address" rows="4" maxlength="2000" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
+        <button class="btn-dark btn-full" type="submit">ذخیره آدرس</button>
+      </form>
+    </div>
+
+    <div id="password-panel" class="profile-edit-panel" hidden>
+      <h3>تغییر رمز عبور</h3>
+      <form id="password-form" class="profile-form">
+        <p class="form-error" id="password-error" hidden></p>
+        <p class="form-success" id="password-success" hidden></p>
+        <label for="current-password">رمز فعلی</label>
+        <input id="current-password" type="password" autocomplete="current-password" minlength="6" maxlength="200" required>
+        <label for="new-password">رمز جدید</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="6" maxlength="200" required>
+        <label for="new-password-repeat">تکرار رمز جدید</label>
+        <input id="new-password-repeat" type="password" autocomplete="new-password" minlength="6" maxlength="200" required>
+        <button class="btn-dark btn-full" type="submit">تغییر رمز</button>
+      </form>
     </div>
   </section>
 
   <footer class="site-footer">
-    <div class="footer-links">
-      <a href="#">تماس با ما</a>
-      <a href="#">قوانین بازگشت کالا</a>
-    </div>
-    <div class="footer-social">
-      <span>📷</span><span>✈️</span><span>💬</span>
-    </div>
+    <div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div>
+    <div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div>
   </footer>
 
   <script>
@@ -84,13 +110,112 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
-    var session = getCustomerSession();
-    if (session) {
-      var fullName = session.customer.firstName || '';
+    var currentCustomer = getCustomerSession() ? getCustomerSession().customer : null;
+
+    function setMessage(errorId, successId, message, isError) {
+      var errorEl = document.getElementById(errorId);
+      var successEl = document.getElementById(successId);
+      errorEl.hidden = true;
+      successEl.hidden = true;
+      var target = isError ? errorEl : successEl;
+      target.textContent = message;
+      target.hidden = false;
+    }
+
+    function renderCustomer(customer) {
+      if (!customer) return;
+      currentCustomer = customer;
+      var session = getCustomerSession();
+      if (session) saveCustomerSession(session.token, customer);
+      var fullName = [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim();
       document.getElementById('profile-name').textContent = fullName || 'کاربر';
       document.getElementById('profile-avatar').textContent = fullName ? fullName[0] : '؟';
-      document.getElementById('profile-phone').textContent = session.customer.phone || '';
+      document.getElementById('profile-phone').textContent = customer.phone || '';
+      document.getElementById('profile-first-name').value = customer.firstName || '';
+      document.getElementById('profile-last-name').value = customer.lastName || '';
+      document.getElementById('profile-email').value = customer.email || '';
+      document.getElementById('profile-address').value = customer.address || '';
     }
+
+    if (currentCustomer) renderCustomer(currentCustomer);
+    apiFetch('/auth/customer/me').then(function (data) {
+      renderCustomer(data.customer);
+    }).catch(function (err) {
+      document.getElementById('profile-name').textContent = 'خطا در دریافت حساب';
+      document.getElementById('profile-phone').textContent = err.message;
+    });
+
+    document.querySelectorAll('[data-profile-panel]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var name = button.dataset.profilePanel;
+        document.querySelectorAll('.profile-edit-panel').forEach(function (panel) {
+          panel.hidden = panel.id !== name + '-panel' || !panel.hidden;
+        });
+        var activePanel = document.getElementById(name + '-panel');
+        if (!activePanel.hidden) activePanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+
+    document.getElementById('personal-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = event.submitter;
+      button.disabled = true;
+      apiFetch('/auth/customer/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          firstName: document.getElementById('profile-first-name').value.trim(),
+          lastName: document.getElementById('profile-last-name').value.trim(),
+          email: document.getElementById('profile-email').value.trim()
+        })
+      }).then(function (data) {
+        renderCustomer(data.customer);
+        setMessage('personal-error', 'personal-success', 'اطلاعات ذخیره شد', false);
+      }).catch(function (err) {
+        setMessage('personal-error', 'personal-success', err.message, true);
+      }).finally(function () { button.disabled = false; });
+    });
+
+    document.getElementById('address-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = event.submitter;
+      button.disabled = true;
+      apiFetch('/auth/customer/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ address: document.getElementById('profile-address').value.trim() })
+      }).then(function (data) {
+        renderCustomer(data.customer);
+        setMessage('address-error', 'address-success', 'آدرس ذخیره شد', false);
+      }).catch(function (err) {
+        setMessage('address-error', 'address-success', err.message, true);
+      }).finally(function () { button.disabled = false; });
+    });
+
+    document.getElementById('password-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var currentPassword = document.getElementById('current-password').value;
+      var newPassword = document.getElementById('new-password').value;
+      var repeat = document.getElementById('new-password-repeat').value;
+      if (newPassword !== repeat) {
+        setMessage('password-error', 'password-success', 'تکرار رمز جدید با رمز جدید یکی نیست', true);
+        return;
+      }
+      var button = event.submitter;
+      button.disabled = true;
+      apiFetch('/auth/customer/password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword })
+      }).then(function () {
+        document.getElementById('password-form').reset();
+        setMessage('password-error', 'password-success', 'رمز عبور تغییر کرد', false);
+      }).catch(function (err) {
+        setMessage('password-error', 'password-success', err.message, true);
+      }).finally(function () { button.disabled = false; });
+    });
+
+    document.getElementById('logout-customer').addEventListener('click', function () {
+      logoutCustomer();
+      window.location.replace('index.html');
+    });
 
     var ordersList = document.getElementById('orders-list');
     apiFetch('/orders/mine')
@@ -101,19 +226,15 @@
         }
         ordersList.innerHTML = orders.map(function (o) {
           var dateStr = new Date(o.createdAt).toLocaleDateString('fa-IR-u-ca-persian');
-          var badgeClass = o.status === 'confirmed' || o.status === 'shipped' ? 'done' : (o.status === 'rejected' ? 'rejected' : 'pending');
-          return '' +
-            '<a href="order-status.html?id=' + o.id + '" class="order-item">' +
-            '  <div>' +
-            '    <div class="order-id">سفارش #' + o.id + '</div>' +
-            '    <div class="order-date">' + dateStr + '</div>' +
-            '  </div>' +
-            '  <span class="status-badge small ' + badgeClass + '">' + getOrderStatusLabel(o.status) + '</span>' +
+          var badgeClass = o.status === 'confirmed' || o.status === 'shipped' ? 'done' : (o.status === 'rejected' || o.status === 'cancelled' ? 'rejected' : 'pending');
+          return '<a href="order-status.html?id=' + o.id + '" class="order-item">' +
+            '<div><div class="order-id">سفارش #' + o.id + '</div><div class="order-date">' + dateStr + '</div></div>' +
+            '<span class="status-badge small ' + badgeClass + '">' + escapeHtml(getOrderStatusLabel(o.status)) + '</span>' +
             '</a>';
         }).join('');
       })
       .catch(function (err) {
-        ordersList.innerHTML = '<p style="color:#c0392b; padding:10px 0;">خطا: ' + err.message + '</p>';
+        ordersList.innerHTML = '<p style="color:#c0392b; padding:10px 0;">خطا: ' + escapeHtml(err.message) + '</p>';
       });
   </script>
 </body>

@@ -25,10 +25,6 @@
     <a href="cart.html">🛍 سبد خرید</a>
     <a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a>
-    <a href="products.html?cat=hair">مراقبت مو</a>
-    <a href="products.html?cat=makeup">آرایش</a>
-    <a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="hero">
@@ -37,11 +33,8 @@
     <a href="products.html" class="btn-dark">مشاهده محصولات</a>
   </section>
 
-  <section class="categories" aria-label="دسته‌بندی محصولات">
-    <a href="products.html?cat=skin" class="cat-item"><div class="cat-icon skin">✦</div><span>مراقبت پوست</span></a>
-    <a href="products.html?cat=makeup" class="cat-item"><div class="cat-icon makeup">✦</div><span>آرایش</span></a>
-    <a href="products.html?cat=hair" class="cat-item"><div class="cat-icon hair">✦</div><span>مراقبت مو</span></a>
-    <a href="products.html?cat=perfume" class="cat-item"><div class="cat-icon perfume">✦</div><span>عطر</span></a>
+  <section class="categories" id="home-categories" aria-label="دسته‌بندی محصولات">
+    <div class="category-loading">در حال بارگذاری دسته‌بندی‌ها...</div>
   </section>
 
   <section class="section-block">
@@ -75,6 +68,24 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
+    var categoryColors = ['skin', 'makeup', 'hair', 'perfume'];
+    var categoriesBox = document.getElementById('home-categories');
+    fetchPublicCategories().then(function (categories) {
+      if (!categories.length) {
+        categoriesBox.innerHTML = '<div class="category-loading">هنوز دسته‌بندی‌ای برای نمایش وجود ندارد</div>';
+        return;
+      }
+      categoriesBox.innerHTML = categories.slice(0, 6).map(function (category, index) {
+        var colorClass = categoryColors[index % categoryColors.length];
+        return '<a href="products.html?category=' + encodeURIComponent(category.id) + '" class="cat-item">' +
+          '<div class="cat-icon ' + colorClass + '">✦</div>' +
+          '<span>' + escapeHtml(category.name) + '</span>' +
+          '</a>';
+      }).join('');
+    }).catch(function () {
+      categoriesBox.innerHTML = '<a href="products.html" class="cat-item"><div class="cat-icon skin">✦</div><span>همه محصولات</span></a>';
+    });
+
     var featuredGrid = document.getElementById('featured-grid');
     apiFetch('/products/public/' + SELLER_ID)
       .then(function (products) {
@@ -86,12 +97,12 @@
         featuredGrid.innerHTML = list.map(function (p) {
           var imageUrl = getProductImageUrl(p);
           var image = imageUrl
-            ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
-            : '';
+            ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy">'
+            : '<span class="product-img-placeholder">بدون تصویر</span>';
           return '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
             '<div class="product-img">' + image + '</div>' +
             '<h3>' + escapeHtml(p.name) + '</h3>' +
-            '<div class="price">' + formatPrice(getProductMinPrice(p)) + ' تومان</div>' +
+            '<div class="price">' + getProductPriceLabel(p) + '</div>' +
             '</a>';
         }).join('');
       })

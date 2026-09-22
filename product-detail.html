@@ -10,7 +10,7 @@
     .detail-media-wrap { margin-bottom: 14px; }
     .detail-media-wrap .detail-img { overflow: hidden; }
     .detail-media-wrap .detail-img img,
-    .detail-media-wrap .detail-img video { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; background:#f3f3f3; }
+    .detail-media-wrap .detail-img video { width:100%; height:100%; object-fit:contain; border-radius:inherit; display:block; background:#f8f8f8; }
     .detail-media-thumbs { display:flex; gap:8px; overflow-x:auto; padding:9px 1px 2px; scrollbar-width:thin; }
     .detail-media-thumb { flex:0 0 64px; width:64px; height:64px; border:1px solid #ddd; border-radius:10px; padding:0; overflow:hidden; background:#f7f7f7; cursor:pointer; }
     .detail-media-thumb.active { border-color:#0F5257; box-shadow:0 0 0 1px #0F5257 inset; }
@@ -19,19 +19,18 @@
   </style>
 </head>
 <body>
-  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="page-title"><a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a></section>
   <section class="detail-block" id="detail-block">
     <div class="detail-media-wrap">
-      <div class="detail-img" id="detail-img"></div>
+      <div class="detail-img" id="detail-img"><span class="product-img-placeholder">در حال بارگذاری...</span></div>
       <div class="detail-media-thumbs" id="detail-media-thumbs" hidden></div>
     </div>
     <h1 class="detail-title" id="detail-title">در حال بارگذاری...</h1>
@@ -40,7 +39,7 @@
     <p id="stock-note" style="font-size:12px;color:#777;margin:10px 0;"></p>
     <div class="qty-row">
       <span>تعداد:</span>
-      <div class="qty-control"><button class="qty-btn" id="qty-minus" type="button">−</button><span id="qty-value">۱</span><button class="qty-btn" id="qty-plus" type="button">+</button></div>
+      <div class="qty-control"><button class="qty-btn" id="qty-minus" type="button" aria-label="کم کردن تعداد">−</button><span id="qty-value">۱</span><button class="qty-btn" id="qty-plus" type="button" aria-label="زیاد کردن تعداد">+</button></div>
     </div>
     <button id="add-to-cart-btn" class="btn-dark btn-full">افزودن به سبد خرید</button>
   </section>
@@ -77,7 +76,7 @@
       var main = document.getElementById('detail-img');
       var thumbs = document.getElementById('detail-media-thumbs');
       if (!media.length) {
-        main.innerHTML = '';
+        main.innerHTML = '<span class="product-img-placeholder">تصویری برای این محصول ثبت نشده</span>';
         thumbs.hidden = true;
         return;
       }
@@ -117,7 +116,7 @@
       qtyDisplay.textContent = toFaDigits(count);
     });
     document.getElementById('qty-plus').addEventListener('click', function () {
-      if (!currentProduct || count < currentProduct.stockQty) count++;
+      if (!currentProduct || count < Number(currentProduct.stockQty || 0)) count++;
       qtyDisplay.textContent = toFaDigits(count);
     });
 
@@ -129,14 +128,15 @@
         currentProduct = product;
         document.title = product.name;
         document.getElementById('detail-title').textContent = product.name;
-        document.getElementById('detail-price').textContent = formatPrice(getProductMinPrice(product)) + ' تومان';
+        document.getElementById('detail-price').textContent = getProductPriceLabel(product);
         document.getElementById('detail-desc').textContent = product.description || '';
         renderProductGallery(product);
         var stock = Number(product.stockQty || 0);
+        var price = getProductMinPrice(product);
         document.getElementById('stock-note').textContent = stock > 0 ? ('موجودی: ' + toFaDigits(stock) + ' عدد') : 'این محصول فعلاً ناموجود است';
-        if (stock <= 0) {
+        if (stock <= 0 || price <= 0) {
           addBtn.disabled = true;
-          addBtn.textContent = 'ناموجود';
+          addBtn.textContent = stock <= 0 ? 'ناموجود' : 'قیمت فروش هنوز تنظیم نشده';
           document.getElementById('qty-plus').disabled = true;
           document.getElementById('qty-minus').disabled = true;
         }
@@ -147,8 +147,8 @@
       });
 
       addBtn.addEventListener('click', function () {
-        if (!currentProduct || Number(currentProduct.stockQty || 0) <= 0) return;
-        addToCart(currentProduct.id, Math.min(count, currentProduct.stockQty));
+        if (!currentProduct || Number(currentProduct.stockQty || 0) <= 0 || getProductMinPrice(currentProduct) <= 0) return;
+        addToCart(currentProduct.id, Math.min(count, Number(currentProduct.stockQty || 0)));
         window.location.href = 'cart.html';
       });
     }

@@ -8,13 +8,12 @@
   <script src="api.js"></script>
 </head>
 <body>
-  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="page-title"><h1>سبد خرید شما</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="products.html" class="breadcrumb">/ محصولات /</a></section>
@@ -22,7 +21,8 @@
     <div id="cart-items"></div>
     <div class="cart-summary" id="cart-summary" style="display:none;">
       <div class="summary-row"><span>جمع کالاها</span><span id="sum-subtotal"></span></div>
-      <div class="summary-row total"><span>مبلغ قابل پرداخت</span><span id="sum-total"></span></div>
+      <div class="summary-row total"><span>جمع فعلی</span><span id="sum-total"></span></div>
+      <div class="cart-hint">هزینه ارسال در مرحله تکمیل خرید و بر اساس تنظیمات فروشگاه محاسبه می‌شود.</div>
     </div>
     <a href="checkout.html" class="btn-dark btn-full" id="checkout-btn" style="display:none;">ادامه فرآیند خرید</a>
   </section>
@@ -50,15 +50,18 @@
     }
 
     function renderCart(products) {
-      var cart = getCart();
-      var cartItems = cart.map(function (ci) {
-        var product = products.find(function (p) { return p.id === ci.productId; });
-        if (!product || Number(product.stockQty || 0) <= 0) return null;
-        var quantity = Math.min(ci.quantity, product.stockQty);
-        if (quantity !== ci.quantity) updateCartQuantity(product.id, quantity);
+      var originalCart = getCart();
+      var cleanedCart = [];
+      var cartItems = originalCart.map(function (ci) {
+        var product = products.find(function (p) { return Number(p.id) === Number(ci.productId); });
+        var price = product ? getProductMinPrice(product) : 0;
+        if (!product || Number(product.stockQty || 0) <= 0 || price <= 0) return null;
+        var quantity = Math.min(Math.max(1, Number(ci.quantity) || 1), Number(product.stockQty || 0));
+        cleanedCart.push({ productId: product.id, quantity: quantity });
         return { product: product, quantity: quantity };
       }).filter(Boolean);
 
+      if (JSON.stringify(cleanedCart) !== JSON.stringify(originalCart)) saveCart(cleanedCart);
       if (!cartItems.length) { renderEmpty(); return; }
 
       var subtotal = 0;
@@ -66,11 +69,11 @@
         var unitPrice = getProductMinPrice(ci.product);
         subtotal += unitPrice * ci.quantity;
         var imageUrl = getProductImageUrl(ci.product);
-        var image = imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ci.product.name) + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">' : '';
+        var image = imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ci.product.name) + '">' : '<span class="product-img-placeholder">بدون تصویر</span>';
         return '<div class="cart-item" data-id="' + ci.product.id + '">' +
           '<div class="cart-item-img">' + image + '</div>' +
-          '<div class="cart-item-info"><h3>' + escapeHtml(ci.product.name) + '</h3><div class="price">' + formatPrice(unitPrice) + ' تومان</div><div style="font-size:10px;color:#999;margin-top:3px;">موجودی: ' + toFaDigits(ci.product.stockQty) + '</div></div>' +
-          '<div class="qty-control small"><button class="qty-btn qty-minus" type="button">−</button><span>' + toFaDigits(ci.quantity) + '</span><button class="qty-btn qty-plus" type="button">+</button></div>' +
+          '<div class="cart-item-info"><h3>' + escapeHtml(ci.product.name) + '</h3><div class="price">' + getProductPriceLabel(ci.product) + '</div><div class="cart-stock">موجودی: ' + toFaDigits(ci.product.stockQty) + '</div><button type="button" class="cart-remove">حذف</button></div>' +
+          '<div class="qty-control small"><button class="qty-btn qty-minus" type="button" aria-label="کم کردن تعداد">−</button><span>' + toFaDigits(ci.quantity) + '</span><button class="qty-btn qty-plus" type="button" aria-label="زیاد کردن تعداد">+</button></div>' +
           '</div>';
       }).join('');
 
@@ -87,11 +90,15 @@
         row.querySelector('.qty-plus').addEventListener('click', function () {
           if (current < currentItem.product.stockQty) { current++; updateCartQuantity(id, current); renderCart(products); }
         });
+        row.querySelector('.cart-remove').addEventListener('click', function () { removeFromCart(id); renderCart(products); });
       });
     }
 
     checkoutBtn.addEventListener('click', function (event) {
-      if (!getCustomerSession()) { event.preventDefault(); window.location.href = 'login.html'; }
+      if (!getCustomerSession()) {
+        event.preventDefault();
+        window.location.href = 'login.html?next=' + encodeURIComponent('checkout.html');
+      }
     });
 
     var cart = getCart();
