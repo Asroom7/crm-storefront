@@ -10,24 +10,23 @@
 <body>
   <header class="site-header">
     <div class="header-top">
-      <span class="icon menu-toggle">☰</span>
+      <span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span>
       <div class="logo">Lumière</div>
       <a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a>
     </div>
   </header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="auth-block">
     <h1 class="auth-title">ورود به حساب کاربری</h1>
     <p class="auth-sub">برای ثبت سفارش و پیگیری خریدهایت وارد شو</p>
     <form class="auth-form" id="login-form">
-      <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
+      <p id="auth-error" class="form-error" hidden></p>
       <label for="phone">شماره موبایل</label>
       <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
       <label for="password">رمز عبور</label>
@@ -40,6 +39,9 @@
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
+    var existingSession = getCustomerSession();
+    if (existingSession) window.location.replace(getRequestedNext('profile.html'));
+
     var toggle = document.querySelector('.menu-toggle');
     var closeBtn = document.querySelector('.close-menu');
     var overlay = document.querySelector('.side-menu-overlay');
@@ -58,7 +60,7 @@
       event.preventDefault();
       var phone = document.getElementById('phone').value.trim();
       var password = document.getElementById('password').value;
-      errorBox.style.display = 'none';
+      errorBox.hidden = true;
       loginBtn.disabled = true;
       loginBtn.textContent = 'در حال ورود...';
 
@@ -67,10 +69,10 @@
         body: JSON.stringify({ sellerId: SELLER_ID, phone: phone, password: password })
       }).then(function (data) {
         saveCustomerSession(data.token, data.customer);
-        window.location.href = 'index.html';
+        window.location.replace(getRequestedNext('index.html'));
       }).catch(function (err) {
         errorBox.textContent = err.message;
-        errorBox.style.display = 'block';
+        errorBox.hidden = false;
         loginBtn.disabled = false;
         loginBtn.textContent = 'ورود';
       });
