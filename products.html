@@ -8,20 +8,18 @@
   <script src="api.js"></script>
 </head>
 <body>
-  <header class="site-header"><div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
+  <header class="site-header"><div class="header-top"><span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div></header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="page-title"><h1>محصولات</h1><a href="index.html" class="breadcrumb">خانه /</a></section>
-  <section class="filter-bar">
-    <div class="filter-chip active">همه</div><div class="filter-chip">پوست</div><div class="filter-chip">مو</div><div class="filter-chip">آرایش</div><div class="filter-chip">عطر</div>
-  </section>
-  <section class="sort-bar"><span id="product-count">در حال بارگذاری...</span><select class="sort-select" id="sort-select"><option value="default">مرتب‌سازی: پیش‌فرض</option><option value="cheap">ارزان‌ترین</option><option value="expensive">گران‌ترین</option></select></section>
+  <section class="store-search"><input id="store-search-input" type="search" placeholder="جستجوی نام محصول..." autocomplete="off"></section>
+  <section class="filter-bar" id="filter-bar"><button type="button" class="filter-chip active" data-category="">همه</button></section>
+  <section class="sort-bar"><span id="product-count">در حال بارگذاری...</span><select class="sort-select" id="sort-select"><option value="default">مرتب‌سازی: جدیدترین</option><option value="cheap">ارزان‌ترین</option><option value="expensive">گران‌ترین</option></select></section>
   <section class="section-block"><div class="product-grid" id="product-grid"></div></section>
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
@@ -37,49 +35,74 @@
     if (overlay) overlay.addEventListener('click', closeMenu);
 
     var allProducts = [];
-    var currentCategory = 'همه';
+    var currentCategoryId = Number(new URLSearchParams(window.location.search).get('category')) || 0;
+    var searchTerm = '';
     var grid = document.getElementById('product-grid');
     var countEl = document.getElementById('product-count');
     var sortSelect = document.getElementById('sort-select');
-    var catSlugMap = { skin: 'پوست', hair: 'مو', makeup: 'آرایش', perfume: 'عطر' };
-    var catFromUrl = new URLSearchParams(window.location.search).get('cat');
-    if (catFromUrl && catSlugMap[catFromUrl]) currentCategory = catSlugMap[catFromUrl];
+    var filterBar = document.getElementById('filter-bar');
+    var searchInput = document.getElementById('store-search-input');
 
     function renderProducts() {
-      var list = allProducts.filter(function (p) { return currentCategory === 'همه' || (p.category && p.category.name === currentCategory); });
-      if (sortSelect.value === 'cheap') list = list.slice().sort(function (a, b) { return getProductMinPrice(a) - getProductMinPrice(b); });
+      var normalizedSearch = searchTerm.trim().toLocaleLowerCase('fa');
+      var list = allProducts.filter(function (p) {
+        var categoryOk = !currentCategoryId || (p.category && Number(p.category.id) === currentCategoryId);
+        var searchOk = !normalizedSearch || String(p.name || '').toLocaleLowerCase('fa').includes(normalizedSearch);
+        return categoryOk && searchOk;
+      });
+      if (sortSelect.value === 'cheap') list = list.slice().sort(function (a, b) {
+        var ap = getProductMinPrice(a) || Number.MAX_SAFE_INTEGER;
+        var bp = getProductMinPrice(b) || Number.MAX_SAFE_INTEGER;
+        return ap - bp;
+      });
       if (sortSelect.value === 'expensive') list = list.slice().sort(function (a, b) { return getProductMinPrice(b) - getProductMinPrice(a); });
       countEl.textContent = toFaDigits(list.length) + ' محصول';
 
       if (!list.length) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:30px 0;color:#888;">هنوز محصولی توی این دسته اضافه نشده</p>';
+        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:30px 0;color:#888;">محصولی با این فیلتر پیدا نشد</p>';
         return;
       }
 
       grid.innerHTML = list.map(function (p) {
         var imageUrl = getProductImageUrl(p);
-        var image = imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">' : '';
+        var image = imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' : '<span class="product-img-placeholder">بدون تصویر</span>';
         return '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
           '<div class="product-img">' + image + '</div>' +
           '<h3>' + escapeHtml(p.name) + '</h3>' +
-          '<div class="price">' + formatPrice(getProductMinPrice(p)) + ' تومان</div>' +
+          '<div class="price">' + getProductPriceLabel(p) + '</div>' +
           '</a>';
       }).join('');
     }
 
-    document.querySelectorAll('.filter-chip').forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
-        currentCategory = chip.textContent.trim();
-        renderProducts();
+    function setCategory(categoryId) {
+      currentCategoryId = Number(categoryId) || 0;
+      filterBar.querySelectorAll('[data-category]').forEach(function (chip) {
+        chip.classList.toggle('active', Number(chip.dataset.category) === currentCategoryId);
       });
+      var url = new URL(window.location.href);
+      if (currentCategoryId) url.searchParams.set('category', currentCategoryId);
+      else url.searchParams.delete('category');
+      history.replaceState(null, '', url.pathname + url.search);
+      renderProducts();
+    }
+
+    fetchPublicCategories().then(function (categories) {
+      filterBar.innerHTML = '<button type="button" class="filter-chip" data-category="">همه</button>' + categories.map(function (category) {
+        return '<button type="button" class="filter-chip" data-category="' + category.id + '">' + escapeHtml(category.name) + '</button>';
+      }).join('');
+      filterBar.querySelectorAll('[data-category]').forEach(function (chip) {
+        chip.addEventListener('click', function () { setCategory(chip.dataset.category); });
+      });
+      setCategory(currentCategoryId);
+    }).catch(function () {
+      filterBar.querySelector('[data-category]').classList.add('active');
     });
+
     sortSelect.addEventListener('change', renderProducts);
+    searchInput.addEventListener('input', function () { searchTerm = searchInput.value; renderProducts(); });
 
     apiFetch('/products/public/' + SELLER_ID).then(function (products) {
       allProducts = products;
-      document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.toggle('active', c.textContent.trim() === currentCategory); });
       renderProducts();
     }).catch(function (err) {
       countEl.textContent = '';
