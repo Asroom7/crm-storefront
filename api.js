@@ -2,6 +2,15 @@
 const API_BASE = window.CRM_API_BASE || 'https://crm-backend-apj4.onrender.com/api';
 const SELLER_ID = Number(window.CRM_SELLER_ID || 1);
 
+(function injectSharedPolishStyles() {
+  if (document.querySelector('link[data-storefront-polish]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.storefrontPolish = 'true';
+  link.href = window.location.pathname.includes('/panel/') ? '../storefront-polish.css' : 'storefront-polish.css';
+  document.head.appendChild(link);
+})();
+
 let storeConfigPromise = null;
 let publicCategoriesPromise = null;
 
@@ -342,7 +351,7 @@ function applyStoreChrome() {
   applyCustomerNavigation();
   fetchStoreConfig().then(applyStoreBrand).catch(function () { /* صفحه بدون تنظیمات هم قابل استفاده بماند */ });
   if (document.querySelector('.side-menu-sep')) {
-    fetchPublicCategories().then(hydrateSideMenuCategories).catch(function () { /* دسته‌های قدیمی تا بارگذاری بعدی می‌مانند */ });
+    fetchPublicCategories().then(hydrateSideMenuCategories).catch(function () { /* دسته‌ها در بارگذاری بعدی تلاش می‌شوند */ });
   }
 }
 
