@@ -21,23 +21,33 @@
   <section class="auth-block">
     <h1 class="auth-title">ساخت حساب کاربری</h1>
     <p class="auth-sub">برای شروع خرید، اطلاعاتت رو وارد کن</p>
-    <form class="auth-form" id="register-form">
+    <form class="auth-form" id="register-form" novalidate>
       <p id="auth-error" class="form-error" hidden></p>
-      <label for="first-name">نام</label><input type="text" id="first-name" autocomplete="given-name" placeholder="نام" required maxlength="100">
-      <label for="last-name">نام خانوادگی</label><input type="text" id="last-name" autocomplete="family-name" placeholder="نام خانوادگی" required maxlength="100">
-      <label for="phone">شماره موبایل</label><input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
-      <label for="password">رمز عبور</label><input type="password" autocomplete="new-password" id="password" minlength="6" maxlength="200" placeholder="حداقل ۶ کاراکتر" required>
+      <p id="auth-success" class="form-success" hidden></p>
+
+      <label for="first-name">نام</label>
+      <input type="text" id="first-name" autocomplete="given-name" placeholder="نام" required maxlength="100">
+
+      <label for="last-name">نام خانوادگی</label>
+      <input type="text" id="last-name" autocomplete="family-name" placeholder="نام خانوادگی" required maxlength="100">
+
+      <label for="phone">شماره موبایل</label>
+      <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="مثلاً 09123456789" required maxlength="16">
+
+      <label for="password">رمز عبور</label>
+      <input type="password" autocomplete="new-password" id="password" minlength="6" maxlength="200" placeholder="حداقل ۶ کاراکتر" required>
+
+      <label for="password-repeat">تکرار رمز عبور</label>
+      <input type="password" autocomplete="new-password" id="password-repeat" minlength="6" maxlength="200" placeholder="رمز را دوباره وارد کنید" required>
+
       <button id="register-btn" class="btn-dark btn-full" type="submit">ثبت‌نام</button>
     </form>
-    <p class="auth-switch">حساب کاربری داری؟ <a href="login.html">وارد شو</a></p>
+    <p class="auth-switch">حساب کاربری داری؟ <a id="login-link" href="login.html">وارد شو</a></p>
   </section>
 
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
-    var existingSession = getCustomerSession();
-    if (existingSession) window.location.replace(getRequestedNext('profile.html'));
-
     var toggle = document.querySelector('.menu-toggle');
     var closeBtn = document.querySelector('.close-menu');
     var overlay = document.querySelector('.side-menu-overlay');
@@ -51,31 +61,109 @@
     var form = document.getElementById('register-form');
     var registerBtn = document.getElementById('register-btn');
     var errorBox = document.getElementById('auth-error');
+    var successBox = document.getElementById('auth-success');
+    var phoneInput = document.getElementById('phone');
+    var loginLink = document.getElementById('login-link');
+
+    function normalizePhone(value) {
+      var fa = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+      var ar = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+      var phone = String(value || '')
+        .replace(/[۰-۹]/g, function (d) { return fa[d]; })
+        .replace(/[٠-٩]/g, function (d) { return ar[d]; })
+        .replace(/[^\d]/g, '');
+      if (phone.indexOf('0098') === 0) phone = '0' + phone.slice(4);
+      else if (phone.indexOf('98') === 0) phone = '0' + phone.slice(2);
+      else if (/^9\d{9}$/.test(phone)) phone = '0' + phone;
+      return phone;
+    }
+
+    function showError(message) {
+      successBox.hidden = true;
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+      errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function setBusy(busy) {
+      registerBtn.disabled = busy;
+      registerBtn.textContent = busy ? 'در حال ساخت حساب...' : 'ثبت‌نام';
+    }
+
+    function updateLoginLink(phone) {
+      var next = new URLSearchParams(window.location.search).get('next');
+      var params = new URLSearchParams();
+      if (phone) params.set('phone', phone);
+      if (next) params.set('next', safeNextTarget(next, 'index.html'));
+      loginLink.href = 'login.html' + (params.toString() ? '?' + params.toString() : '');
+    }
+
+    var phoneFromUrl = new URLSearchParams(window.location.search).get('phone');
+    if (phoneFromUrl) {
+      phoneInput.value = normalizePhone(phoneFromUrl);
+      updateLoginLink(phoneInput.value);
+    }
+
+    phoneInput.addEventListener('blur', function () {
+      phoneInput.value = normalizePhone(phoneInput.value);
+      updateLoginLink(phoneInput.value);
+    });
 
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       errorBox.hidden = true;
+      successBox.hidden = true;
+
+      var firstName = document.getElementById('first-name').value.trim();
+      var lastName = document.getElementById('last-name').value.trim();
+      var phone = normalizePhone(phoneInput.value);
+      var password = document.getElementById('password').value;
+      var passwordRepeat = document.getElementById('password-repeat').value;
+
+      phoneInput.value = phone;
+      updateLoginLink(phone);
+
+      if (!firstName) return showError('نام را وارد کنید.');
+      if (!lastName) return showError('نام خانوادگی را وارد کنید.');
+      if (!/^09\d{9}$/.test(phone)) return showError('شماره موبایل معتبر نیست؛ مثل 09123456789 وارد کنید.');
+      if (password.length < 6) return showError('رمز عبور باید حداقل ۶ کاراکتر باشد.');
+      if (password !== passwordRepeat) return showError('تکرار رمز عبور با رمز عبور یکسان نیست.');
+
       var payload = {
         sellerId: SELLER_ID,
-        firstName: document.getElementById('first-name').value.trim(),
-        lastName: document.getElementById('last-name').value.trim(),
-        phone: document.getElementById('phone').value.trim(),
-        password: document.getElementById('password').value
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        password: password
       };
 
-      registerBtn.disabled = true;
-      registerBtn.textContent = 'در حال ثبت‌نام...';
+      setBusy(true);
       apiFetch('/auth/customer/register', {
         method: 'POST',
         body: JSON.stringify(payload)
       }).then(function (data) {
+        if (!data || !data.token || !data.customer) throw new Error('پاسخ ثبت‌نام ناقص بود؛ دوباره تلاش کنید.');
         saveCustomerSession(data.token, data.customer);
-        window.location.replace(getRequestedNext('index.html'));
+        successBox.textContent = 'حساب با موفقیت ساخته شد. در حال ورود...';
+        successBox.hidden = false;
+        return apiFetch('/auth/customer/me');
+      }).then(function (data) {
+        if (data && data.customer) {
+          var session = getCustomerSession();
+          if (session) saveCustomerSession(session.token, data.customer);
+        }
+        window.location.replace(getRequestedNext('profile.html'));
       }).catch(function (err) {
-        errorBox.textContent = err.message;
-        errorBox.hidden = false;
-        registerBtn.disabled = false;
-        registerBtn.textContent = 'ثبت‌نام';
+        setBusy(false);
+        if (err && err.status === 409) {
+          showError((err.message || 'این شماره قبلاً حساب دارد.') + ' از گزینه «وارد شو» استفاده کنید.');
+          return;
+        }
+        if (err && err.name === 'TypeError') {
+          showError('ارتباط با سرور برقرار نشد. چند ثانیه صبر کنید و دوباره ثبت‌نام را بزنید.');
+          return;
+        }
+        showError(err && err.message ? err.message : 'ثبت‌نام انجام نشد؛ دوباره تلاش کنید.');
       });
     });
   </script>
