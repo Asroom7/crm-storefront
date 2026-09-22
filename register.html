@@ -9,25 +9,24 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="header-top"><span class="icon menu-toggle">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div>
+    <div class="header-top"><span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span><div class="logo">Lumière</div><a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a></div>
   </header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu">✕</span></div>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
     <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a><a href="products.html?cat=hair">مراقبت مو</a><a href="products.html?cat=makeup">آرایش</a><a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
   <section class="auth-block">
     <h1 class="auth-title">ساخت حساب کاربری</h1>
     <p class="auth-sub">برای شروع خرید، اطلاعاتت رو وارد کن</p>
     <form class="auth-form" id="register-form">
-      <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
-      <label for="first-name">نام</label><input type="text" id="first-name" autocomplete="given-name" placeholder="نام" required>
-      <label for="last-name">نام خانوادگی</label><input type="text" id="last-name" autocomplete="family-name" placeholder="نام خانوادگی" required>
+      <p id="auth-error" class="form-error" hidden></p>
+      <label for="first-name">نام</label><input type="text" id="first-name" autocomplete="given-name" placeholder="نام" required maxlength="100">
+      <label for="last-name">نام خانوادگی</label><input type="text" id="last-name" autocomplete="family-name" placeholder="نام خانوادگی" required maxlength="100">
       <label for="phone">شماره موبایل</label><input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
-      <label for="password">رمز عبور</label><input type="password" autocomplete="new-password" id="password" minlength="6" placeholder="حداقل ۶ کاراکتر" required>
+      <label for="password">رمز عبور</label><input type="password" autocomplete="new-password" id="password" minlength="6" maxlength="200" placeholder="حداقل ۶ کاراکتر" required>
       <button id="register-btn" class="btn-dark btn-full" type="submit">ثبت‌نام</button>
     </form>
     <p class="auth-switch">حساب کاربری داری؟ <a href="login.html">وارد شو</a></p>
@@ -36,6 +35,9 @@
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
+    var existingSession = getCustomerSession();
+    if (existingSession) window.location.replace(getRequestedNext('profile.html'));
+
     var toggle = document.querySelector('.menu-toggle');
     var closeBtn = document.querySelector('.close-menu');
     var overlay = document.querySelector('.side-menu-overlay');
@@ -52,7 +54,7 @@
 
     form.addEventListener('submit', function (event) {
       event.preventDefault();
-      errorBox.style.display = 'none';
+      errorBox.hidden = true;
       var payload = {
         sellerId: SELLER_ID,
         firstName: document.getElementById('first-name').value.trim(),
@@ -68,10 +70,10 @@
         body: JSON.stringify(payload)
       }).then(function (data) {
         saveCustomerSession(data.token, data.customer);
-        window.location.href = 'index.html';
+        window.location.replace(getRequestedNext('index.html'));
       }).catch(function (err) {
         errorBox.textContent = err.message;
-        errorBox.style.display = 'block';
+        errorBox.hidden = false;
         registerBtn.disabled = false;
         registerBtn.textContent = 'ثبت‌نام';
       });
