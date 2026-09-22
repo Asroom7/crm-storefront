@@ -12,31 +12,20 @@
 
   <header class="site-header">
     <div class="header-top">
-      <span class="icon menu-toggle">☰</span>
+      <span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span>
       <div class="logo">Lumière</div>
-      <a href="cart.html" class="icon">🛍</a>
+      <a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a>
     </div>
   </header>
   <div class="side-menu-overlay"></div>
-  <nav class="side-menu">
-    <div class="side-menu-head">
-      <span class="logo">Lumière</span>
-      <span class="icon close-menu">✕</span>
-    </div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a>
-    <a href="profile.html">📦 سفارش‌های من</a>
-    <a href="cart.html">🛍 سبد خرید</a>
-    <a href="index.html">🏠 صفحه نخست</a>
+  <nav class="side-menu" aria-label="منوی اصلی">
+    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
+    <a href="profile.html">👤 حساب کاربری</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
-    <a href="products.html?cat=skin">مراقبت پوست</a>
-    <a href="products.html?cat=hair">مراقبت مو</a>
-    <a href="products.html?cat=makeup">آرایش</a>
-    <a href="products.html?cat=perfume">عطر و ادکلن</a>
   </nav>
 
-
   <section class="status-block">
-    <div class="status-icon" id="status-icon">✓</div>
+    <div class="status-icon" id="status-icon">…</div>
     <h1 id="status-title">در حال بارگذاری...</h1>
     <div class="status-code" id="status-code"></div>
 
@@ -45,18 +34,12 @@
       <p id="status-desc"></p>
     </div>
 
-    <a href="index.html" class="btn-dark btn-full">بازگشت به صفحه اصلی</a>
+    <div class="order-summary-card" id="order-summary" hidden></div>
+    <a href="profile.html" class="btn-outline btn-full">مشاهده همه سفارش‌ها</a>
+    <a href="index.html" class="btn-dark btn-full status-home-btn">بازگشت به صفحه اصلی</a>
   </section>
 
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="#">تماس با ما</a>
-      <a href="#">قوانین بازگشت کالا</a>
-    </div>
-    <div class="footer-social">
-      <span>📷</span><span>✈️</span><span>💬</span>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
   <script>
     var toggle = document.querySelector('.menu-toggle');
@@ -70,32 +53,60 @@
     if (overlay) overlay.addEventListener('click', closeMenu);
 
     var statusDescriptions = {
-      pending_review: 'رسید پرداخت شما دریافت شد و در حال بررسی توسط فروشگاه است. به محض تایید، وضعیت سفارش به‌روز می‌شود.',
-      confirmed: 'پرداخت شما تایید شد و سفارشتون در حال آماده‌سازیه.',
-      shipped: 'سفارش شما ارسال شد.',
-      rejected: 'متاسفانه پرداخت این سفارش تایید نشد. اگه فکر می‌کنی اشتباهیه، با پشتیبانی تماس بگیر.'
+      pending_payment: 'سفارش ثبت شده و منتظر ثبت یا بررسی پرداخت است.',
+      pending_review: 'رسید پرداخت شما دریافت شد و در حال بررسی توسط فروشگاه است.',
+      paid: 'پرداخت این سفارش ثبت شده است.',
+      confirmed: 'پرداخت تایید شده و سفارش در حال آماده‌سازی است.',
+      shipped: 'سفارش از طرف فروشگاه ارسال شده است.',
+      rejected: 'پرداخت این سفارش تایید نشد. برای بررسی بیشتر با پشتیبانی تماس بگیرید.',
+      cancelled: 'این سفارش لغو شده است.'
     };
 
-    var orderId = new URLSearchParams(window.location.search).get('id');
+    var orderId = Number(new URLSearchParams(window.location.search).get('id'));
 
-    if (!orderId) {
+    function statusVisual(status) {
+      if (status === 'rejected' || status === 'cancelled') return { icon: '✕', title: 'سفارش تایید نشد', className: 'rejected' };
+      if (status === 'shipped') return { icon: '✓', title: 'سفارش ارسال شده', className: 'done' };
+      if (status === 'confirmed' || status === 'paid') return { icon: '✓', title: 'سفارش تایید شده', className: 'done' };
+      return { icon: '⏳', title: 'سفارش در حال بررسی است', className: 'pending' };
+    }
+
+    function renderOrderSummary(order) {
+      var box = document.getElementById('order-summary');
+      var items = Array.isArray(order.items) ? order.items : [];
+      var itemsHtml = items.map(function (item) {
+        return '<div class="order-summary-item"><span>' + escapeHtml(item.product ? item.product.name : 'محصول') + ' × ' + toFaDigits(item.quantity) + '</span><strong>' + formatPrice(Number(item.price || 0) * Number(item.quantity || 0)) + ' تومان</strong></div>';
+      }).join('');
+      var tracking = order.transaction && order.transaction.refId ? order.transaction.refId : '';
+      box.innerHTML = '<h2>جزئیات سفارش</h2>' + itemsHtml +
+        '<div class="order-summary-total"><span>مبلغ ثبت‌شده سفارش</span><strong>' + formatPrice(order.totalAmount) + ' تومان</strong></div>' +
+        (tracking ? '<div class="order-summary-meta"><span>شماره پیگیری پرداخت</span><strong>' + escapeHtml(tracking) + '</strong></div>' : '') +
+        '<div class="order-summary-meta"><span>آدرس ارسال</span><strong>' + escapeHtml(order.shippingAddress || '') + '</strong></div>';
+      box.hidden = false;
+    }
+
+    if (!Number.isInteger(orderId) || orderId <= 0) {
       document.getElementById('status-title').textContent = 'سفارشی پیدا نشد';
+      document.getElementById('status-icon').textContent = '✕';
     } else {
       apiFetch('/orders/mine/' + orderId)
         .then(function (order) {
-          document.getElementById('status-title').textContent =
-            order.status === 'rejected' ? 'سفارش شما تایید نشد' : 'سفارش شما ثبت شد';
-          document.getElementById('status-icon').textContent = order.status === 'rejected' ? '✕' : '✓';
-          document.getElementById('status-code').textContent = 'کد پیگیری سفارش: #' + order.id;
+          var visual = statusVisual(order.status);
+          document.getElementById('status-title').textContent = visual.title;
+          document.getElementById('status-icon').textContent = visual.icon;
+          document.getElementById('status-icon').className = 'status-icon ' + visual.className;
+          document.getElementById('status-code').textContent = 'کد سفارش: #' + order.id;
 
           var pendingBox = document.getElementById('status-pending');
           pendingBox.style.display = '';
           document.getElementById('status-badge').textContent = getOrderStatusLabel(order.status);
-          document.getElementById('status-badge').className = 'status-badge ' + (order.status === 'rejected' ? 'rejected' : '');
-          document.getElementById('status-desc').textContent = statusDescriptions[order.status] || '';
+          document.getElementById('status-badge').className = 'status-badge ' + visual.className;
+          document.getElementById('status-desc').textContent = statusDescriptions[order.status] || 'وضعیت سفارش در حال به‌روزرسانی است.';
+          renderOrderSummary(order);
         })
         .catch(function (err) {
           document.getElementById('status-title').textContent = 'خطا در بارگذاری سفارش';
+          document.getElementById('status-icon').textContent = '✕';
           document.getElementById('status-code').textContent = err.message;
         });
     }
