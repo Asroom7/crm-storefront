@@ -1,0 +1,22 @@
+/* Customer CRM detail polish */
+@media (max-width: 600px) {
+  .view .tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .view .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .view .tabs button {
+    flex: 0 0 auto;
+    min-width: 92px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+}
