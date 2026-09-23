@@ -6,77 +6,100 @@
   <meta name="description" content="فروشگاه محصولات آرایشی و بهداشتی">
   <title>فروشگاه آرایشی و بهداشتی</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="cinematic-intro.css">
   <script src="api.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-top">
-      <span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span>
-      <div class="logo">Lumière</div>
-      <a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a>
+  <section id="cinematic-intro" class="cinematic-intro" aria-label="معرفی فروشگاه" tabindex="0">
+    <div class="cinematic-intro-media" aria-hidden="true">
+      <img class="cinematic-intro-poster" src="assets/beauty-intro-poster.svg" alt="">
+      <video class="cinematic-intro-video" muted playsinline preload="metadata" poster="assets/beauty-intro-poster.svg" aria-hidden="true">
+        <!-- فایل ویدیوی نهایی سه‌ثانیه‌ای با نام assets/beauty-intro.mp4 در این بخش قرار می‌گیرد. -->
+      </video>
+      <div class="cinematic-intro-shade"></div>
+      <div class="cinematic-intro-glow"></div>
+      <div class="cinematic-intro-grain"></div>
     </div>
-  </header>
+    <div class="cinematic-intro-copy">
+      <p class="cinematic-intro-tagline">درخشش، از مراقبت شروع می‌شود.</p>
+      <button type="button" class="cinematic-intro-scroll" aria-label="ورود به فروشگاه">
+        <span>صفحه را به پایین بکشید</span>
+        <span class="cinematic-intro-arrow" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div class="cinematic-intro-progress" aria-hidden="true"></div>
+  </section>
 
-  <div class="side-menu-overlay"></div>
-  <nav class="side-menu" aria-label="منوی اصلی">
-    <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a>
-    <a href="profile.html">📦 سفارش‌های من</a>
-    <a href="cart.html">🛍 سبد خرید</a>
-    <a href="index.html">🏠 صفحه نخست</a>
-    <div class="side-menu-sep"></div>
-  </nav>
-
-  <section class="hero">
-    <div class="hero-copy">
-      <div class="hero-label">فروشگاه آنلاین مراقبت و زیبایی</div>
-      <h1>انتخاب ساده‌تر برای روتین مراقبت و زیبایی</h1>
-      <p>محصولات موجود فروشگاه را ببین، انتخابت را ثبت کن و وضعیت سفارش را از حساب کاربری پیگیری کن.</p>
-      <div class="hero-actions">
-        <a href="products.html" class="btn-dark">مشاهده محصولات</a>
-        <a href="#home-categories" class="hero-secondary">دیدن دسته‌بندی‌ها</a>
+  <div id="storefront-reveal-shell" class="storefront-reveal-shell">
+    <header class="site-header">
+      <div class="header-top">
+        <span class="icon menu-toggle" role="button" tabindex="0" aria-label="باز کردن منو">☰</span>
+        <div class="logo">Lumière</div>
+        <a href="cart.html" class="icon" aria-label="سبد خرید">🛍</a>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <section class="home-intro" aria-label="مزایای خرید">
-    <div class="home-intro-item">
-      <span class="home-intro-icon">✦</span>
-      <div><strong>انتخاب مرتب‌تر</strong><span>محصولات را بر اساس دسته‌بندی پیدا کن</span></div>
-    </div>
-    <div class="home-intro-item">
-      <span class="home-intro-icon">◈</span>
-      <div><strong>ثبت پرداخت روشن</strong><span>مبلغ دقیق و رسید پرداخت داخل سفارش ثبت می‌شود</span></div>
-    </div>
-    <div class="home-intro-item">
-      <span class="home-intro-icon">◎</span>
-      <div><strong>پیگیری سفارش</strong><span>وضعیت سفارش را از حساب کاربری دنبال کن</span></div>
-    </div>
-  </section>
+    <div class="side-menu-overlay"></div>
+    <nav class="side-menu" aria-label="منوی اصلی">
+      <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
+      <a href="login.html">👤 ورود / ثبت‌نام</a>
+      <a href="profile.html">📦 سفارش‌های من</a>
+      <a href="cart.html">🛍 سبد خرید</a>
+      <a href="index.html">🏠 صفحه نخست</a>
+      <div class="side-menu-sep"></div>
+    </nav>
 
-  <section class="categories" id="home-categories" aria-label="دسته‌بندی محصولات">
-    <div class="category-loading">در حال بارگذاری دسته‌بندی‌ها...</div>
-  </section>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="hero-label">فروشگاه آنلاین مراقبت و زیبایی</div>
+        <h1>انتخاب ساده‌تر برای روتین مراقبت و زیبایی</h1>
+        <p>محصولات موجود فروشگاه را ببین، انتخابت را ثبت کن و وضعیت سفارش را از حساب کاربری پیگیری کن.</p>
+        <div class="hero-actions">
+          <a href="products.html" class="btn-dark">مشاهده محصولات</a>
+          <a href="#home-categories" class="hero-secondary">دیدن دسته‌بندی‌ها</a>
+        </div>
+      </div>
+    </section>
 
-  <section class="section-block">
-    <div class="section-head"><h2>جدیدترین محصولات</h2><a href="products.html">مشاهده همه</a></div>
-    <div class="product-grid" id="featured-grid">
-      <p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">در حال بارگذاری...</p>
-    </div>
-  </section>
+    <section class="home-intro" aria-label="مزایای خرید">
+      <div class="home-intro-item">
+        <span class="home-intro-icon">✦</span>
+        <div><strong>انتخاب مرتب‌تر</strong><span>محصولات را بر اساس دسته‌بندی پیدا کن</span></div>
+      </div>
+      <div class="home-intro-item">
+        <span class="home-intro-icon">◈</span>
+        <div><strong>ثبت پرداخت روشن</strong><span>مبلغ دقیق و رسید پرداخت داخل سفارش ثبت می‌شود</span></div>
+      </div>
+      <div class="home-intro-item">
+        <span class="home-intro-icon">◎</span>
+        <div><strong>پیگیری سفارش</strong><span>وضعیت سفارش را از حساب کاربری دنبال کن</span></div>
+      </div>
+    </section>
 
-  <section class="trust-banner"><span>از انتخاب محصول تا ثبت رسید و پیگیری سفارش، همه مراحل در همین فروشگاه انجام می‌شود.</span></section>
+    <section class="categories" id="home-categories" aria-label="دسته‌بندی محصولات">
+      <div class="category-loading">در حال بارگذاری دسته‌بندی‌ها...</div>
+    </section>
 
-  <section class="badges-row">
-    <div class="badge-item"><span class="badge-icon">📦</span><span>پیگیری سفارش</span></div>
-    <div class="badge-item"><span class="badge-icon">💳</span><span>ثبت پرداخت</span></div>
-    <div class="badge-item"><span class="badge-icon">💬</span><span>دسترسی به پشتیبانی</span></div>
-  </section>
+    <section class="section-block">
+      <div class="section-head"><h2>جدیدترین محصولات</h2><a href="products.html">مشاهده همه</a></div>
+      <div class="product-grid" id="featured-grid">
+        <p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">در حال بارگذاری...</p>
+      </div>
+    </section>
 
-  <footer class="site-footer">
-    <div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div>
-    <div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div>
-  </footer>
+    <section class="trust-banner"><span>از انتخاب محصول تا ثبت رسید و پیگیری سفارش، همه مراحل در همین فروشگاه انجام می‌شود.</span></section>
+
+    <section class="badges-row">
+      <div class="badge-item"><span class="badge-icon">📦</span><span>پیگیری سفارش</span></div>
+      <div class="badge-item"><span class="badge-icon">💳</span><span>ثبت پرداخت</span></div>
+      <div class="badge-item"><span class="badge-icon">💬</span><span>دسترسی به پشتیبانی</span></div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div>
+      <div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div>
+    </footer>
+  </div>
 
   <script>
     var toggle = document.querySelector('.menu-toggle');
@@ -131,5 +154,6 @@
         featuredGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:20px 0;color:#888;">محصولات در دسترس نیست</p>';
       });
   </script>
+  <script src="cinematic-intro.js"></script>
 </body>
 </html>
