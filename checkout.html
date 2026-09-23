@@ -135,10 +135,12 @@
       });
     }
     function renderSupport(config) {
-      var rubika = config && config.seller ? config.seller.supportRubika : '';
-      if (!rubika) return;
+      var seller = config && config.seller ? config.seller : {};
+      var rubikaUrl = seller.supportRubikaUrl || 'https://rubika.ir/tebolnovin';
       var box = document.getElementById('checkout-support');
-      document.getElementById('checkout-support-rubika').innerHTML = 'اگر هنگام ثبت سفارش مشکلی داشتی، در روبیکا پیام بده: <strong dir="ltr" style="unicode-bidi:isolate;user-select:all;">' + escapeHtml(rubika) + '</strong>';
+      document.getElementById('checkout-support-rubika').innerHTML =
+        '<p style="margin:0 0 10px;">اگر هنگام ثبت سفارش مشکلی داشتی، مستقیم وارد چت پشتیبانی شو.</p>' +
+        '<a href="' + escapeHtml(rubikaUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-dark btn-full" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">💬 ورود مستقیم به چت پشتیبانی روبیکا</a>';
       box.style.display = '';
     }
 
@@ -192,6 +194,7 @@
       renderTotals();
       updateReadyState();
     }).catch(function (err) {
+      renderSupport(null);
       document.getElementById('card-number').textContent = 'خطا در دریافت اطلاعات پرداخت';
       showError(err.message);
     });
