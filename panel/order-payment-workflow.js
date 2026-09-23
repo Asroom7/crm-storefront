@@ -12,15 +12,9 @@
       padding-inline-end: 3px;
       scrollbar-gutter: stable;
     }
-    .payment-review-card {
-      margin-bottom: 8px !important;
-    }
-    .payment-review-card .rec-card__body {
-      padding: 10px 11px !important;
-    }
-    .payment-review-card .rec-card__top {
-      margin-bottom: 3px;
-    }
+    .payment-review-card { margin-bottom: 8px !important; }
+    .payment-review-card .rec-card__body { padding: 10px 11px !important; }
+    .payment-review-card .rec-card__top { margin-bottom: 3px; }
     .payment-review-card .rec-card__id,
     .payment-review-card .rec-card__meta,
     .payment-review-card .rec-card__desc {
@@ -32,6 +26,28 @@
       flex-wrap: wrap;
       gap: 5px 12px;
       margin-top: 5px;
+    }
+    .payment-review-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin: 7px 0 3px;
+    }
+    .payment-review-amount__value {
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--success, #16844b);
+    }
+    .payment-review-original {
+      font-size: 11.5px;
+      opacity: .52;
+      margin-top: 1px;
+    }
+    .payment-review-discount {
+      font-size: 11.5px;
+      color: var(--success, #16844b);
+      margin-top: 1px;
     }
     .payment-review-details {
       margin-top: 7px;
@@ -86,12 +102,12 @@
       .payments-today-list,
       .payment-review-scroll { max-height: 55vh; }
       .payment-review-card .rec-card__body { padding: 9px !important; }
+      .payment-review-amount__value { font-size: 16px; }
     }
   `;
   document.head.appendChild(style);
 
-  function orderTime(p) {
-    var raw = p && p.order && p.order.createdAt ? p.order.createdAt : (p ? p.createdAt : null);
+  function formatClock(raw) {
     if (!raw) return '';
     var date = new Date(raw);
     if (Number.isNaN(date.getTime())) return '';
@@ -114,11 +130,15 @@
     const tracking = p.order && p.order.transaction ? p.order.transaction.refId : null;
     const rawResponse = p.order && p.order.transaction && p.order.transaction.rawResponse
       ? p.order.transaction.rawResponse
-      : null;
-    const receiptUrl = rawResponse && rawResponse.receiptUrl ? safeMediaUrl(rawResponse.receiptUrl) : '';
+      : {};
+    const receiptUrl = rawResponse.receiptUrl ? safeMediaUrl(rawResponse.receiptUrl) : '';
+    const originalAmount = Number(rawResponse.originalAmount || 0);
+    const discountAmount = Number(rawResponse.discountAmount || 0);
+    const payableAmount = Number(p.amount || rawResponse.payableAmount || 0);
     const statusText = isPending ? 'در انتظار تایید' : (isRejected ? 'رد شده' : 'تایید شده');
     const badgeClass = isPending ? 'pay-pending' : 'pay-completed';
-    const registeredAt = orderTime(p);
+    const registeredAt = formatClock(p.order && p.order.createdAt ? p.order.createdAt : p.createdAt);
+    const submittedAt = formatClock(rawResponse.submittedAt);
 
     return `
       <div class="rec-card payment-review-card" style="border-right-color:${color};" data-id="${p.id}">
@@ -129,14 +149,21 @@
           </div>
           <div class="rec-card__id">
             ${formatJalaliDisplay(p.date)}
-            ${registeredAt ? ` · ساعت ثبت: ${esc(registeredAt)}` : ''}
+            ${registeredAt ? ` · ساعت ثبت سفارش: ${esc(registeredAt)}` : ''}
+            ${submittedAt ? ` · ارسال رسید: ${esc(submittedAt)}` : ''}
             ${p.order ? ` · سفارش #${faDigits(p.order.id)}` : ` · ${fmtId('P', p.id)} · ثبت دستی`}
           </div>
 
+          <div class="payment-review-amount">
+            <span style="font-size:12px;">مبلغ واریزی مورد انتظار:</span>
+            <span class="payment-review-amount__value">${fmtPrice(payableAmount)}</span>
+          </div>
+          ${originalAmount > 0 ? `<div class="payment-review-original">مبلغ اصلی سفارش: ${fmtPrice(originalAmount)}</div>` : ''}
+          ${discountAmount > 0 ? `<div class="payment-review-discount">تخفیف اختصاصی پرداخت: ${fmtPrice(discountAmount)}</div>` : ''}
+
           <div class="rec-card__meta">
-            <span>${ic('wallet')}${fmtPrice(p.amount)}</span>
-            ${tracking ? `<span>${ic('check')}پیگیری: <b dir="ltr" style="unicode-bidi:isolate;">${esc(tracking)}</b></span>` : ''}
-            ${receiptUrl ? '<span>🧾 رسید تصویری ثبت شده</span>' : ''}
+            ${tracking ? `<span>${ic('check')}پیگیری: <b dir="ltr" style="unicode-bidi:isolate;">${esc(tracking)}</b></span>` : '<span>شماره پیگیری وارد نشده</span>'}
+            ${receiptUrl ? '<span>🧾 رسید تصویری ثبت شده</span>' : '<span>⚠️ رسید تصویری موجود نیست</span>'}
           </div>
 
           ${p.order ? `

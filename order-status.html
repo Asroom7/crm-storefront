@@ -36,6 +36,7 @@
 
     <div class="order-summary-card" id="support-card" hidden></div>
     <div class="order-summary-card" id="order-summary" hidden></div>
+    <div id="continue-payment-wrap" hidden><a href="checkout.html" class="btn-dark btn-full" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">ادامه پرداخت و ثبت رسید</a></div>
     <a href="profile.html" class="btn-outline btn-full">مشاهده همه سفارش‌ها</a>
     <a href="index.html" class="btn-dark btn-full status-home-btn">بازگشت به صفحه اصلی</a>
   </section>
@@ -54,8 +55,8 @@
     if (overlay) overlay.addEventListener('click', closeMenu);
 
     var statusDescriptions = {
-      pending_payment: 'سفارش ثبت شده و منتظر ثبت یا بررسی پرداخت است.',
-      pending_review: 'مدرک پرداخت شما دریافت شده و در انتظار تایید فروشگاه است.',
+      pending_payment: 'مبلغ پرداخت برای سفارش رزرو شده است. پرداخت را انجام بده و تصویر رسید را ثبت کن.',
+      pending_review: 'رسید پرداخت شما دریافت شده و در انتظار بررسی فروشگاه است.',
       paid: 'پرداخت این سفارش ثبت شده است.',
       confirmed: 'سفارش تایید شد و در حال آماده‌سازی برای ارسال است.',
       shipped: 'سفارش شما ارسال شد.',
@@ -65,18 +66,22 @@
 
     var orderId = Number(new URLSearchParams(window.location.search).get('id'));
 
-    function statusLabel(status) {
-      if (status === 'pending_review' || status === 'pending_payment') return 'در انتظار تایید';
-      if (status === 'confirmed' || status === 'paid') return 'سفارش تایید شد';
-      if (status === 'shipped') return 'سفارش ارسال شد';
-      if (status === 'rejected') return 'پرداخت رد شد';
-      return getOrderStatusLabel(status);
+    function statusLabel(order) {
+      if (order.status === 'pending_payment') return 'در انتظار پرداخت';
+      if (order.status === 'pending_review') return 'در انتظار تایید';
+      if (order.status === 'confirmed' || order.status === 'paid') return 'سفارش تایید شد';
+      if (order.status === 'shipped') return 'سفارش ارسال شد';
+      if (order.status === 'rejected') return 'پرداخت رد شد';
+      if (order.status === 'cancelled' && order.transaction && order.transaction.status === 'expired') return 'مهلت پرداخت تمام شد';
+      return getOrderStatusLabel(order.status);
     }
 
-    function statusVisual(status) {
-      if (status === 'rejected' || status === 'cancelled') return { icon: '✕', title: 'سفارش تایید نشد', className: 'rejected' };
-      if (status === 'shipped') return { icon: '✓', title: 'سفارش ارسال شد', className: 'done' };
-      if (status === 'confirmed' || status === 'paid') return { icon: '✓', title: 'سفارش تایید شد', className: 'done' };
+    function statusVisual(order) {
+      if (order.status === 'cancelled' && order.transaction && order.transaction.status === 'expired') return { icon: '⌛', title: 'مهلت پرداخت تمام شد', className: 'rejected' };
+      if (order.status === 'rejected' || order.status === 'cancelled') return { icon: '✕', title: 'سفارش تایید نشد', className: 'rejected' };
+      if (order.status === 'shipped') return { icon: '✓', title: 'سفارش ارسال شد', className: 'done' };
+      if (order.status === 'confirmed' || order.status === 'paid') return { icon: '✓', title: 'سفارش تایید شد', className: 'done' };
+      if (order.status === 'pending_payment') return { icon: '💳', title: 'در انتظار پرداخت', className: 'pending' };
       return { icon: '⏳', title: 'در انتظار تایید پرداخت', className: 'pending' };
     }
 
@@ -97,12 +102,17 @@
       var box = document.getElementById('order-summary');
       var items = Array.isArray(order.items) ? order.items : [];
       var itemsHtml = items.map(function (item) {
-        return '<div class="order-summary-item"><span>' + escapeHtml(item.product ? item.product.name : 'محصول') + ' × ' + toFaDigits(item.quantity) + '</span><strong>' + formatPrice(Number(item.price || 0) * Number(item.quantity || 0)) + ' تومان</strong></div>';
+        return '<div class="order-summary-item"><span>' + escapeHtml(item.product ? item.product.name : 'محصول') + ' × ' + toFaDigits(item.quantity) + '</span></div>';
       }).join('');
-      var tracking = order.transaction && order.transaction.refId ? order.transaction.refId : '';
-      var receiptUrl = order.transaction && order.transaction.rawResponse ? safeMediaUrl(order.transaction.rawResponse.receiptUrl) : '';
+      var transaction = order.transaction || {};
+      var meta = transaction.rawResponse || {};
+      var payableAmount = Number(meta.payableAmount || transaction.amount || order.totalAmount || 0);
+      var discountAmount = Number(meta.discountAmount || 0);
+      var tracking = transaction.refId || '';
+      var receiptUrl = meta.receiptUrl ? safeMediaUrl(meta.receiptUrl) : '';
       box.innerHTML = '<h2>جزئیات سفارش</h2>' + itemsHtml +
-        '<div class="order-summary-total"><span>مبلغ ثبت‌شده سفارش</span><strong>' + formatPrice(order.totalAmount) + ' تومان</strong></div>' +
+        (discountAmount > 0 ? '<div class="order-summary-meta"><span>تخفیف اختصاصی پرداخت</span><strong>' + formatPrice(discountAmount) + ' تومان</strong></div>' : '') +
+        '<div class="order-summary-total"><span>مبلغ واریزی</span><strong>' + formatPrice(payableAmount) + ' تومان</strong></div>' +
         (tracking ? '<div class="order-summary-meta"><span>شماره پیگیری پرداخت</span><strong dir="ltr" style="unicode-bidi:isolate;">' + escapeHtml(tracking) + '</strong></div>' : '') +
         (receiptUrl ? '<div class="order-summary-meta" style="display:block;"><span style="display:block;margin-bottom:8px;">تصویر رسید پرداخت</span><a href="' + escapeHtml(receiptUrl) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(receiptUrl) + '" alt="رسید پرداخت" style="display:block;max-width:100%;max-height:300px;margin:auto;border-radius:12px;object-fit:contain;"></a></div>' : '') +
         '<div class="order-summary-meta"><span>آدرس ارسال</span><strong>' + escapeHtml(order.shippingAddress || '') + '</strong></div>';
@@ -115,7 +125,7 @@
     } else {
       apiFetch('/orders/mine/' + orderId)
         .then(function (order) {
-          var visual = statusVisual(order.status);
+          var visual = statusVisual(order);
           document.getElementById('status-title').textContent = visual.title;
           document.getElementById('status-icon').textContent = visual.icon;
           document.getElementById('status-icon').className = 'status-icon ' + visual.className;
@@ -123,9 +133,12 @@
 
           var pendingBox = document.getElementById('status-pending');
           pendingBox.style.display = '';
-          document.getElementById('status-badge').textContent = statusLabel(order.status);
+          document.getElementById('status-badge').textContent = statusLabel(order);
           document.getElementById('status-badge').className = 'status-badge ' + visual.className;
-          document.getElementById('status-desc').textContent = statusDescriptions[order.status] || 'وضعیت سفارش در حال به‌روزرسانی است.';
+          var desc = statusDescriptions[order.status] || 'وضعیت سفارش در حال به‌روزرسانی است.';
+          if (order.status === 'cancelled' && order.transaction && order.transaction.status === 'expired') desc = 'مهلت مبلغ رزروشده تمام شده است. برای خرید دوباره از سبد سفارش جدید بسازید.';
+          document.getElementById('status-desc').textContent = desc;
+          document.getElementById('continue-payment-wrap').hidden = order.status !== 'pending_payment';
           renderOrderSummary(order);
           fetchStoreConfig().then(function (config) { renderSupport(config, order.status); }).catch(function () { renderSupport(null, order.status); });
         })
