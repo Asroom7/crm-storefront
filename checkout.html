@@ -13,55 +13,78 @@
   <div class="side-menu-overlay"></div>
   <nav class="side-menu" aria-label="منوی اصلی">
     <div class="side-menu-head"><span class="logo">Lumière</span><span class="icon close-menu" role="button" tabindex="0" aria-label="بستن منو">✕</span></div>
-    <a href="login.html">👤 ورود / ثبت‌نام</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
+    <a href="profile.html">👤 حساب کاربری</a><a href="profile.html">📦 سفارش‌های من</a><a href="cart.html">🛍 سبد خرید</a><a href="index.html">🏠 صفحه نخست</a>
     <div class="side-menu-sep"></div>
   </nav>
 
   <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
 
   <section class="checkout-block">
-    <div class="trust-note"><span class="trust-icon">🛡</span><p>بعد از واریز، حداقل یکی از «شماره پیگیری تراکنش» یا «تصویر رسید» را ثبت کنید. سفارش پس از بررسی فروشگاه آماده ارسال می‌شود.</p></div>
+    <div class="trust-note"><span class="trust-icon">🛡</span><p>برای اینکه واریزی شما با سفارش دیگری اشتباه نشود، سیستم مبلغ دقیق پرداخت را برای سفارش رزرو می‌کند. تصویر رسید برای ثبت پرداخت الزامی است.</p></div>
 
-    <div id="checkout-support" class="card-info" style="display:none; margin-bottom:16px;">
+    <div id="checkout-support" class="card-info" style="display:none;margin-bottom:16px;">
       <h2>پشتیبانی ثبت سفارش</h2>
-      <div id="checkout-support-rubika" style="font-size:15px;line-height:2;"></div>
+      <div id="checkout-support-rubika"></div>
     </div>
 
-    <div class="card-info">
-      <h2>اطلاعات واریز</h2>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
-        <div class="card-number" id="card-number" dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;user-select:all;">در حال دریافت...</div>
-        <button type="button" id="copy-card-btn" class="btn-outline" style="padding:8px 12px;display:none;">کپی شماره کارت</button>
-      </div>
-      <div class="card-owner" id="card-owner"></div>
-      <div class="checkout-totals">
-        <div class="summary-row"><span>جمع کالاها</span><span id="checkout-subtotal">...</span></div>
-        <div class="summary-row"><span>هزینه ارسال</span><span id="checkout-shipping">...</span></div>
-        <div class="summary-row total"><span>مبلغ قابل پرداخت</span><span><span id="checkout-amount">...</span> تومان</span></div>
-      </div>
-    </div>
-
-    <div class="receipt-form">
-      <h2>آدرس ارسال</h2>
+    <div class="receipt-form" id="address-step">
+      <h2>۱. آدرس ارسال</h2>
       <label for="f-address">آدرس کامل</label>
-      <textarea rows="3" id="f-address" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
-      <h2 style="margin-top:16px;">ثبت مدرک پرداخت</h2>
-      <p style="color:#777;line-height:1.9;margin-top:0;">برای ثبت سفارش، پر کردن حداقل یکی از دو بخش زیر الزامی است.</p>
-      <p id="checkout-error" style="color:#c0392b;display:none;"></p>
-      <label for="f-tracking">شماره پیگیری تراکنش</label>
-      <input type="text" inputmode="numeric" id="f-tracking" placeholder="مثال: 123456789" autocomplete="off">
+      <textarea rows="3" id="f-address" maxlength="2000" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
+      <p id="checkout-error" style="color:#c0392b;display:none;line-height:1.8;"></p>
+      <button id="prepare-payment-btn" class="btn-dark btn-full" type="button">دریافت مبلغ دقیق پرداخت</button>
+      <p style="font-size:12.5px;color:#888;line-height:1.8;margin-bottom:0;">با دریافت مبلغ، موجودی کالا و مبلغ پرداخت برای مدت محدود رزرو می‌شود.</p>
+    </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin:14px 0;color:#888;"><span style="height:1px;background:#ddd;flex:1;"></span><strong>یا</strong><span style="height:1px;background:#ddd;flex:1;"></span></div>
+    <div class="card-info" id="payment-step" style="display:none;margin-top:16px;">
+      <h2>۲. واریز مبلغ دقیق</h2>
+      <div id="resumed-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(15,82,87,.08);font-size:13px;line-height:1.8;">پرداخت فعال قبلی شما بازیابی شد. از همین مبلغ استفاده کنید.</div>
 
-      <label for="f-receipt">تصویر رسید تراکنش</label>
+      <div id="discount-row" style="display:none;text-align:center;margin:8px 0 12px;">
+        <span style="font-size:13px;color:#777;">تخفیف اختصاصی این پرداخت:</span>
+        <strong id="discount-amount" style="margin-right:6px;"></strong>
+      </div>
+
+      <div style="text-align:center;margin:10px 0 8px;color:#666;font-size:13px;">مبلغی که باید دقیقاً واریز شود</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <div id="payable-amount" dir="ltr" style="direction:ltr;unicode-bidi:isolate;font-size:28px;font-weight:900;letter-spacing:.3px;user-select:all;">...</div>
+        <span style="font-weight:700;">تومان</span>
+      </div>
+      <button type="button" id="copy-amount-btn" class="btn-dark btn-full" style="margin-top:12px;">کپی مبلغ دقیق</button>
+      <div style="margin-top:12px;padding:11px 12px;border:1px solid #e3bd6b;background:#fff8e9;border-radius:12px;line-height:1.9;font-size:13px;">
+        <strong>مهم:</strong> حتماً مبلغ بالا را با دکمه «کپی مبلغ دقیق» کپی کنید یا دقیقاً همان عدد را واریز کنید. مبلغ را گرد نکنید و عدد دیگری نفرستید، چون شناسایی پرداخت بر اساس همین مبلغ و زمان انجام می‌شود.
+      </div>
+
+      <div id="payment-timer" style="text-align:center;margin:13px 0;font-size:13px;font-weight:700;"></div>
+
+      <div style="border-top:1px solid #eee;padding-top:14px;margin-top:12px;">
+        <div style="text-align:center;color:#777;font-size:13px;margin-bottom:7px;">شماره کارت مقصد</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+          <div class="card-number" id="card-number" dir="ltr" style="direction:ltr;unicode-bidi:isolate;text-align:center;user-select:all;">در حال دریافت...</div>
+          <button type="button" id="copy-card-btn" class="btn-outline" style="padding:8px 12px;display:none;">کپی شماره کارت</button>
+        </div>
+        <div class="card-owner" id="card-owner"></div>
+      </div>
+
+      <button type="button" id="cancel-payment-btn" class="btn-outline btn-full" style="margin-top:14px;">لغو این پرداخت و بازگشت به سبد</button>
+    </div>
+
+    <div class="receipt-form" id="evidence-step" style="display:none;margin-top:16px;">
+      <h2>۳. ثبت رسید پرداخت</h2>
+      <p style="color:#666;line-height:1.9;margin-top:0;">بعد از واریز، تصویر رسید را بارگذاری کنید. ساعت درج‌شده روی رسید برای تطبیق تراکنش استفاده می‌شود.</p>
+
+      <label for="f-receipt">تصویر رسید تراکنش <strong style="color:#c0392b;">*</strong></label>
       <input type="file" id="f-receipt" accept="image/jpeg,image/png,image/webp" style="width:100%;box-sizing:border-box;">
       <div id="receipt-preview-wrap" style="display:none;margin-top:10px;">
         <img id="receipt-preview" alt="پیش‌نمایش رسید" style="display:block;max-width:100%;max-height:280px;margin:auto;border-radius:12px;border:1px solid #e4e4e4;object-fit:contain;">
         <div id="receipt-file-name" style="text-align:center;color:#777;font-size:13px;margin-top:7px;"></div>
       </div>
-      <p style="font-size:12.5px;color:#888;line-height:1.8;">فرمت‌های JPG، PNG و WebP تا حداکثر ۸ مگابایت.</p>
+      <p style="font-size:12.5px;color:#888;line-height:1.8;">فرمت‌های JPG، PNG و WebP تا حداکثر ۸ مگابایت. استفاده دوباره از یک تصویر رسید برای سفارش دیگر پذیرفته نمی‌شود.</p>
 
-      <button id="submit-order-btn" class="btn-dark btn-full" disabled>ثبت سفارش</button>
+      <label for="f-tracking">شماره پیگیری تراکنش <span style="color:#888;font-weight:400;">(اختیاری)</span></label>
+      <input type="text" inputmode="numeric" id="f-tracking" maxlength="150" placeholder="در صورت وجود وارد کنید" autocomplete="off">
+
+      <button id="submit-payment-btn" class="btn-dark btn-full" type="button" disabled>ثبت رسید و ارسال سفارش برای بررسی</button>
     </div>
   </section>
 
@@ -79,107 +102,262 @@
     if (overlay) overlay.addEventListener('click', closeMenu);
 
     var cart = getCart();
-    var errorBox = document.getElementById('checkout-error');
-    var submitBtn = document.getElementById('submit-order-btn');
-    var amountEl = document.getElementById('checkout-amount');
-    var receiptInput = document.getElementById('f-receipt');
-    var cartProducts = [];
-    var paymentReady = false;
-    var productsReady = false;
-    var storeConfig = null;
-    var subtotal = 0;
-    var receiptPreviewUrl = null;
-    var rawCardNumber = '';
-
     var session = getCustomerSession();
-    if (session && session.customer && session.customer.address) document.getElementById('f-address').value = session.customer.address;
-    if (!cart.length) window.location.replace('cart.html');
+    var errorBox = document.getElementById('checkout-error');
+    var addressInput = document.getElementById('f-address');
+    var prepareBtn = document.getElementById('prepare-payment-btn');
+    var submitBtn = document.getElementById('submit-payment-btn');
+    var receiptInput = document.getElementById('f-receipt');
+    var paymentStep = document.getElementById('payment-step');
+    var evidenceStep = document.getElementById('evidence-step');
+    var rawCardNumber = '';
+    var paymentConfigReady = false;
+    var paymentSession = null;
+    var timerId = null;
+    var receiptPreviewUrl = null;
+
+    if (session && session.customer && session.customer.address) addressInput.value = session.customer.address;
 
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = 'block';
       errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-    function updateReadyState() {
-      submitBtn.disabled = !(paymentReady && productsReady && cartProducts.length);
-    }
-    function shippingFeeFor(value) {
-      var shipping = storeConfig && storeConfig.shipping ? storeConfig.shipping : {};
-      var fee = Math.max(0, Number(shipping.fee || 0));
-      var freeAbove = Math.max(0, Number(shipping.freeAbove || 0));
-      if (!fee || (freeAbove > 0 && value >= freeAbove)) return 0;
-      return fee;
-    }
-    function renderTotals() {
-      var shippingFee = shippingFeeFor(subtotal);
-      var total = subtotal + shippingFee;
-      document.getElementById('checkout-subtotal').textContent = formatPrice(subtotal) + ' تومان';
-      document.getElementById('checkout-shipping').textContent = shippingFee ? formatPrice(shippingFee) + ' تومان' : 'رایگان';
-      amountEl.textContent = formatPrice(total);
-    }
+    function clearError() { errorBox.style.display = 'none'; }
+
     function formatCardNumber(value) {
       var digits = String(value || '').replace(/\D/g, '');
       return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
     }
+
     function copyText(value) {
-      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(value);
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(String(value));
       return new Promise(function (resolve, reject) {
         var area = document.createElement('textarea');
-        area.value = value;
+        area.value = String(value);
         area.style.position = 'fixed';
         area.style.opacity = '0';
+        area.style.pointerEvents = 'none';
         document.body.appendChild(area);
         area.select();
-        try { document.execCommand('copy'); resolve(); } catch (err) { reject(err); }
+        try {
+          var ok = document.execCommand('copy');
+          if (ok) resolve(); else reject(new Error('copy failed'));
+        } catch (err) { reject(err); }
         area.remove();
       });
     }
+
+    function flashCopied(button, normalText) {
+      button.textContent = 'کپی شد ✓';
+      setTimeout(function () { button.textContent = normalText; }, 1400);
+    }
+
     function renderSupport(config) {
       var seller = config && config.seller ? config.seller : {};
       var rubikaUrl = seller.supportRubikaUrl || 'https://rubika.ir/tebolnovin';
       var box = document.getElementById('checkout-support');
       document.getElementById('checkout-support-rubika').innerHTML =
-        '<p style="margin:0 0 10px;">اگر هنگام ثبت سفارش مشکلی داشتی، مستقیم وارد چت پشتیبانی شو.</p>' +
+        '<p style="margin:0 0 10px;line-height:1.9;">اگر در پرداخت یا ثبت سفارش مشکلی داشتی، مستقیم وارد گفت‌وگوی پشتیبانی شو.</p>' +
         '<a href="' + escapeHtml(rubikaUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-dark btn-full" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">💬 ورود مستقیم به چت پشتیبانی روبیکا</a>';
       box.style.display = '';
+    }
+
+    function renderPaymentSession(data, resumed) {
+      var meta = data && data.transaction && data.transaction.rawResponse ? data.transaction.rawResponse : {};
+      paymentSession = {
+        orderId: Number(data.orderId || data.id),
+        payableAmount: Number(data.payableAmount || data.totalAmount || meta.payableAmount || 0),
+        discountAmount: Number(data.discountAmount != null ? data.discountAmount : (meta.discountAmount || 0)),
+        expiresAt: data.expiresAt || meta.expiresAt || null
+      };
+      if (!paymentSession.orderId || !paymentSession.payableAmount) {
+        showError('اطلاعات مبلغ پرداخت ناقص است؛ صفحه را تازه‌سازی کنید.');
+        return;
+      }
+
+      addressInput.disabled = true;
+      prepareBtn.disabled = true;
+      prepareBtn.textContent = 'مبلغ پرداخت رزرو شد ✓';
+      paymentStep.style.display = '';
+      evidenceStep.style.display = '';
+      document.getElementById('payable-amount').textContent = formatPrice(paymentSession.payableAmount);
+      document.getElementById('resumed-note').style.display = resumed ? '' : 'none';
+
+      var discountRow = document.getElementById('discount-row');
+      if (paymentSession.discountAmount > 0) {
+        document.getElementById('discount-amount').textContent = formatPrice(paymentSession.discountAmount) + ' تومان';
+        discountRow.style.display = '';
+      } else {
+        discountRow.style.display = 'none';
+      }
+
+      startTimer();
+      updateSubmitState();
+      paymentStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function startTimer() {
+      if (timerId) clearInterval(timerId);
+      function tick() {
+        var timer = document.getElementById('payment-timer');
+        if (!paymentSession || !paymentSession.expiresAt) {
+          timer.textContent = '';
+          return;
+        }
+        var remaining = Date.parse(paymentSession.expiresAt) - Date.now();
+        if (!Number.isFinite(remaining) || remaining <= 0) {
+          timer.textContent = 'مهلت این مبلغ تمام شده است. برای ساخت مبلغ جدید به سبد برگردید.';
+          timer.style.color = '#c0392b';
+          receiptInput.disabled = true;
+          submitBtn.disabled = true;
+          if (timerId) clearInterval(timerId);
+          return;
+        }
+        var totalSeconds = Math.floor(remaining / 1000);
+        var minutes = Math.floor(totalSeconds / 60);
+        var seconds = totalSeconds % 60;
+        timer.textContent = 'مهلت واریز این مبلغ: ' + toFaDigits(minutes) + ':' + toFaDigits(String(seconds).padStart(2, '0'));
+        timer.style.color = '';
+      }
+      tick();
+      timerId = setInterval(tick, 1000);
+    }
+
+    function updateSubmitState() {
+      var hasReceipt = Boolean(receiptInput.files && receiptInput.files[0]);
+      var notExpired = paymentSession && (!paymentSession.expiresAt || Date.parse(paymentSession.expiresAt) > Date.now());
+      submitBtn.disabled = !(paymentSession && hasReceipt && notExpired);
     }
 
     document.getElementById('copy-card-btn').addEventListener('click', function () {
       var btn = this;
       if (!rawCardNumber) return;
-      copyText(rawCardNumber).then(function () {
-        var old = btn.textContent;
-        btn.textContent = 'کپی شد ✓';
-        setTimeout(function () { btn.textContent = old; }, 1400);
-      }).catch(function () { showError('کپی خودکار انجام نشد؛ شماره کارت را لمس و کپی کنید.'); });
+      copyText(rawCardNumber).then(function () { flashCopied(btn, 'کپی شماره کارت'); })
+        .catch(function () { showError('کپی خودکار شماره کارت انجام نشد؛ شماره را لمس و کپی کنید.'); });
+    });
+
+    document.getElementById('copy-amount-btn').addEventListener('click', function () {
+      var btn = this;
+      if (!paymentSession) return;
+      copyText(String(paymentSession.payableAmount)).then(function () { flashCopied(btn, 'کپی مبلغ دقیق'); })
+        .catch(function () { showError('کپی خودکار مبلغ انجام نشد؛ مبلغ را دقیقاً از روی صفحه وارد کنید.'); });
     });
 
     receiptInput.addEventListener('change', function () {
+      clearError();
       var file = receiptInput.files && receiptInput.files[0];
       var wrap = document.getElementById('receipt-preview-wrap');
       if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
       receiptPreviewUrl = null;
-      if (!file) { wrap.style.display = 'none'; return; }
+      if (!file) {
+        wrap.style.display = 'none';
+        updateSubmitState();
+        return;
+      }
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         receiptInput.value = '';
         wrap.style.display = 'none';
         showError('فرمت تصویر رسید باید JPG، PNG یا WebP باشد.');
+        updateSubmitState();
         return;
       }
       if (file.size > 8 * 1024 * 1024) {
         receiptInput.value = '';
         wrap.style.display = 'none';
         showError('حجم تصویر رسید باید حداکثر ۸ مگابایت باشد.');
+        updateSubmitState();
         return;
       }
       receiptPreviewUrl = URL.createObjectURL(file);
       document.getElementById('receipt-preview').src = receiptPreviewUrl;
       document.getElementById('receipt-file-name').textContent = file.name;
       wrap.style.display = '';
+      updateSubmitState();
+    });
+
+    prepareBtn.addEventListener('click', function () {
+      clearError();
+      if (!paymentConfigReady) { showError('اطلاعات کارت فروشگاه هنوز آماده نشده است.'); return; }
+      if (!cart.length) { window.location.href = 'cart.html'; return; }
+      var address = addressInput.value.trim();
+      if (address.length < 5) { showError('آدرس کامل را وارد کنید.'); return; }
+
+      prepareBtn.disabled = true;
+      prepareBtn.textContent = 'در حال ساخت مبلغ دقیق...';
+      apiFetch('/orders/prepare', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: cart.map(function (item) { return { productId: Number(item.productId), quantity: Number(item.quantity) }; }),
+          shippingAddress: address
+        })
+      }).then(function (data) {
+        renderPaymentSession(data, Boolean(data.resumed));
+      }).catch(function (err) {
+        prepareBtn.disabled = false;
+        prepareBtn.textContent = 'دریافت مبلغ دقیق پرداخت';
+        showError(err.message);
+      });
+    });
+
+    document.getElementById('cancel-payment-btn').addEventListener('click', function () {
+      if (!paymentSession) { window.location.href = 'cart.html'; return; }
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'در حال لغو...';
+      apiFetch('/orders/' + paymentSession.orderId + '/cancel', { method: 'POST' })
+        .then(function () { window.location.href = 'cart.html'; })
+        .catch(function (err) {
+          btn.disabled = false;
+          btn.textContent = 'لغو این پرداخت و بازگشت به سبد';
+          showError(err.message);
+        });
+    });
+
+    submitBtn.addEventListener('click', function () {
+      clearError();
+      if (!paymentSession) { showError('ابتدا مبلغ دقیق پرداخت را دریافت کنید.'); return; }
+      var file = receiptInput.files && receiptInput.files[0];
+      var tracking = document.getElementById('f-tracking').value.trim();
+      if (!file) { showError('تصویر رسید پرداخت الزامی است.'); return; }
+      if (tracking && tracking.length < 3) { showError('شماره پیگیری باید حداقل ۳ کاراکتر باشد.'); return; }
+      if (paymentSession.expiresAt && Date.parse(paymentSession.expiresAt) <= Date.now()) {
+        showError('مهلت این مبلغ تمام شده است؛ به سبد برگردید و مبلغ جدید بگیرید.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'در حال آپلود رسید...';
+      var form = new FormData();
+      form.append('file', file);
+      apiFetch('/orders/receipt/upload', { method: 'POST', body: form })
+        .then(function (receipt) {
+          if (!receipt || !receipt.url || !receipt.receiptFingerprint || !receipt.receiptProof) {
+            throw new Error('اطلاعات اعتبارسنجی رسید از سرور دریافت نشد.');
+          }
+          submitBtn.textContent = 'در حال ثبت پرداخت...';
+          return apiFetch('/orders/' + paymentSession.orderId + '/evidence', {
+            method: 'POST',
+            body: JSON.stringify({
+              receiptUrl: receipt.url,
+              receiptFingerprint: receipt.receiptFingerprint,
+              receiptProof: receipt.receiptProof,
+              trackingNumber: tracking || undefined
+            })
+          });
+        })
+        .then(function (data) {
+          clearCart();
+          window.location.href = 'order-status.html?id=' + data.orderId;
+        })
+        .catch(function (err) {
+          submitBtn.textContent = 'ثبت رسید و ارسال سفارش برای بررسی';
+          updateSubmitState();
+          showError(err.message);
+        });
     });
 
     fetchStoreConfig().then(function (config) {
-      storeConfig = config;
       renderSupport(config);
       if (!config.payment || !config.payment.cardNumber) {
         document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
@@ -190,76 +368,23 @@
       document.getElementById('card-number').textContent = formatCardNumber(rawCardNumber);
       document.getElementById('card-owner').textContent = config.payment.cardOwner ? 'به نام: ' + config.payment.cardOwner : '';
       document.getElementById('copy-card-btn').style.display = '';
-      paymentReady = true;
-      renderTotals();
-      updateReadyState();
+      paymentConfigReady = true;
     }).catch(function (err) {
       renderSupport(null);
       document.getElementById('card-number').textContent = 'خطا در دریافت اطلاعات پرداخت';
       showError(err.message);
     });
 
-    apiFetch('/products/public/' + SELLER_ID).then(function (products) {
-      cartProducts = cart.map(function (ci) {
-        var product = products.find(function (p) { return Number(p.id) === Number(ci.productId); });
-        if (!product || product.stockQty < ci.quantity || getProductMinPrice(product) <= 0) return null;
-        return { product: product, quantity: ci.quantity };
-      }).filter(Boolean);
-
-      if (cartProducts.length !== cart.length) {
-        showError('موجودی یا قیمت بعضی کالاها تغییر کرده است؛ لطفاً سبد خرید را دوباره بررسی کنید.');
+    apiFetch('/orders/mine/pending-payment').then(function (order) {
+      if (order) {
+        if (order.shippingAddress) addressInput.value = order.shippingAddress;
+        renderPaymentSession(order, true);
         return;
       }
-
-      subtotal = cartProducts.reduce(function (sum, ci) { return sum + getProductMinPrice(ci.product) * ci.quantity; }, 0);
-      productsReady = subtotal > 0;
-      renderTotals();
-      updateReadyState();
-    }).catch(function (err) { showError(err.message); });
-
-    function uploadReceiptIfNeeded() {
-      var file = receiptInput.files && receiptInput.files[0];
-      if (!file) return Promise.resolve(null);
-      var form = new FormData();
-      form.append('file', file);
-      submitBtn.textContent = 'در حال آپلود رسید...';
-      return apiFetch('/orders/receipt/upload', { method: 'POST', body: form }).then(function (data) {
-        if (!data || !data.url) throw new Error('آدرس رسید از سرور دریافت نشد');
-        return data.url;
-      });
-    }
-
-    submitBtn.addEventListener('click', function () {
-      errorBox.style.display = 'none';
-      var address = document.getElementById('f-address').value.trim();
-      var tracking = document.getElementById('f-tracking').value.trim();
-      var hasReceipt = Boolean(receiptInput.files && receiptInput.files[0]);
-      if (address.length < 5) { showError('آدرس کامل را وارد کن'); return; }
-      if (tracking && tracking.length < 3) { showError('شماره پیگیری باید حداقل ۳ کاراکتر باشد'); return; }
-      if (!tracking && !hasReceipt) { showError('برای ثبت سفارش، حداقل شماره پیگیری یا تصویر رسید را وارد کن'); return; }
-      if (!paymentReady || !productsReady || !cartProducts.length) { showError('اطلاعات سفارش کامل نیست'); return; }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'در حال ثبت...';
-      uploadReceiptIfNeeded().then(function (receiptUrl) {
-        submitBtn.textContent = 'در حال ثبت سفارش...';
-        return apiFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify({
-            items: cartProducts.map(function (ci) { return { productId: ci.product.id, quantity: ci.quantity }; }),
-            shippingAddress: address,
-            trackingNumber: tracking || undefined,
-            receiptUrl: receiptUrl || undefined
-          })
-        });
-      }).then(function (data) {
-        clearCart();
-        window.location.href = 'order-status.html?id=' + data.orderId;
-      }).catch(function (err) {
-        showError(err.message);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'ثبت سفارش';
-      });
+      if (!cart.length) window.location.replace('cart.html');
+    }).catch(function (err) {
+      if (!cart.length) window.location.replace('cart.html');
+      else showError(err.message);
     });
   </script>
 </body>
