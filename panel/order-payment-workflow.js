@@ -158,7 +158,7 @@
             <span style="font-size:12px;">مبلغ واریزی مورد انتظار:</span>
             <span class="payment-review-amount__value">${fmtPrice(payableAmount)}</span>
           </div>
-          ${originalAmount > 0 && originalAmount !== payableAmount ? `<div class="payment-review-original">مبلغ اصلی سفارش: ${fmtPrice(originalAmount)}</div>` : ''}
+          ${originalAmount > 0 ? `<div class="payment-review-original">مبلغ اصلی سفارش: ${fmtPrice(originalAmount)}</div>` : ''}
           ${discountAmount > 0 ? `<div class="payment-review-discount">تخفیف اختصاصی پرداخت: ${fmtPrice(discountAmount)}</div>` : ''}
 
           <div class="rec-card__meta">
