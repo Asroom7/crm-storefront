@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Beauty intro poster placeholder</title>
+  <desc id="desc">Fallback poster shown when the cinematic video is not available.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#efe9e3"/>
+      <stop offset="1" stop-color="#d8d2cb"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="52%" cy="38%" r="52%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".78"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+  <rect width="1080" height="1350" fill="url(#glow)"/>
+  <circle cx="555" cy="520" r="255" fill="#f1c7b9" opacity=".66"/>
+  <ellipse cx="555" cy="795" rx="208" ry="280" fill="#f3c9bb" opacity=".52"/>
+  <path d="M327 369c42-180 386-235 496-27-89-80-364-78-496 27Z" fill="#533b34" opacity=".78"/>
+  <path d="M420 578c44 20 83 20 120 0M574 578c42 20 82 20 121 0" fill="none" stroke="#66545a" stroke-width="9" stroke-linecap="round" opacity=".58"/>
+  <path d="M480 760c52 31 108 31 161-1" fill="none" stroke="#c87883" stroke-width="16" stroke-linecap="round" opacity=".72"/>
+  <text x="540" y="1170" text-anchor="middle" font-family="Tahoma,Arial,sans-serif" font-size="34" fill="#173e3c" opacity=".72">فریم نهایی ویدیو</text>
+</svg>
