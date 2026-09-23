@@ -28,9 +28,30 @@
   </nav>
 
   <section class="hero">
-    <div class="hero-label">انتخاب‌های تازه</div>
-    <h1>محصولات مراقبتی و زیبایی<br>با خرید ساده‌تر</h1>
-    <a href="products.html" class="btn-dark">مشاهده محصولات</a>
+    <div class="hero-copy">
+      <div class="hero-label">فروشگاه آنلاین مراقبت و زیبایی</div>
+      <h1>انتخاب ساده‌تر برای روتین مراقبت و زیبایی</h1>
+      <p>محصولات موجود فروشگاه را ببین، انتخابت را ثبت کن و وضعیت سفارش را از حساب کاربری پیگیری کن.</p>
+      <div class="hero-actions">
+        <a href="products.html" class="btn-dark">مشاهده محصولات</a>
+        <a href="#home-categories" class="hero-secondary">دیدن دسته‌بندی‌ها</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-intro" aria-label="مزایای خرید">
+    <div class="home-intro-item">
+      <span class="home-intro-icon">✦</span>
+      <div><strong>انتخاب مرتب‌تر</strong><span>محصولات را بر اساس دسته‌بندی پیدا کن</span></div>
+    </div>
+    <div class="home-intro-item">
+      <span class="home-intro-icon">◈</span>
+      <div><strong>ثبت پرداخت روشن</strong><span>مبلغ دقیق و رسید پرداخت داخل سفارش ثبت می‌شود</span></div>
+    </div>
+    <div class="home-intro-item">
+      <span class="home-intro-icon">◎</span>
+      <div><strong>پیگیری سفارش</strong><span>وضعیت سفارش را از حساب کاربری دنبال کن</span></div>
+    </div>
   </section>
 
   <section class="categories" id="home-categories" aria-label="دسته‌بندی محصولات">
@@ -44,12 +65,12 @@
     </div>
   </section>
 
-  <section class="trust-banner"><span>🚚 ثبت و پیگیری سفارش از حساب کاربری</span></section>
+  <section class="trust-banner"><span>از انتخاب محصول تا ثبت رسید و پیگیری سفارش، همه مراحل در همین فروشگاه انجام می‌شود.</span></section>
 
   <section class="badges-row">
     <div class="badge-item"><span class="badge-icon">📦</span><span>پیگیری سفارش</span></div>
-    <div class="badge-item"><span class="badge-icon">💳</span><span>ثبت امن پرداخت</span></div>
-    <div class="badge-item"><span class="badge-icon">🛡</span><span>مدیریت مستقیم فروشگاه</span></div>
+    <div class="badge-item"><span class="badge-icon">💳</span><span>ثبت پرداخت</span></div>
+    <div class="badge-item"><span class="badge-icon">💬</span><span>دسترسی به پشتیبانی</span></div>
   </section>
 
   <footer class="site-footer">
@@ -89,7 +110,7 @@
     var featuredGrid = document.getElementById('featured-grid');
     apiFetch('/products/public/' + SELLER_ID)
       .then(function (products) {
-        var list = products.slice(0, 6);
+        var list = products.slice(0, 8);
         if (!list.length) {
           featuredGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:20px 0;color:#888;">هنوز محصولی اضافه نشده</p>';
           return;
