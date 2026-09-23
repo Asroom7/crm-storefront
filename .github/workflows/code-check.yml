@@ -14,7 +14,10 @@ jobs:
         with:
           node-version: 20
       - run: node --check api.js
-      - run: node --check panel/app.js
-      - run: node --check panel/modernize.js
-      - run: node --check panel/modal-scroll-fix.js
+      - name: Check all panel JavaScript
+        run: |
+          for file in panel/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
       - run: node scripts/check-html.js
