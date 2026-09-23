@@ -48,6 +48,7 @@
     <div class="account-list">
       <button type="button" class="account-row account-row-button" data-profile-panel="personal">✏️ ویرایش اطلاعات شخصی</button>
       <button type="button" class="account-row account-row-button" data-profile-panel="address">📍 آدرس ارسال</button>
+      <button type="button" class="account-row account-row-button" data-profile-panel="sms">📱 پیامک‌ها و اطلاع‌رسانی</button>
       <button type="button" class="account-row account-row-button" data-profile-panel="password">🔒 تغییر رمز عبور</button>
       <button type="button" class="account-row account-row-button logout" id="logout-customer">🚪 خروج از حساب</button>
     </div>
@@ -75,6 +76,19 @@
         <label for="profile-address">آدرس کامل</label>
         <textarea id="profile-address" rows="4" maxlength="2000" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
         <button class="btn-dark btn-full" type="submit">ذخیره آدرس</button>
+      </form>
+    </div>
+
+    <div id="sms-panel" class="profile-edit-panel" hidden>
+      <h3>پیامک‌ها و اطلاع‌رسانی</h3>
+      <form id="sms-form" class="profile-form">
+        <p class="form-error" id="sms-error" hidden></p>
+        <p class="form-success" id="sms-success" hidden></p>
+        <label for="profile-sms-opt-in" style="display:flex;align-items:flex-start;gap:10px;line-height:1.9;cursor:pointer;">
+          <input id="profile-sms-opt-in" type="checkbox" style="width:auto;margin-top:6px;flex:0 0 auto;">
+          <span>مایلم پیامک‌های پیگیری سفارش و پیشنهادهای فروشگاه را دریافت کنم <small style="display:block;color:#777;">این گزینه هر زمان قابل تغییر است.</small></span>
+        </label>
+        <button class="btn-dark btn-full" type="submit">ذخیره تنظیم پیامک</button>
       </form>
     </div>
 
@@ -135,6 +149,7 @@
       document.getElementById('profile-last-name').value = customer.lastName || '';
       document.getElementById('profile-email').value = customer.email || '';
       document.getElementById('profile-address').value = customer.address || '';
+      document.getElementById('profile-sms-opt-in').checked = Boolean(customer.smsOptIn);
     }
 
     if (currentCustomer) renderCustomer(currentCustomer);
@@ -187,6 +202,21 @@
         setMessage('address-error', 'address-success', 'آدرس ذخیره شد', false);
       }).catch(function (err) {
         setMessage('address-error', 'address-success', err.message, true);
+      }).finally(function () { button.disabled = false; });
+    });
+
+    document.getElementById('sms-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = event.submitter;
+      button.disabled = true;
+      apiFetch('/auth/customer/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ smsOptIn: document.getElementById('profile-sms-opt-in').checked })
+      }).then(function (data) {
+        renderCustomer(data.customer);
+        setMessage('sms-error', 'sms-success', 'تنظیم پیامک ذخیره شد', false);
+      }).catch(function (err) {
+        setMessage('sms-error', 'sms-success', err.message, true);
       }).finally(function () { button.disabled = false; });
     });
 

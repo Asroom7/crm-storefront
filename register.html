@@ -40,6 +40,11 @@
       <label for="password-repeat">تکرار رمز عبور</label>
       <input type="password" autocomplete="new-password" id="password-repeat" minlength="6" maxlength="200" placeholder="رمز را دوباره وارد کنید" required>
 
+      <label for="sms-opt-in" style="display:flex;align-items:flex-start;gap:9px;line-height:1.8;cursor:pointer;margin:6px 0 12px;">
+        <input type="checkbox" id="sms-opt-in" style="width:auto;margin-top:6px;flex:0 0 auto;">
+        <span>مایلم پیامک‌های مربوط به پیگیری سفارش و پیشنهادهای فروشگاه را دریافت کنم <small style="display:block;color:#777;">اختیاری است و بعداً از حساب کاربری قابل تغییر است.</small></span>
+      </label>
+
       <button id="register-btn" class="btn-dark btn-full" type="submit">ثبت‌نام</button>
     </form>
     <p class="auth-switch">حساب کاربری داری؟ <a id="login-link" href="login.html">وارد شو</a></p>
@@ -134,7 +139,8 @@
         firstName: firstName,
         lastName: lastName,
         phone: phone,
-        password: password
+        password: password,
+        smsOptIn: document.getElementById('sms-opt-in').checked
       };
 
       setBusy(true);
