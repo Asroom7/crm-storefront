@@ -1,0 +1,33 @@
+(function () {
+  'use strict';
+
+  var parts = [
+    'assets/beauty-intro-b64-01a.txt',
+    'assets/beauty-intro-b64-01b.txt',
+    'assets/beauty-intro-b64-01c.txt',
+    'assets/beauty-intro-b64-02.txt',
+    'assets/beauty-intro-b64-03a.txt',
+    'assets/beauty-intro-b64-03b.txt',
+    'assets/beauty-intro-b64-03c.txt',
+    'assets/beauty-intro-b64-04a.txt',
+    'assets/beauty-intro-b64-04b.txt',
+    'assets/beauty-intro-b64-04c.txt',
+    'assets/beauty-intro-b64-05.txt',
+    'assets/beauty-intro-b64-06.txt',
+    'assets/beauty-intro-b64-07.txt',
+    'assets/beauty-intro-b64-08.txt'
+  ];
+
+  window.CINEMATIC_BEAUTY_VIDEO_PROMISE = Promise.all(parts.map(function (url) {
+    return fetch(url, { cache: 'force-cache' }).then(function (response) {
+      if (!response.ok) throw new Error('intro chunk failed: ' + response.status);
+      return response.text();
+    });
+  })).then(function (chunks) {
+    var base64 = chunks.join('').replace(/\s+/g, '');
+    if (base64.slice(0, 16) !== 'AAAAIGZ0eXBpc29t') {
+      throw new Error('invalid intro MP4 data');
+    }
+    return 'data:video/mp4;base64,' + base64;
+  });
+})();
