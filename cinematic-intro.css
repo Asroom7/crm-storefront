@@ -181,7 +181,7 @@ body.cinematic-intro-active {
   height: 100%;
   border-radius: inherit;
   background: rgba(255,255,255,.86);
-  animation: cinematicProgress 3s linear forwards;
+  animation: cinematicProgress 10s linear forwards;
 }
 
 .cinematic-intro.ready .cinematic-intro-progress { opacity: 0; }

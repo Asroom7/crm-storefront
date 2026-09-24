@@ -1,9 +1,9 @@
 (function () {
   'use strict';
 
-  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV1';
+  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV2';
   var INTRO_MIN_MS = 3000;
-  var INTRO_READY_FALLBACK_MS = 3200;
+  var POSTER_FALLBACK_MS = 3200;
   var intro = document.getElementById('cinematic-intro');
   if (!intro) return;
 
@@ -11,9 +11,11 @@
   var shell = document.getElementById('storefront-reveal-shell');
   var leaving = false;
   var ready = false;
+  var videoStarted = false;
   var startY = 0;
   var lastY = 0;
   var introStartedAt = performance.now();
+  var fallbackTimer = null;
 
   function alreadySeen() {
     try { return sessionStorage.getItem(INTRO_SESSION_KEY) === '1'; }
@@ -49,25 +51,62 @@
     intro.classList.add('ready');
   }
 
+  function schedulePosterFallback() {
+    window.clearTimeout(fallbackTimer);
+    fallbackTimer = window.setTimeout(function () {
+      if (!videoStarted) setReady();
+    }, POSTER_FALLBACK_MS);
+  }
+
   function tryVideo() {
-    if (!video) return;
+    if (!video) {
+      schedulePosterFallback();
+      return;
+    }
+
+    if (window.CINEMATIC_BEAUTY_VIDEO_DATA) {
+      video.src = window.CINEMATIC_BEAUTY_VIDEO_DATA;
+      video.removeAttribute('preload');
+      video.preload = 'auto';
+      video.load();
+    }
+
     var source = video.querySelector('source');
-    if (!source || !source.getAttribute('src')) return;
+    var hasSource = !!video.getAttribute('src') || !!(source && source.getAttribute('src'));
+    if (!hasSource) {
+      schedulePosterFallback();
+      return;
+    }
 
     function showVideo() {
+      if (videoStarted) return;
+      videoStarted = true;
+      window.clearTimeout(fallbackTimer);
       intro.classList.add('has-video');
+
       var playPromise = video.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(function () {
+          videoStarted = false;
           intro.classList.remove('has-video');
+          schedulePosterFallback();
         });
       }
+
+      var safeDuration = isFinite(video.duration) && video.duration > 0 ? video.duration * 1000 + 1500 : 12000;
+      fallbackTimer = window.setTimeout(setReady, safeDuration);
     }
 
     video.addEventListener('loadeddata', showVideo, { once: true });
-    video.addEventListener('ended', setReady, { once: true });
+    video.addEventListener('canplay', showVideo, { once: true });
+    video.addEventListener('ended', function () {
+      window.clearTimeout(fallbackTimer);
+      setReady();
+    }, { once: true });
     video.addEventListener('error', function () {
+      videoStarted = false;
       intro.classList.remove('has-video');
+      schedulePosterFallback();
     }, { once: true });
 
     window.setTimeout(function () {
@@ -142,6 +181,5 @@
     }
   });
 
-  window.setTimeout(setReady, INTRO_READY_FALLBACK_MS);
   tryVideo();
 })();
