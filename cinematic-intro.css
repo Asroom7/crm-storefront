@@ -1,7 +1,5 @@
 /* Cinematic beauty intro. Home page only. */
-:root {
-  --cinematic-ease: cubic-bezier(.22,.61,.36,1);
-}
+:root { --cinematic-ease: cubic-bezier(.22,.61,.36,1); }
 
 body.cinematic-intro-active {
   overflow: hidden;
@@ -12,12 +10,15 @@ body.cinematic-intro-active {
   position: fixed;
   inset: 0;
   z-index: 5000;
-  min-height: 100svh;
+  height: 100svh;
   overflow: hidden;
   background: #ebe8e4;
   color: #fff;
   isolation: isolate;
   touch-action: pan-y;
+  contain: paint;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .cinematic-intro[hidden] { display: none; }
@@ -26,8 +27,7 @@ body.cinematic-intro-active {
 .cinematic-intro-poster,
 .cinematic-intro-video,
 .cinematic-intro-shade,
-.cinematic-intro-glow,
-.cinematic-intro-grain {
+.cinematic-intro-glow {
   position: absolute;
   inset: 0;
 }
@@ -35,6 +35,7 @@ body.cinematic-intro-active {
 .cinematic-intro-media {
   overflow: hidden;
   background: #ebe8e4;
+  transform: translateZ(0);
 }
 
 .cinematic-intro-poster,
@@ -44,16 +45,18 @@ body.cinematic-intro-active {
   object-fit: cover;
   object-position: 50% 42%;
   display: block;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .cinematic-intro-poster {
-  transform: scale(1.035);
-  animation: cinematicBreath 7s ease-in-out infinite alternate;
+  transform: scale(1.025) translateZ(0);
+  transition: opacity .28s ease;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .45s ease;
+  transition: opacity .28s ease;
   background: #ebe8e4;
 }
 
@@ -61,30 +64,19 @@ body.cinematic-intro-active {
 .cinematic-intro.has-video .cinematic-intro-poster { opacity: 0; }
 
 .cinematic-intro-shade {
-  background:
-    linear-gradient(180deg, rgba(14,28,27,.05) 0%, rgba(14,28,27,0) 48%, rgba(8,20,19,.34) 100%),
-    radial-gradient(circle at 52% 39%, rgba(255,255,255,.12), transparent 32%);
   z-index: 1;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(14,28,27,.03) 0%, rgba(14,28,27,0) 52%, rgba(8,20,19,.32) 100%);
 }
 
 .cinematic-intro-glow {
   z-index: 2;
   pointer-events: none;
-  opacity: .75;
-  background: linear-gradient(108deg, transparent 28%, rgba(255,255,255,.06) 39%, rgba(255,255,255,.35) 48%, rgba(255,255,255,.07) 57%, transparent 68%);
-  transform: translateX(-125%) skewX(-9deg);
-  animation: cinematicLightSweep 4.8s ease-in-out 3.15s infinite;
-  mix-blend-mode: screen;
+  opacity: .38;
+  background: radial-gradient(circle at 56% 35%, rgba(255,255,255,.32), transparent 35%);
 }
 
-.cinematic-intro-grain {
-  z-index: 3;
-  pointer-events: none;
-  opacity: .045;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
-  animation: cinematicGrain .35s steps(2) infinite;
-}
+.cinematic-intro-grain { display: none; }
 
 .cinematic-intro-copy {
   position: absolute;
@@ -92,16 +84,17 @@ body.cinematic-intro-active {
   left: 50%;
   bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px));
   width: min(92vw, 560px);
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 8px, 0);
   text-align: center;
   opacity: 0;
-  transition: opacity .65s ease, transform .65s var(--cinematic-ease);
+  transition: opacity .38s ease, transform .38s var(--cinematic-ease);
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .cinematic-intro.ready .cinematic-intro-copy {
   opacity: 1;
-  transform: translate(-50%, -5px);
+  transform: translate3d(-50%, 0, 0);
   pointer-events: auto;
 }
 
@@ -110,7 +103,7 @@ body.cinematic-intro-active {
   font-size: clamp(16px, 3.6vw, 25px);
   line-height: 1.85;
   font-weight: 800;
-  text-shadow: 0 2px 20px rgba(0,0,0,.25);
+  text-shadow: 0 2px 16px rgba(0,0,0,.22);
   letter-spacing: -.15px;
 }
 
@@ -130,7 +123,7 @@ body.cinematic-intro-active {
   font-size: 12px;
   line-height: 1.6;
   color: rgba(255,255,255,.92);
-  text-shadow: 0 1px 8px rgba(0,0,0,.32);
+  text-shadow: 0 1px 8px rgba(0,0,0,.28);
 }
 
 .cinematic-intro-scroll:focus-visible {
@@ -144,6 +137,7 @@ body.cinematic-intro-active {
   height: 24px;
   position: relative;
   animation: cinematicArrow 1.25s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .cinematic-intro-arrow::before,
@@ -171,87 +165,62 @@ body.cinematic-intro-active {
   border-radius: 999px;
   background: rgba(255,255,255,.22);
   opacity: .75;
-  transition: opacity .3s ease;
+  transition: opacity .25s ease;
 }
 
 .cinematic-intro-progress::after {
   content: '';
   display: block;
-  width: 0;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: rgba(255,255,255,.86);
-  animation: cinematicProgress 10s linear forwards;
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: cinematicProgress 10.1s linear forwards;
+  will-change: transform;
 }
 
 .cinematic-intro.ready .cinematic-intro-progress { opacity: 0; }
 
 .cinematic-intro.is-leaving {
   pointer-events: none;
-  animation: cinematicCurtain .82s var(--cinematic-ease) forwards;
-}
-
-.cinematic-intro.is-leaving .cinematic-intro-media {
-  animation: cinematicExitMedia .82s var(--cinematic-ease) forwards;
+  animation: cinematicExit .6s var(--cinematic-ease) forwards;
 }
 
 .cinematic-intro.is-leaving .cinematic-intro-copy {
   opacity: 0;
-  transform: translate(-50%, -22px);
+  transform: translate3d(-50%, -12px, 0);
 }
 
 .storefront-reveal-shell {
   transform-origin: 50% 0;
+  backface-visibility: hidden;
 }
 
 .storefront-reveal-shell.cinematic-revealing {
-  animation: storefrontReveal .82s var(--cinematic-ease) both;
-}
-
-@keyframes cinematicBreath {
-  0% { transform: scale(1.035) translate3d(0,0,0); filter: saturate(.96) brightness(1); }
-  100% { transform: scale(1.065) translate3d(-.3%, -.45%, 0); filter: saturate(1.02) brightness(1.025); }
-}
-
-@keyframes cinematicLightSweep {
-  0%, 15% { transform: translateX(-125%) skewX(-9deg); opacity: 0; }
-  34% { opacity: .58; }
-  52% { transform: translateX(125%) skewX(-9deg); opacity: .16; }
-  100% { transform: translateX(125%) skewX(-9deg); opacity: 0; }
-}
-
-@keyframes cinematicGrain {
-  0% { transform: translate(0,0); }
-  25% { transform: translate(-1.5%,1%); }
-  50% { transform: translate(1%,-1.5%); }
-  75% { transform: translate(.5%,1.4%); }
-  100% { transform: translate(-1%,0); }
+  animation: storefrontReveal .6s var(--cinematic-ease) both;
+  will-change: transform, opacity;
 }
 
 @keyframes cinematicArrow {
-  0%, 100% { transform: translateY(0); opacity: .7; }
-  50% { transform: translateY(7px); opacity: 1; }
+  0%, 100% { transform: translate3d(0,0,0); opacity: .7; }
+  50% { transform: translate3d(0,7px,0); opacity: 1; }
 }
 
 @keyframes cinematicProgress {
-  from { width: 0; }
-  to { width: 100%; }
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
-@keyframes cinematicCurtain {
-  0% { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0 round 0); }
-  45% { opacity: 1; clip-path: inset(0 0 6% 0 round 0 0 28px 28px); }
-  100% { opacity: 0; transform: translateY(-16%); clip-path: inset(0 0 100% 0 round 0 0 42px 42px); }
-}
-
-@keyframes cinematicExitMedia {
-  from { transform: scale(1); filter: blur(0) brightness(1); }
-  to { transform: scale(1.08); filter: blur(3px) brightness(1.12); }
+@keyframes cinematicExit {
+  from { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+  to { opacity: 0; transform: translate3d(0,-22px,0) scale(1.01); }
 }
 
 @keyframes storefrontReveal {
-  from { opacity: .35; transform: translateY(54px) scale(.985); filter: blur(3px); }
-  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from { opacity: .65; transform: translate3d(0,30px,0) scale(.992); }
+  to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
 }
 
 @media (min-width: 800px) {
@@ -261,13 +230,9 @@ body.cinematic-intro-active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cinematic-intro-poster,
-  .cinematic-intro-glow,
-  .cinematic-intro-grain,
   .cinematic-intro-arrow,
   .cinematic-intro-progress::after,
   .cinematic-intro.is-leaving,
-  .cinematic-intro.is-leaving .cinematic-intro-media,
   .storefront-reveal-shell.cinematic-revealing {
     animation: none !important;
   }

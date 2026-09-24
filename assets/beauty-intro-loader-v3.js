@@ -2,10 +2,16 @@
   'use strict';
 
   var parts = [
-    'assets/beauty-intro-b64-01.txt',
+    'assets/beauty-intro-b64-01a.txt',
+    'assets/beauty-intro-b64-01b.txt',
+    'assets/beauty-intro-b64-01c.txt',
     'assets/beauty-intro-b64-02.txt',
-    'assets/beauty-intro-b64-03.txt',
-    'assets/beauty-intro-b64-04.txt',
+    'assets/beauty-intro-b64-03a.txt',
+    'assets/beauty-intro-b64-03b.txt',
+    'assets/beauty-intro-b64-03c.txt',
+    'assets/beauty-intro-b64-04a.txt',
+    'assets/beauty-intro-b64-04b.txt',
+    'assets/beauty-intro-b64-04c.txt',
     'assets/beauty-intro-b64-05.txt',
     'assets/beauty-intro-b64-06.txt',
     'assets/beauty-intro-b64-07.txt',
