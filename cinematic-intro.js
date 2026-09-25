@@ -1,11 +1,13 @@
 (function () {
   'use strict';
 
-  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV8';
+  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV9';
   var CUE_AT_SECONDS = 3;
-  var EXIT_MS = 1080;
+  var HANDOFF_MS = 1000;
+  var HANDOFF_EASING = 'cubic-bezier(.42,0,.58,1)';
   var VIDEO_RETRY_MS = 2200;
   var MAX_LOAD_RETRIES = 2;
+  var NO_VIDEO_CUE_MS = 6000;
 
   var intro = document.getElementById('cinematic-intro');
   if (!intro) return;
@@ -17,9 +19,12 @@
   var frameReady = false;
   var loadRetries = 0;
   var retryTimer = 0;
+  var noVideoCueTimer = 0;
+  var cleanupTimer = 0;
+  var cleanupDone = false;
   var startY = 0;
   var lastY = 0;
-  var cleanupTimer = 0;
+  var activeAnimations = [];
 
   function alreadySeen() {
     try { return sessionStorage.getItem(INTRO_SESSION_KEY) === '1'; }
@@ -31,20 +36,46 @@
     catch (e) {}
   }
 
+  function cancelAnimations() {
+    activeAnimations.forEach(function (animation) {
+      try { animation.cancel(); } catch (e) {}
+    });
+    activeAnimations = [];
+  }
+
   function cleanupTransition() {
+    if (cleanupDone) return;
+    cleanupDone = true;
+
     window.clearTimeout(cleanupTimer);
     window.clearTimeout(retryTimer);
+    window.clearTimeout(noVideoCueTimer);
+
     if (video) {
       try { video.pause(); } catch (e) {}
     }
+
     if (intro && intro.parentNode) intro.remove();
-    document.body.classList.remove('cinematic-intro-active', 'cinematic-transition-stage', 'cinematic-transition-fallback-run');
+
+    /* Remove the staging state first. At this point the storefront animation
+       is already at translateY(0) / opacity 1, so returning it to normal flow
+       is visually identical and cannot flash. */
+    document.body.classList.remove(
+      'cinematic-intro-active',
+      'cinematic-transition-fallback-run'
+    );
+
+    cancelAnimations();
     window.scrollTo(0, 0);
   }
 
   function removeIntroImmediately() {
     if (intro && intro.parentNode) intro.remove();
-    document.body.classList.remove('cinematic-intro-active', 'cinematic-transition-stage', 'cinematic-transition-fallback-run');
+    document.body.classList.remove(
+      'cinematic-intro-active',
+      'cinematic-transition-fallback-run'
+    );
+    window.scrollTo(0, 0);
   }
 
   if (alreadySeen()) {
@@ -52,6 +83,8 @@
     return;
   }
 
+  /* This class stages the real storefront one viewport below the screen for
+     the whole intro, so no layout/setup work is needed when the handoff starts. */
   document.body.classList.add('cinematic-intro-active');
   window.scrollTo(0, 0);
 
@@ -65,14 +98,18 @@
     if (frameReady || leaving) return;
     frameReady = true;
     intro.classList.add('video-frame-ready');
+    window.clearTimeout(noVideoCueTimer);
   }
 
   function tryPlay() {
     if (!video || leaving || video.ended || video.readyState < 2) return;
     markFrameReady();
+
     var promise;
     try { promise = video.play(); } catch (e) { promise = null; }
-    if (promise && typeof promise.catch === 'function') promise.catch(function () {});
+    if (promise && typeof promise.catch === 'function') {
+      promise.catch(function () {});
+    }
   }
 
   function scheduleLoadRetry() {
@@ -87,72 +124,83 @@
 
   function runFallbackTransition() {
     document.body.classList.add('cinematic-transition-fallback-run');
-    cleanupTimer = window.setTimeout(cleanupTransition, EXIT_MS + 120);
+    cleanupTimer = window.setTimeout(cleanupTransition, HANDOFF_MS + 80);
   }
 
-  function runCompositorTransition() {
+  function runExactHandoff() {
     if (!shell || typeof intro.animate !== 'function' || typeof shell.animate !== 'function') {
       runFallbackTransition();
       return;
     }
 
-    var timing = {
-      duration: EXIT_MS,
-      easing: 'cubic-bezier(.22,1,.36,1)',
-      fill: 'forwards'
-    };
-
     var introAnimation;
     var shellAnimation;
-    try {
-      introAnimation = intro.animate([
-        { transform: 'translate3d(0,0,0)', opacity: 1 },
-        { transform: 'translate3d(0,-100%,0)', opacity: 0 }
-      ], timing);
 
+    try {
+      /* Intro stays completely stationary. Only its opacity changes. */
+      introAnimation = intro.animate([
+        { opacity: 1 },
+        { opacity: 0 }
+      ], {
+        duration: HANDOFF_MS,
+        easing: HANDOFF_EASING,
+        fill: 'forwards'
+      });
+
+      /* Storefront starts exactly one viewport below and rises into place while
+         becoming visible during the same 1000ms interval. */
       shellAnimation = shell.animate([
-        { transform: 'translate3d(0,100%,0)', opacity: 0.22 },
+        { transform: 'translate3d(0,100%,0)', opacity: 0 },
         { transform: 'translate3d(0,0,0)', opacity: 1 }
-      ], timing);
+      ], {
+        duration: HANDOFF_MS,
+        easing: HANDOFF_EASING,
+        fill: 'forwards'
+      });
+
+      /* Give both animations the exact same document-timeline start time so
+         their first and last frames are synchronized, not merely similar. */
+      var sharedStart = document.timeline && document.timeline.currentTime;
+      if (typeof sharedStart === 'number') {
+        introAnimation.startTime = sharedStart;
+        shellAnimation.startTime = sharedStart;
+      }
+
+      activeAnimations = [introAnimation, shellAnimation];
     } catch (e) {
       runFallbackTransition();
       return;
     }
 
-    var finished = 0;
-    function oneFinished() {
-      finished += 1;
-      if (finished >= 2) cleanupTransition();
+    var finishedCount = 0;
+    function animationFinished() {
+      finishedCount += 1;
+      if (finishedCount === 2) cleanupTransition();
     }
 
-    if (introAnimation && introAnimation.finished) introAnimation.finished.then(oneFinished).catch(oneFinished);
-    else oneFinished();
-    if (shellAnimation && shellAnimation.finished) shellAnimation.finished.then(oneFinished).catch(oneFinished);
-    else oneFinished();
+    introAnimation.finished.then(animationFinished).catch(animationFinished);
+    shellAnimation.finished.then(animationFinished).catch(animationFinished);
 
-    cleanupTimer = window.setTimeout(cleanupTransition, EXIT_MS + 180);
+    /* Safety only. Normal cleanup is driven by both 1000ms animations ending. */
+    cleanupTimer = window.setTimeout(cleanupTransition, HANDOFF_MS + 120);
   }
 
   function finishIntro(force) {
     if (leaving || (!ready && !force)) return;
+
     leaving = true;
     markSeen();
     window.clearTimeout(retryTimer);
+    window.clearTimeout(noVideoCueTimer);
     window.scrollTo(0, 0);
 
-    /* Stage the storefront below the viewport with no transition attached.
-       Force that start state to layout, then move both layers together on the
-       compositor. This fixes the previous reversed staging animation. */
-    document.body.classList.add('cinematic-transition-stage');
-    if (shell) {
-      shell.getBoundingClientRect();
-      window.getComputedStyle(shell).transform;
+    if (video) {
+      try { video.pause(); } catch (e) {}
     }
-    intro.getBoundingClientRect();
 
-    requestAnimationFrame(function () {
-      requestAnimationFrame(runCompositorTransition);
-    });
+    /* No native scrolling and no staging/layout work occurs here. The
+       storefront has already been sitting below the viewport since intro load. */
+    runExactHandoff();
   }
 
   function prepareVideo() {
@@ -180,9 +228,11 @@
     video.addEventListener('timeupdate', function () {
       if (!ready && video.currentTime >= CUE_AT_SECONDS) showCue();
     });
+
+    /* The automatic handoff begins immediately when the video actually ends. */
     video.addEventListener('ended', function () {
       showCue();
-      window.setTimeout(function () { finishIntro(true); }, 50);
+      finishIntro(true);
     }, { once: true });
 
     video.addEventListener('waiting', function () {
@@ -199,6 +249,12 @@
     if (video.readyState >= 2) markFrameReady();
     tryPlay();
     scheduleLoadRetry();
+
+    /* If the browser cannot start the video at all, do not trap the visitor.
+       The manual cue is exposed while the existing poster remains visible. */
+    noVideoCueTimer = window.setTimeout(function () {
+      if (!frameReady && !leaving) showCue();
+    }, NO_VIDEO_CUE_MS);
   }
 
   function scrollIntent(delta) {
