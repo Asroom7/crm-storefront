@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV5';
+  var INTRO_SESSION_KEY = 'crmBeautyIntroSeenV6';
   var CUE_AT_SECONDS = 3;
   var EXIT_MS = 920;
   var POSTER_FALLBACK_MS = 3500;
@@ -64,13 +64,16 @@
       try { video.pause(); } catch (e) {}
     }
 
-    intro.classList.add('is-leaving');
-    document.body.classList.remove('cinematic-intro-active');
+    /* Keep the page scroll locked for the whole hand-off. Both layers are
+       moved with GPU-friendly transforms so the transition behaves like one
+       continuous upward page scroll instead of a curtain reveal. */
     if (shell) shell.classList.add('cinematic-revealing');
+    intro.classList.add('is-leaving');
 
     window.setTimeout(function () {
       if (intro && intro.parentNode) intro.remove();
       if (shell) shell.classList.remove('cinematic-revealing');
+      document.body.classList.remove('cinematic-intro-active');
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, EXIT_MS + 40);
   }
