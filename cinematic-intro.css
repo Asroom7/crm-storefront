@@ -1,5 +1,5 @@
 /* Cinematic beauty intro. Home page only. */
-:root { --cinematic-ease: cubic-bezier(.22,.72,.22,1); }
+:root { --cinematic-ease: cubic-bezier(.22,1,.36,1); }
 
 body.cinematic-intro-active,
 body.cinematic-transition-stage {
@@ -54,18 +54,15 @@ body.cinematic-transition-stage {
 
 .cinematic-intro-poster {
   transform: scale(1.015) translateZ(0);
-  transition: opacity .12s linear;
+  transition: opacity .1s linear;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .12s linear;
+  transition: opacity .1s linear;
   background: #ebe8e4;
 }
 
-/* Use the real decoded first frame as soon as it exists. A temporary network
-   stall therefore keeps the last video frame on screen instead of returning
-   to the poster. */
 .cinematic-intro.video-frame-ready .cinematic-intro-video,
 .cinematic-intro.has-video .cinematic-intro-video { opacity: 1; }
 .cinematic-intro.video-frame-ready .cinematic-intro-poster,
@@ -95,7 +92,7 @@ body.cinematic-transition-stage {
   transform: translate3d(-50%, 12px, 0);
   text-align: center;
   opacity: 0;
-  transition: opacity .42s ease, transform .55s var(--cinematic-ease);
+  transition: opacity .42s ease, transform .55s cubic-bezier(.22,.72,.22,1);
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -193,13 +190,8 @@ body.cinematic-transition-stage {
   transform: translate3d(0,0,0);
 }
 
-/* The storefront is first staged exactly one viewport below the screen. On a
-   later animation frame both layers travel upward together. Only transform and
-   opacity animate, so the effect stays smooth on mobile GPUs. */
-body.cinematic-transition-stage .cinematic-intro {
-  transition: transform 1.12s var(--cinematic-ease), opacity .9s ease-out;
-}
-
+/* Staging deliberately has NO transition. The storefront must first exist
+   completely below the viewport before either layer begins moving. */
 body.cinematic-transition-stage .storefront-reveal-shell {
   position: fixed;
   inset: 0;
@@ -207,29 +199,31 @@ body.cinematic-transition-stage .storefront-reveal-shell {
   width: 100%;
   height: 100svh;
   overflow: hidden;
-  opacity: .72;
+  background: #fff;
+  opacity: .22;
   transform: translate3d(0,100%,0);
-  transition: transform 1.12s var(--cinematic-ease), opacity .82s ease-out;
   will-change: transform, opacity;
   backface-visibility: hidden;
   contain: paint;
 }
 
-body.cinematic-transition-run .cinematic-intro {
+body.cinematic-transition-stage .cinematic-intro {
+  will-change: transform, opacity;
+}
+
+/* CSS-only fallback. The normal path uses Web Animations so both layers are
+   handed to the compositor in the same frame. */
+body.cinematic-transition-fallback-run .cinematic-intro {
   transform: translate3d(0,-100%,0);
   opacity: 0;
+  transition: transform 1.08s var(--cinematic-ease), opacity .92s ease-out;
   pointer-events: none;
 }
 
-body.cinematic-transition-run .storefront-reveal-shell {
+body.cinematic-transition-fallback-run .storefront-reveal-shell {
   transform: translate3d(0,0,0);
   opacity: 1;
-}
-
-body.cinematic-transition-run .cinematic-intro-copy {
-  opacity: 0;
-  transform: translate3d(-50%, -18px, 0);
-  transition-duration: .2s;
+  transition: transform 1.08s var(--cinematic-ease), opacity .92s ease-out;
 }
 
 @keyframes cinematicArrow {
@@ -251,8 +245,8 @@ body.cinematic-transition-run .cinematic-intro-copy {
 @media (prefers-reduced-motion: reduce) {
   .cinematic-intro-arrow,
   .cinematic-intro-progress::after { animation: none !important; }
-  body.cinematic-transition-stage .cinematic-intro,
-  body.cinematic-transition-stage .storefront-reveal-shell {
+  body.cinematic-transition-fallback-run .cinematic-intro,
+  body.cinematic-transition-fallback-run .storefront-reveal-shell {
     transition-duration: .2s !important;
   }
 }
