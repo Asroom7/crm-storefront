@@ -181,9 +181,11 @@ body.cinematic-intro-active {
   will-change: transform;
 }
 
+/* Natural page-push transition: the intro moves out through the top while
+   the actual storefront rises into view from below at exactly the same rate. */
 .cinematic-intro.is-leaving {
   pointer-events: none;
-  animation: cinematicScrollAway .92s var(--cinematic-ease) forwards;
+  animation: cinematicIntroPushUp .92s var(--cinematic-ease) forwards;
 }
 
 .cinematic-intro.is-leaving .cinematic-intro-copy {
@@ -194,14 +196,12 @@ body.cinematic-intro-active {
 
 .storefront-reveal-shell {
   backface-visibility: hidden;
-  transform: translateZ(0);
+  transform: translate3d(0,0,0);
 }
 
-/* Only the intro layer moves during the hand-off. Keeping the storefront static
-   avoids compositing two full-screen animated layers and is smoother on phones. */
 .storefront-reveal-shell.cinematic-revealing {
-  opacity: 1;
-  transform: translateZ(0);
+  will-change: transform;
+  animation: cinematicStorefrontRise .92s var(--cinematic-ease) forwards;
 }
 
 @keyframes cinematicArrow {
@@ -214,9 +214,14 @@ body.cinematic-intro-active {
   to { transform: scaleX(1); }
 }
 
-@keyframes cinematicScrollAway {
-  0% { transform: translate3d(0,0,0); }
-  100% { transform: translate3d(0,-100%,0); }
+@keyframes cinematicIntroPushUp {
+  from { transform: translate3d(0,0,0); }
+  to { transform: translate3d(0,-100svh,0); }
+}
+
+@keyframes cinematicStorefrontRise {
+  from { transform: translate3d(0,100svh,0); }
+  to { transform: translate3d(0,0,0); }
 }
 
 @media (min-width: 800px) {
@@ -230,7 +235,8 @@ body.cinematic-intro-active {
   .cinematic-intro-progress::after {
     animation: none !important;
   }
-  .cinematic-intro.is-leaving {
+  .cinematic-intro.is-leaving,
+  .storefront-reveal-shell.cinematic-revealing {
     animation-duration: .18s !important;
   }
 }
