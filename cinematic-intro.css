@@ -52,12 +52,12 @@ body.cinematic-intro-active {
 
 .cinematic-intro-poster {
   transform: scale(1.015) translateZ(0);
-  transition: opacity .18s linear;
+  transition: opacity .16s linear;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .18s linear;
+  transition: opacity .16s linear;
   background: #ebe8e4;
 }
 
@@ -181,27 +181,42 @@ body.cinematic-intro-active {
   will-change: transform;
 }
 
-/* Natural page-push transition: the intro moves out through the top while
-   the actual storefront rises into view from below at exactly the same rate. */
+/* The storefront is physically staged one viewport below the intro while the
+   intro is active. This guarantees a true page-push: the bottom page enters as
+   the intro exits through the top, with no blank gap or curtain effect. */
+body.cinematic-intro-active .storefront-reveal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 4998;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: #fff;
+  transform: translate3d(0,100svh,0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+body.cinematic-intro-active .storefront-reveal-shell.cinematic-revealing {
+  transform: translate3d(0,0,0);
+  transition: transform .98s var(--cinematic-ease);
+}
+
 .cinematic-intro.is-leaving {
   pointer-events: none;
-  animation: cinematicIntroPushUp .92s var(--cinematic-ease) forwards;
+  transform: translate3d(0,-100svh,0);
+  transition: transform .98s var(--cinematic-ease);
 }
 
 .cinematic-intro.is-leaving .cinematic-intro-copy {
   opacity: 0;
-  transform: translate3d(-50%, -18px, 0);
-  transition-duration: .24s;
+  transform: translate3d(-50%, -14px, 0);
+  transition-duration: .22s;
 }
 
 .storefront-reveal-shell {
   backface-visibility: hidden;
-  transform: translate3d(0,0,0);
-}
-
-.storefront-reveal-shell.cinematic-revealing {
-  will-change: transform;
-  animation: cinematicStorefrontRise .92s var(--cinematic-ease) forwards;
+  transform: translateZ(0);
 }
 
 @keyframes cinematicArrow {
@@ -214,16 +229,6 @@ body.cinematic-intro-active {
   to { transform: scaleX(1); }
 }
 
-@keyframes cinematicIntroPushUp {
-  from { transform: translate3d(0,0,0); }
-  to { transform: translate3d(0,-100svh,0); }
-}
-
-@keyframes cinematicStorefrontRise {
-  from { transform: translate3d(0,100svh,0); }
-  to { transform: translate3d(0,0,0); }
-}
-
 @media (min-width: 800px) {
   .cinematic-intro-poster,
   .cinematic-intro-video { object-position: 50% 50%; }
@@ -234,9 +239,5 @@ body.cinematic-intro-active {
   .cinematic-intro-arrow,
   .cinematic-intro-progress::after {
     animation: none !important;
-  }
-  .cinematic-intro.is-leaving,
-  .storefront-reveal-shell.cinematic-revealing {
-    animation-duration: .18s !important;
   }
 }
