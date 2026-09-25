@@ -51,12 +51,12 @@ body.cinematic-intro-active {
 
 .cinematic-intro-poster {
   transform: scale(1.025) translateZ(0);
-  transition: opacity .28s ease;
+  transition: opacity .22s ease;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .28s ease;
+  transition: opacity .22s ease;
   background: #ebe8e4;
 }
 
@@ -72,8 +72,8 @@ body.cinematic-intro-active {
 .cinematic-intro-glow {
   z-index: 2;
   pointer-events: none;
-  opacity: .38;
-  background: radial-gradient(circle at 56% 35%, rgba(255,255,255,.32), transparent 35%);
+  opacity: .32;
+  background: radial-gradient(circle at 56% 35%, rgba(255,255,255,.28), transparent 35%);
 }
 
 .cinematic-intro-grain { display: none; }
@@ -87,7 +87,7 @@ body.cinematic-intro-active {
   transform: translate3d(-50%, 8px, 0);
   text-align: center;
   opacity: 0;
-  transition: opacity .38s ease, transform .38s var(--cinematic-ease);
+  transition: opacity .32s ease, transform .32s var(--cinematic-ease);
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -165,7 +165,7 @@ body.cinematic-intro-active {
   border-radius: 999px;
   background: rgba(255,255,255,.22);
   opacity: .75;
-  transition: opacity .25s ease;
+  transition: opacity .2s ease;
 }
 
 .cinematic-intro-progress::after {
@@ -185,22 +185,23 @@ body.cinematic-intro-active {
 
 .cinematic-intro.is-leaving {
   pointer-events: none;
-  animation: cinematicExit .6s var(--cinematic-ease) forwards;
+  animation: cinematicExit .42s var(--cinematic-ease) forwards;
 }
 
 .cinematic-intro.is-leaving .cinematic-intro-copy {
   opacity: 0;
-  transform: translate3d(-50%, -12px, 0);
+  transform: translate3d(-50%, -8px, 0);
 }
 
 .storefront-reveal-shell {
-  transform-origin: 50% 0;
   backface-visibility: hidden;
 }
 
+/* Keep the underlying page static during the exit. Animating two full-screen
+   layers at once caused frame drops on lower-power mobile GPUs. */
 .storefront-reveal-shell.cinematic-revealing {
-  animation: storefrontReveal .6s var(--cinematic-ease) both;
-  will-change: transform, opacity;
+  opacity: 1;
+  transform: none;
 }
 
 @keyframes cinematicArrow {
@@ -214,13 +215,8 @@ body.cinematic-intro-active {
 }
 
 @keyframes cinematicExit {
-  from { opacity: 1; transform: translate3d(0,0,0) scale(1); }
-  to { opacity: 0; transform: translate3d(0,-22px,0) scale(1.01); }
-}
-
-@keyframes storefrontReveal {
-  from { opacity: .65; transform: translate3d(0,30px,0) scale(.992); }
-  to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+  from { opacity: 1; transform: translate3d(0,0,0); }
+  to { opacity: 0; transform: translate3d(0,-18px,0); }
 }
 
 @media (min-width: 800px) {
@@ -232,8 +228,7 @@ body.cinematic-intro-active {
 @media (prefers-reduced-motion: reduce) {
   .cinematic-intro-arrow,
   .cinematic-intro-progress::after,
-  .cinematic-intro.is-leaving,
-  .storefront-reveal-shell.cinematic-revealing {
+  .cinematic-intro.is-leaving {
     animation: none !important;
   }
 }
