@@ -1,7 +1,8 @@
 /* Cinematic beauty intro. Home page only. */
 :root { --cinematic-ease: cubic-bezier(.22,.72,.22,1); }
 
-body.cinematic-intro-active {
+body.cinematic-intro-active,
+body.cinematic-transition-stage {
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -17,8 +18,9 @@ body.cinematic-intro-active {
   isolation: isolate;
   touch-action: pan-y;
   contain: paint;
-  will-change: transform;
+  will-change: transform, opacity;
   transform: translate3d(0,0,0);
+  opacity: 1;
   backface-visibility: hidden;
 }
 
@@ -52,16 +54,21 @@ body.cinematic-intro-active {
 
 .cinematic-intro-poster {
   transform: scale(1.015) translateZ(0);
-  transition: opacity .16s linear;
+  transition: opacity .12s linear;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .16s linear;
+  transition: opacity .12s linear;
   background: #ebe8e4;
 }
 
+/* Use the real decoded first frame as soon as it exists. A temporary network
+   stall therefore keeps the last video frame on screen instead of returning
+   to the poster. */
+.cinematic-intro.video-frame-ready .cinematic-intro-video,
 .cinematic-intro.has-video .cinematic-intro-video { opacity: 1; }
+.cinematic-intro.video-frame-ready .cinematic-intro-poster,
 .cinematic-intro.has-video .cinematic-intro-poster { opacity: 0; }
 
 .cinematic-intro-shade {
@@ -181,42 +188,48 @@ body.cinematic-intro-active {
   will-change: transform;
 }
 
-/* The storefront is physically staged one viewport below the intro while the
-   intro is active. This guarantees a true page-push: the bottom page enters as
-   the intro exits through the top, with no blank gap or curtain effect. */
-body.cinematic-intro-active .storefront-reveal-shell {
+.storefront-reveal-shell {
+  backface-visibility: hidden;
+  transform: translate3d(0,0,0);
+}
+
+/* The storefront is first staged exactly one viewport below the screen. On a
+   later animation frame both layers travel upward together. Only transform and
+   opacity animate, so the effect stays smooth on mobile GPUs. */
+body.cinematic-transition-stage .cinematic-intro {
+  transition: transform 1.12s var(--cinematic-ease), opacity .9s ease-out;
+}
+
+body.cinematic-transition-stage .storefront-reveal-shell {
   position: fixed;
   inset: 0;
-  z-index: 4998;
+  z-index: 4990;
   width: 100%;
   height: 100svh;
   overflow: hidden;
-  background: #fff;
-  transform: translate3d(0,100svh,0);
+  opacity: .72;
+  transform: translate3d(0,100%,0);
+  transition: transform 1.12s var(--cinematic-ease), opacity .82s ease-out;
+  will-change: transform, opacity;
   backface-visibility: hidden;
-  will-change: transform;
+  contain: paint;
 }
 
-body.cinematic-intro-active .storefront-reveal-shell.cinematic-revealing {
-  transform: translate3d(0,0,0);
-  transition: transform .98s var(--cinematic-ease);
-}
-
-.cinematic-intro.is-leaving {
-  pointer-events: none;
-  transform: translate3d(0,-100svh,0);
-  transition: transform .98s var(--cinematic-ease);
-}
-
-.cinematic-intro.is-leaving .cinematic-intro-copy {
+body.cinematic-transition-run .cinematic-intro {
+  transform: translate3d(0,-100%,0);
   opacity: 0;
-  transform: translate3d(-50%, -14px, 0);
-  transition-duration: .22s;
+  pointer-events: none;
 }
 
-.storefront-reveal-shell {
-  backface-visibility: hidden;
-  transform: translateZ(0);
+body.cinematic-transition-run .storefront-reveal-shell {
+  transform: translate3d(0,0,0);
+  opacity: 1;
+}
+
+body.cinematic-transition-run .cinematic-intro-copy {
+  opacity: 0;
+  transform: translate3d(-50%, -18px, 0);
+  transition-duration: .2s;
 }
 
 @keyframes cinematicArrow {
@@ -237,7 +250,9 @@ body.cinematic-intro-active .storefront-reveal-shell.cinematic-revealing {
 
 @media (prefers-reduced-motion: reduce) {
   .cinematic-intro-arrow,
-  .cinematic-intro-progress::after {
-    animation: none !important;
+  .cinematic-intro-progress::after { animation: none !important; }
+  body.cinematic-transition-stage .cinematic-intro,
+  body.cinematic-transition-stage .storefront-reveal-shell {
+    transition-duration: .2s !important;
   }
 }
