@@ -1,8 +1,10 @@
 /* Cinematic beauty intro. Home page only. */
-:root { --cinematic-ease: cubic-bezier(.22,1,.36,1); }
+:root {
+  --cinematic-handoff-duration: 1000ms;
+  --cinematic-handoff-ease: cubic-bezier(.42,0,.58,1);
+}
 
-body.cinematic-intro-active,
-body.cinematic-transition-stage {
+body.cinematic-intro-active {
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -18,7 +20,7 @@ body.cinematic-transition-stage {
   isolation: isolate;
   touch-action: pan-y;
   contain: paint;
-  will-change: transform, opacity;
+  will-change: opacity;
   transform: translate3d(0,0,0);
   opacity: 1;
   backface-visibility: hidden;
@@ -190,9 +192,10 @@ body.cinematic-transition-stage {
   transform: translate3d(0,0,0);
 }
 
-/* Staging deliberately has NO transition. The storefront must first exist
-   completely below the viewport before either layer begins moving. */
-body.cinematic-transition-stage .storefront-reveal-shell {
+/* Keep the real storefront rendered and ready one full viewport below the
+   intro for the entire intro session. There is no transition in this staging
+   state, so the handoff never has to perform a layout/setup step at trigger. */
+body.cinematic-intro-active .storefront-reveal-shell {
   position: fixed;
   inset: 0;
   z-index: 4990;
@@ -200,30 +203,27 @@ body.cinematic-transition-stage .storefront-reveal-shell {
   height: 100svh;
   overflow: hidden;
   background: #fff;
-  opacity: .22;
+  opacity: 0;
   transform: translate3d(0,100%,0);
   will-change: transform, opacity;
   backface-visibility: hidden;
   contain: paint;
 }
 
-body.cinematic-transition-stage .cinematic-intro {
-  will-change: transform, opacity;
-}
-
-/* CSS-only fallback. The normal path uses Web Animations so both layers are
-   handed to the compositor in the same frame. */
+/* Fallback for browsers without Web Animations. Intro only fades. The
+   storefront rises from below and fades in at the exact same time. */
 body.cinematic-transition-fallback-run .cinematic-intro {
-  transform: translate3d(0,-100%,0);
   opacity: 0;
-  transition: transform 1.08s var(--cinematic-ease), opacity .92s ease-out;
+  transition: opacity var(--cinematic-handoff-duration) var(--cinematic-handoff-ease);
   pointer-events: none;
 }
 
 body.cinematic-transition-fallback-run .storefront-reveal-shell {
   transform: translate3d(0,0,0);
   opacity: 1;
-  transition: transform 1.08s var(--cinematic-ease), opacity .92s ease-out;
+  transition:
+    transform var(--cinematic-handoff-duration) var(--cinematic-handoff-ease),
+    opacity var(--cinematic-handoff-duration) var(--cinematic-handoff-ease);
 }
 
 @keyframes cinematicArrow {
@@ -245,8 +245,4 @@ body.cinematic-transition-fallback-run .storefront-reveal-shell {
 @media (prefers-reduced-motion: reduce) {
   .cinematic-intro-arrow,
   .cinematic-intro-progress::after { animation: none !important; }
-  body.cinematic-transition-fallback-run .cinematic-intro,
-  body.cinematic-transition-fallback-run .storefront-reveal-shell {
-    transition-duration: .2s !important;
-  }
 }
