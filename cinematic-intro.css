@@ -1,5 +1,5 @@
 /* Cinematic beauty intro. Home page only. */
-:root { --cinematic-ease: cubic-bezier(.22,.61,.36,1); }
+:root { --cinematic-ease: cubic-bezier(.22,.72,.22,1); }
 
 body.cinematic-intro-active {
   overflow: hidden;
@@ -17,8 +17,9 @@ body.cinematic-intro-active {
   isolation: isolate;
   touch-action: pan-y;
   contain: paint;
-  will-change: transform, opacity;
-  transform: translateZ(0);
+  will-change: transform;
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
 }
 
 .cinematic-intro[hidden] { display: none; }
@@ -43,20 +44,20 @@ body.cinematic-intro-active {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 42%;
+  object-position: 50% 50%;
   display: block;
   backface-visibility: hidden;
   transform: translateZ(0);
 }
 
 .cinematic-intro-poster {
-  transform: scale(1.025) translateZ(0);
-  transition: opacity .22s ease;
+  transform: scale(1.015) translateZ(0);
+  transition: opacity .18s linear;
 }
 
 .cinematic-intro-video {
   opacity: 0;
-  transition: opacity .22s ease;
+  transition: opacity .18s linear;
   background: #ebe8e4;
 }
 
@@ -66,14 +67,14 @@ body.cinematic-intro-active {
 .cinematic-intro-shade {
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(14,28,27,.03) 0%, rgba(14,28,27,0) 52%, rgba(8,20,19,.32) 100%);
+  background: linear-gradient(180deg, rgba(14,28,27,.01) 0%, rgba(14,28,27,0) 55%, rgba(8,20,19,.28) 100%);
 }
 
 .cinematic-intro-glow {
   z-index: 2;
   pointer-events: none;
-  opacity: .32;
-  background: radial-gradient(circle at 56% 35%, rgba(255,255,255,.28), transparent 35%);
+  opacity: .18;
+  background: radial-gradient(circle at 56% 34%, rgba(255,255,255,.24), transparent 37%);
 }
 
 .cinematic-intro-grain { display: none; }
@@ -84,10 +85,10 @@ body.cinematic-intro-active {
   left: 50%;
   bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px));
   width: min(92vw, 560px);
-  transform: translate3d(-50%, 8px, 0);
+  transform: translate3d(-50%, 12px, 0);
   text-align: center;
   opacity: 0;
-  transition: opacity .32s ease, transform .32s var(--cinematic-ease);
+  transition: opacity .42s ease, transform .55s var(--cinematic-ease);
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -122,7 +123,7 @@ body.cinematic-intro-active {
   padding: 10px 18px 6px;
   font-size: 12px;
   line-height: 1.6;
-  color: rgba(255,255,255,.92);
+  color: rgba(255,255,255,.94);
   text-shadow: 0 1px 8px rgba(0,0,0,.28);
 }
 
@@ -136,7 +137,7 @@ body.cinematic-intro-active {
   width: 24px;
   height: 24px;
   position: relative;
-  animation: cinematicArrow 1.25s ease-in-out infinite;
+  animation: cinematicArrow 1.35s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -163,9 +164,8 @@ body.cinematic-intro-active {
   height: 2px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255,255,255,.22);
-  opacity: .75;
-  transition: opacity .2s ease;
+  background: rgba(255,255,255,.18);
+  opacity: .68;
 }
 
 .cinematic-intro-progress::after {
@@ -174,38 +174,38 @@ body.cinematic-intro-active {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: rgba(255,255,255,.86);
+  background: rgba(255,255,255,.82);
   transform-origin: left center;
   transform: scaleX(0);
-  animation: cinematicProgress 10.1s linear forwards;
+  animation: cinematicProgress 7.68s linear forwards;
   will-change: transform;
 }
 
-.cinematic-intro.ready .cinematic-intro-progress { opacity: 0; }
-
 .cinematic-intro.is-leaving {
   pointer-events: none;
-  animation: cinematicExit .42s var(--cinematic-ease) forwards;
+  animation: cinematicScrollAway .92s var(--cinematic-ease) forwards;
 }
 
 .cinematic-intro.is-leaving .cinematic-intro-copy {
   opacity: 0;
-  transform: translate3d(-50%, -8px, 0);
+  transform: translate3d(-50%, -18px, 0);
+  transition-duration: .24s;
 }
 
 .storefront-reveal-shell {
   backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
-/* Keep the underlying page static during the exit. Animating two full-screen
-   layers at once caused frame drops on lower-power mobile GPUs. */
+/* Only the intro layer moves during the hand-off. Keeping the storefront static
+   avoids compositing two full-screen animated layers and is smoother on phones. */
 .storefront-reveal-shell.cinematic-revealing {
   opacity: 1;
-  transform: none;
+  transform: translateZ(0);
 }
 
 @keyframes cinematicArrow {
-  0%, 100% { transform: translate3d(0,0,0); opacity: .7; }
+  0%, 100% { transform: translate3d(0,0,0); opacity: .68; }
   50% { transform: translate3d(0,7px,0); opacity: 1; }
 }
 
@@ -214,21 +214,23 @@ body.cinematic-intro-active {
   to { transform: scaleX(1); }
 }
 
-@keyframes cinematicExit {
-  from { opacity: 1; transform: translate3d(0,0,0); }
-  to { opacity: 0; transform: translate3d(0,-18px,0); }
+@keyframes cinematicScrollAway {
+  0% { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(0,-100%,0); }
 }
 
 @media (min-width: 800px) {
   .cinematic-intro-poster,
-  .cinematic-intro-video { object-position: 50% 39%; }
+  .cinematic-intro-video { object-position: 50% 50%; }
   .cinematic-intro-copy { bottom: 34px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cinematic-intro-arrow,
-  .cinematic-intro-progress::after,
-  .cinematic-intro.is-leaving {
+  .cinematic-intro-progress::after {
     animation: none !important;
+  }
+  .cinematic-intro.is-leaving {
+    animation-duration: .18s !important;
   }
 }
