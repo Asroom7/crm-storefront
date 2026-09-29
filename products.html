@@ -34,20 +34,23 @@
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
     if (overlay) overlay.addEventListener('click', closeMenu);
 
+    var queryParams = new URLSearchParams(window.location.search);
     var allProducts = [];
-    var currentCategoryId = Number(new URLSearchParams(window.location.search).get('category')) || 0;
-    var searchTerm = '';
+    var currentCategoryId = Number(queryParams.get('category')) || 0;
+    var searchTerm = queryParams.get('q') || '';
     var grid = document.getElementById('product-grid');
     var countEl = document.getElementById('product-count');
     var sortSelect = document.getElementById('sort-select');
     var filterBar = document.getElementById('filter-bar');
     var searchInput = document.getElementById('store-search-input');
+    searchInput.value = searchTerm;
 
     function renderProducts() {
       var normalizedSearch = searchTerm.trim().toLocaleLowerCase('fa');
       var list = allProducts.filter(function (p) {
         var categoryOk = !currentCategoryId || (p.category && Number(p.category.id) === currentCategoryId);
-        var searchOk = !normalizedSearch || String(p.name || '').toLocaleLowerCase('fa').includes(normalizedSearch);
+        var searchable = [p.name, p.description, p.category && p.category.name].filter(Boolean).join(' ').toLocaleLowerCase('fa');
+        var searchOk = !normalizedSearch || searchable.includes(normalizedSearch);
         return categoryOk && searchOk;
       });
       if (sortSelect.value === 'cheap') list = list.slice().sort(function (a, b) {
@@ -86,6 +89,13 @@
       renderProducts();
     }
 
+    function syncSearchUrl() {
+      var url = new URL(window.location.href);
+      if (searchTerm.trim()) url.searchParams.set('q', searchTerm.trim());
+      else url.searchParams.delete('q');
+      history.replaceState(null, '', url.pathname + url.search);
+    }
+
     fetchPublicCategories().then(function (categories) {
       filterBar.innerHTML = '<button type="button" class="filter-chip" data-category="">همه</button>' + categories.map(function (category) {
         return '<button type="button" class="filter-chip" data-category="' + category.id + '">' + escapeHtml(category.name) + '</button>';
@@ -99,7 +109,11 @@
     });
 
     sortSelect.addEventListener('change', renderProducts);
-    searchInput.addEventListener('input', function () { searchTerm = searchInput.value; renderProducts(); });
+    searchInput.addEventListener('input', function () {
+      searchTerm = searchInput.value;
+      syncSearchUrl();
+      renderProducts();
+    });
 
     apiFetch('/products/public/' + SELLER_ID).then(function (products) {
       allProducts = products;
