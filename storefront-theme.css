@@ -1,0 +1,9 @@
+/* Runtime theme tokens controlled by Global Design settings. */
+:root{--sf-section-spacing:52px;--sf-page-padding:16px}
+.sf-container{width:min(calc(100% - (var(--sf-page-padding) * 2)),var(--sf-container))}
+.sf-section,.sf-support-wrap{padding-top:var(--sf-section-spacing)}
+[data-sf-button-style="pill"] .sf-btn,[data-sf-button-style="pill"] .sf-support-banner>a{border-radius:999px}
+[data-sf-button-style="square"] .sf-btn,[data-sf-button-style="square"] .sf-support-banner>a{border-radius:4px}
+[data-sf-shadow-style="none"] .sf-hero-panel,[data-sf-shadow-style="none"] .sf-product-card,[data-sf-shadow-style="none"] .sf-category-card,[data-sf-shadow-style="none"] .sf-support-banner{box-shadow:none!important}
+[data-sf-shadow-style="medium"] .sf-hero-panel,[data-sf-shadow-style="medium"] .sf-product-card:hover,[data-sf-shadow-style="medium"] .sf-category-card:hover{box-shadow:0 22px 54px rgba(67,37,50,.14)}
+@media(max-width:700px){:root{--sf-section-spacing:38px;--sf-page-padding:12px}}

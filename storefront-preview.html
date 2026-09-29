@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>پیش‌نمایش فروشگاه</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="storefront-home.css?v=20260930-v2">
+  <link rel="stylesheet" href="storefront-theme.css?v=20260930-v1">
+  <style>
+    body{padding-top:34px;background:var(--sf-bg,#fffdfc)}
+    .preview-mode-bar{position:fixed;inset:0 0 auto;z-index:9999;height:34px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px;background:#292427;color:#fff;font:11px Tahoma,Arial,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.16)}
+    .preview-mode-bar span:last-child{color:#cfc5ca}
+    #storefront-home-root>[data-preview-section-key]{position:relative;outline:2px solid transparent;outline-offset:-2px;transition:outline-color .15s ease}
+    #storefront-home-root>[data-preview-section-key]:hover{outline-color:rgba(207,71,114,.55);cursor:pointer}
+    #storefront-home-root>[data-preview-section-key].is-preview-selected{outline-color:#cf4772}
+    .preview-error{max-width:680px;margin:64px auto;padding:24px;border:1px solid #eadde2;border-radius:20px;background:#fff;text-align:center;color:#4a3941;font:13px/2 Tahoma,Arial,sans-serif}
+    .preview-error strong{display:block;font-size:16px;margin-bottom:4px}
+  </style>
+  <script src="api.js"></script>
+  <script>requireSellerAuth();</script>
+</head>
+<body>
+  <div class="preview-mode-bar"><strong>پیش‌نمایش پیش‌نویس فروشگاه</strong><span id="previewStatus">در حال بارگذاری</span></div>
+  <main id="storefront-home-root" data-storefront-mode="preview"></main>
+  <script src="storefront-home.js?v=20260930-v2"></script>
+  <script src="storefront-preview.js?v=20260930-v1"></script>
+</body>
+</html>
