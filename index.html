@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="فروشگاه محصولات آرایشی و بهداشتی">
+  <meta name="description" content="فروشگاه آنلاین محصولات مراقبتی، آرایشی و زیبایی با جستجوی سریع، دسته‌بندی مرتب و پیگیری سفارش.">
+  <meta name="theme-color" content="#fffdfc">
   <title>فروشگاه آرایشی و بهداشتی</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="storefront-home.css?v=20260930-v1">
   <link rel="stylesheet" href="cinematic-intro.css?v=20260925-v9">
   <script src="api.js"></script>
 </head>
@@ -45,115 +47,21 @@
       <a href="login.html">👤 ورود / ثبت‌نام</a>
       <a href="profile.html">📦 سفارش‌های من</a>
       <a href="cart.html">🛍 سبد خرید</a>
+      <a href="products.html">✦ همه محصولات</a>
       <a href="index.html">🏠 صفحه نخست</a>
       <div class="side-menu-sep"></div>
     </nav>
 
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="hero-label">فروشگاه آنلاین مراقبت و زیبایی</div>
-        <h1>انتخاب ساده‌تر برای روتین مراقبت و زیبایی</h1>
-        <p>محصولات موجود فروشگاه را ببین، انتخابت را ثبت کن و وضعیت سفارش را از حساب کاربری پیگیری کن.</p>
-        <div class="hero-actions">
-          <a href="products.html" class="btn-dark">مشاهده محصولات</a>
-          <a href="#home-categories" class="hero-secondary">دیدن دسته‌بندی‌ها</a>
-        </div>
+    <main id="storefront-home-root" tabindex="-1">
+      <div class="sf-home-loading sf-container" aria-live="polite">
+        <div class="sf-skeleton sf-skeleton-search"></div>
+        <div class="sf-skeleton sf-skeleton-hero"></div>
+        <div class="sf-skeleton-row"><span></span><span></span><span></span></div>
       </div>
-    </section>
-
-    <section class="home-intro" aria-label="مزایای خرید">
-      <div class="home-intro-item">
-        <span class="home-intro-icon">✦</span>
-        <div><strong>انتخاب مرتب‌تر</strong><span>محصولات را بر اساس دسته‌بندی پیدا کن</span></div>
-      </div>
-      <div class="home-intro-item">
-        <span class="home-intro-icon">◈</span>
-        <div><strong>ثبت پرداخت روشن</strong><span>مبلغ دقیق و رسید پرداخت داخل سفارش ثبت می‌شود</span></div>
-      </div>
-      <div class="home-intro-item">
-        <span class="home-intro-icon">◎</span>
-        <div><strong>پیگیری سفارش</strong><span>وضعیت سفارش را از حساب کاربری دنبال کن</span></div>
-      </div>
-    </section>
-
-    <section class="categories" id="home-categories" aria-label="دسته‌بندی محصولات">
-      <div class="category-loading">در حال بارگذاری دسته‌بندی‌ها...</div>
-    </section>
-
-    <section class="section-block">
-      <div class="section-head"><h2>جدیدترین محصولات</h2><a href="products.html">مشاهده همه</a></div>
-      <div class="product-grid" id="featured-grid">
-        <p style="grid-column:1/-1; text-align:center; padding:20px 0; color:#888;">در حال بارگذاری...</p>
-      </div>
-    </section>
-
-    <section class="trust-banner"><span>از انتخاب محصول تا ثبت رسید و پیگیری سفارش، همه مراحل در همین فروشگاه انجام می‌شود.</span></section>
-
-    <section class="badges-row">
-      <div class="badge-item"><span class="badge-icon">📦</span><span>پیگیری سفارش</span></div>
-      <div class="badge-item"><span class="badge-icon">💳</span><span>ثبت پرداخت</span></div>
-      <div class="badge-item"><span class="badge-icon">💬</span><span>دسترسی به پشتیبانی</span></div>
-    </section>
-
-    <footer class="site-footer">
-      <div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div>
-      <div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div>
-    </footer>
+    </main>
   </div>
 
-  <script>
-    var toggle = document.querySelector('.menu-toggle');
-    var closeBtn = document.querySelector('.close-menu');
-    var overlay = document.querySelector('.side-menu-overlay');
-    var menu = document.querySelector('.side-menu');
-    function openMenu() { menu.classList.add('open'); overlay.classList.add('open'); }
-    function closeMenu() { menu.classList.remove('open'); overlay.classList.remove('open'); }
-    if (toggle) toggle.addEventListener('click', openMenu);
-    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-    if (overlay) overlay.addEventListener('click', closeMenu);
-
-    var categoryColors = ['skin', 'makeup', 'hair', 'perfume'];
-    var categoriesBox = document.getElementById('home-categories');
-    fetchPublicCategories().then(function (categories) {
-      if (!categories.length) {
-        categoriesBox.innerHTML = '<div class="category-loading">هنوز دسته‌بندی‌ای برای نمایش وجود ندارد</div>';
-        return;
-      }
-      categoriesBox.innerHTML = categories.slice(0, 6).map(function (category, index) {
-        var colorClass = categoryColors[index % categoryColors.length];
-        return '<a href="products.html?category=' + encodeURIComponent(category.id) + '" class="cat-item">' +
-          '<div class="cat-icon ' + colorClass + '">✦</div>' +
-          '<span>' + escapeHtml(category.name) + '</span>' +
-          '</a>';
-      }).join('');
-    }).catch(function () {
-      categoriesBox.innerHTML = '<a href="products.html" class="cat-item"><div class="cat-icon skin">✦</div><span>همه محصولات</span></a>';
-    });
-
-    var featuredGrid = document.getElementById('featured-grid');
-    apiFetch('/products/public/' + SELLER_ID)
-      .then(function (products) {
-        var list = products.slice(0, 8);
-        if (!list.length) {
-          featuredGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:20px 0;color:#888;">هنوز محصولی اضافه نشده</p>';
-          return;
-        }
-        featuredGrid.innerHTML = list.map(function (p) {
-          var imageUrl = getProductImageUrl(p);
-          var image = imageUrl
-            ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy">'
-            : '<span class="product-img-placeholder">بدون تصویر</span>';
-          return '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
-            '<div class="product-img">' + image + '</div>' +
-            '<h3>' + escapeHtml(p.name) + '</h3>' +
-            '<div class="price">' + getProductPriceLabel(p) + '</div>' +
-            '</a>';
-        }).join('');
-      })
-      .catch(function () {
-        featuredGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:20px 0;color:#888;">محصولات در دسترس نیست</p>';
-      });
-  </script>
+  <script src="storefront-home.js?v=20260930-v1"></script>
   <script src="cinematic-intro.js?v=20260925-v9"></script>
 </body>
 </html>
