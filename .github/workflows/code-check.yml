@@ -13,7 +13,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node --check api.js
+      - name: Check storefront JavaScript
+        run: |
+          node --check api.js
+          node --check storefront-home.js
+          node --check cinematic-intro.js
       - name: Check all panel JavaScript
         run: |
           for file in panel/*.js; do
