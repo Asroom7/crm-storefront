@@ -1,0 +1,93 @@
+/* Phase 5: restrained neumorphism for the management panel.
+   This layer intentionally changes presentation only. */
+:root{
+  --neo-bg:#edf2ef;
+  --neo-surface:#f2f6f3;
+  --neo-shadow-dark:rgba(31,55,47,.16);
+  --neo-shadow-light:rgba(255,255,255,.92);
+  --neo-raised:10px 10px 24px var(--neo-shadow-dark),-10px -10px 24px var(--neo-shadow-light);
+  --neo-raised-sm:6px 6px 14px var(--neo-shadow-dark),-6px -6px 14px var(--neo-shadow-light);
+  --neo-inset:inset 4px 4px 10px rgba(31,55,47,.12),inset -4px -4px 10px rgba(255,255,255,.88);
+  --neo-focus:0 0 0 3px color-mix(in srgb,var(--primary) 17%,transparent);
+  --bg:var(--neo-bg);
+  --surface:var(--neo-surface);
+  --surface-2:#e8efeb;
+  --border:rgba(71,101,90,.14);
+  --shadow-1:var(--neo-raised-sm);
+  --shadow-2:var(--neo-raised);
+  --radius-s:12px;
+  --radius-m:18px;
+  --radius-l:24px;
+}
+html,body{background:var(--bg)}
+body{background-image:radial-gradient(circle at 18% 0%,rgba(255,255,255,.62),transparent 34%),radial-gradient(circle at 82% 100%,rgba(15,82,87,.045),transparent 34%)}
+.topbar{background:color-mix(in srgb,var(--surface) 88%,transparent);border:0;box-shadow:0 8px 24px rgba(31,55,47,.08),inset 0 -1px 0 rgba(255,255,255,.62);backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%)}
+.topbar__title{letter-spacing:-.25px}
+#topbarSearchBtn{border-radius:13px!important;background:var(--surface)!important;box-shadow:var(--neo-raised-sm)!important;transition:transform .16s ease,box-shadow .16s ease!important}
+#topbarSearchBtn:active{box-shadow:var(--neo-inset)!important;transform:scale(.98)}
+.bottom-nav{background:color-mix(in srgb,var(--surface) 88%,transparent)!important;border-top:1px solid rgba(255,255,255,.64)!important;box-shadow:0 -10px 30px rgba(31,55,47,.10),inset 0 1px 0 rgba(255,255,255,.72)!important}
+.nav-item{color:var(--ink-soft)!important}
+.nav-item__icon{transition:all .18s ease}
+.nav-item.active{color:var(--primary)!important}
+.nav-item.active .nav-item__icon{background:var(--surface)!important;box-shadow:var(--neo-raised-sm)!important;border:1px solid rgba(255,255,255,.55)}
+.nav-item:active .nav-item__icon{box-shadow:var(--neo-inset)!important}
+.dash-card,.chart-card,.today-panel,.top-products,.payments-today-panel,.settings-group,.panel-note,.customer-connected-card,.customer-metric,.sms-control-card,.sms-history-row,.legacy-kpi,.legacy-info-card,.legacy-page-head,.legacy-followup-card,.legacy-month-chart,.legacy-report-inline-kpis span,.legacy-product-performance button,.legacy-sale-row,.product-media-item{border-color:rgba(74,101,91,.10)!important;background:var(--surface)!important;box-shadow:var(--neo-raised-sm)!important}
+.dash-card{min-height:104px;border:0!important;transition:transform .16s ease,box-shadow .16s ease}
+.dash-card[data-go]:hover{transform:translateY(-2px)}
+.dash-card[data-go]:active{transform:translateY(0) scale(.99);box-shadow:var(--neo-inset)!important}
+.dash-card__icon{box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 5px 12px rgba(31,55,47,.14)}
+.section-title{margin-top:16px;font-weight:800;letter-spacing:-.15px}
+.section-title .cnt{background:var(--surface);box-shadow:var(--neo-inset);padding:3px 9px}
+.today-panel,.top-products,.settings-group{overflow:visible}
+.today-row,.top-product-row,.settings-row{border-color:rgba(74,101,91,.10)!important;transition:background .15s ease,transform .15s ease}
+.today-row:hover,.top-product-row:hover,.settings-row:hover{background:color-mix(in srgb,var(--surface-2) 70%,transparent)!important}
+.search-box,.field input,.field select,.field textarea,.tag-input,.jcal,.combo-list,.jcal__monthsel,.jcal__yearinput,.jcal select,.global-search-entry{background:var(--surface-2)!important;border:1px solid rgba(74,101,91,.08)!important;box-shadow:var(--neo-inset)!important}
+.search-box{height:46px;border-radius:14px}
+.field input,.field select,.field textarea{border-radius:13px!important;min-height:44px}
+.field textarea{min-height:92px}
+.field input:focus,.field select:focus,.field textarea:focus,.search-box:focus-within{border-color:color-mix(in srgb,var(--primary) 35%,transparent)!important;box-shadow:var(--neo-inset),var(--neo-focus)!important}
+.tbtn,.btn,.back-btn,.media-upload-btn,.media-mini-btn,.chip,.switch,.jcal__navbtn{border-color:rgba(74,101,91,.10)!important;box-shadow:var(--neo-raised-sm);transition:transform .14s ease,box-shadow .14s ease,background .14s ease}
+.tbtn:active,.btn:active,.back-btn:active,.media-upload-btn:active,.media-mini-btn:active,.chip:active,.jcal__navbtn:active{transform:scale(.985);box-shadow:var(--neo-inset)!important}
+.btn.secondary,.tbtn,.back-btn,.chip,.media-mini-btn{background:var(--surface)!important}
+.btn.primary,.tbtn.tbtn-add,.chip.active{background:linear-gradient(145deg,color-mix(in srgb,var(--primary) 90%,white),var(--primary-dark))!important;color:#fff!important;border-color:transparent!important;box-shadow:5px 5px 13px rgba(15,82,87,.24),-4px -4px 12px rgba(255,255,255,.70)!important}
+.btn.danger{box-shadow:4px 4px 10px rgba(214,72,58,.14),-4px -4px 10px rgba(255,255,255,.60)}
+.chip{padding:8px 14px}
+.rec-card{border:0!important;border-right:4px solid var(--st-new)!important;background:var(--surface)!important;box-shadow:var(--neo-raised-sm)!important;border-radius:17px!important}
+.rec-card.due-today{border-right-color:var(--danger)!important;box-shadow:var(--neo-raised-sm),0 0 0 1px color-mix(in srgb,var(--danger) 22%,transparent)!important}
+.rec-card--linked:hover,.legacy-product-row:hover{box-shadow:var(--neo-raised)!important}
+.rec-card__thumb-wrap,.legacy-product-row__media{border:0!important;box-shadow:var(--neo-inset)!important;background:var(--surface-2)!important}
+.badge{box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+.tabs{background:var(--surface-2)!important;box-shadow:var(--neo-inset)!important;padding:5px;border-radius:14px}
+.tabs button.active{background:var(--surface)!important;box-shadow:var(--neo-raised-sm)!important}
+.modal-backdrop{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);background:rgba(24,39,34,.38)!important}
+.modal{background:var(--surface)!important;border:1px solid rgba(255,255,255,.56)!important;box-shadow:18px 18px 45px rgba(20,43,35,.23),-14px -14px 38px rgba(255,255,255,.55)!important;border-radius:24px 24px 0 0!important}
+.modal__handle{background:color-mix(in srgb,var(--ink-faint) 35%,transparent)!important}
+.fab{background:linear-gradient(145deg,color-mix(in srgb,var(--primary) 90%,white),var(--primary-dark))!important;box-shadow:8px 8px 20px rgba(15,82,87,.28),-6px -6px 18px rgba(255,255,255,.70)!important}
+.fab:active{box-shadow:var(--neo-inset)!important}
+.panel-note{background:linear-gradient(145deg,color-mix(in srgb,var(--primary-tint) 76%,var(--surface)),var(--surface))!important}
+.settings-row__icon,.today-row__icon,.top-product-row__rank,.legacy-followup-date span,.customer-timeline-dot,.legacy-product-performance .rank{box-shadow:3px 3px 8px rgba(31,55,47,.10),-3px -3px 8px rgba(255,255,255,.68)}
+.product-media-item{overflow:hidden}
+.media-upload-btn{background:var(--surface)!important}
+.combo-list{box-shadow:var(--neo-raised)!important}
+.combo-item{border-color:rgba(74,101,91,.10)!important}
+.combo-item:hover,.combo-item.hi{background:var(--surface)!important}
+.legacy-followup-card{border:0!important}
+.legacy-followup-card::before{width:5px}
+.legacy-product-row{border:0!important}
+.legacy-product-open{background:var(--surface)!important;box-shadow:var(--neo-raised-sm)}
+.legacy-product-open:active{box-shadow:var(--neo-inset)}
+.legacy-month-bar__track{box-shadow:var(--neo-inset);background:var(--surface-2)!important}
+.legacy-month-bar__track span{box-shadow:0 -4px 10px rgba(15,82,87,.18)}
+.invoice-doc,.shipping-label{box-shadow:none!important;background:var(--surface)!important;border-color:var(--border)!important}
+:focus-visible{outline:2px solid color-mix(in srgb,var(--primary) 72%,white);outline-offset:3px}
+[data-theme="dark"]{--neo-bg:#152420;--neo-surface:#1b2c27;--neo-shadow-dark:rgba(0,0,0,.38);--neo-shadow-light:rgba(61,88,78,.17);--neo-raised:9px 9px 22px var(--neo-shadow-dark),-8px -8px 20px var(--neo-shadow-light);--neo-raised-sm:5px 5px 13px var(--neo-shadow-dark),-5px -5px 12px var(--neo-shadow-light);--neo-inset:inset 4px 4px 10px rgba(0,0,0,.32),inset -4px -4px 10px rgba(74,103,92,.13);--bg:var(--neo-bg);--surface:var(--neo-surface);--surface-2:#172722;--border:rgba(126,163,149,.13)}
+[data-theme="dark"] body{background-image:radial-gradient(circle at 12% 0%,rgba(63,167,156,.05),transparent 34%)}
+[data-theme="dark"] .topbar,[data-theme="dark"] .bottom-nav{background:rgba(27,44,39,.88)!important;border-color:rgba(126,163,149,.10)!important}
+[data-theme="dark"] #topbarSearchBtn,[data-theme="dark"] .btn.secondary,[data-theme="dark"] .tbtn,[data-theme="dark"] .back-btn,[data-theme="dark"] .chip,[data-theme="dark"] .media-mini-btn{background:var(--surface)!important}
+[data-theme="dark"] .btn.primary,[data-theme="dark"] .tbtn.tbtn-add,[data-theme="dark"] .chip.active{box-shadow:5px 5px 14px rgba(0,0,0,.34),-4px -4px 12px rgba(63,92,81,.15)!important}
+[data-theme="dark"] .modal{border-color:rgba(126,163,149,.12)!important;box-shadow:18px 18px 42px rgba(0,0,0,.42),-12px -12px 32px rgba(63,92,81,.12)!important}
+[data-theme="dark"] .settings-row__icon,[data-theme="dark"] .today-row__icon,[data-theme="dark"] .top-product-row__rank,[data-theme="dark"] .legacy-followup-date span{box-shadow:3px 3px 8px rgba(0,0,0,.28),-3px -3px 8px rgba(63,92,81,.12)}
+@media(min-width:900px){.bottom-nav{border-left:1px solid rgba(74,101,91,.10)!important;border-top:0!important;box-shadow:-12px 0 30px rgba(31,55,47,.09),inset -1px 0 0 rgba(255,255,255,.60)!important}.nav-item{margin-bottom:3px}.nav-item.active{background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:var(--neo-raised-sm)}.view{padding-top:28px}}
+@media(max-width:899px),(hover:none) and (pointer:coarse){.dash-card,.chart-card,.today-panel,.top-products,.payments-today-panel,.settings-group,.panel-note,.rec-card,.legacy-page-head,.legacy-followup-card{box-shadow:5px 5px 13px var(--neo-shadow-dark),-5px -5px 13px var(--neo-shadow-light)!important}.bottom-nav{box-shadow:0 -8px 24px rgba(31,55,47,.10),inset 0 1px 0 rgba(255,255,255,.55)!important}}
+@media(prefers-reduced-motion:reduce){.dash-card,.nav-item__icon,.btn,.tbtn,.chip,.back-btn{transition:none!important}}
+@media print{body{background:#fff!important;background-image:none!important}.invoice-doc,.shipping-label{box-shadow:none!important}}
