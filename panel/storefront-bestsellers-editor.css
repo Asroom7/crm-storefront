@@ -1,0 +1,15 @@
+/* Manual best-sellers editor enhancements. */
+.bs-editor-note{margin:9px 0;padding:9px 10px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2);color:var(--ink-soft);font-size:10.5px;line-height:1.8}
+.bs-editor-note strong{color:var(--ink);font-size:11px}
+.bs-selected-wrap{margin-top:10px;display:grid;gap:7px}
+.bs-selected-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.bs-selected-head strong{font-size:11px}.bs-selected-head span{color:var(--ink-faint);font-size:9.5px}
+.bs-selected-list{display:grid;gap:6px}
+.bs-selected-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.bs-selected-row__title{min-width:0}.bs-selected-row__title strong{display:block;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bs-selected-row__title span{display:block;margin-top:2px;color:var(--ink-faint);font-size:9px}
+.bs-selected-row__actions{display:flex;gap:4px}.bs-selected-row__actions button{width:29px;height:29px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--ink-soft);cursor:pointer}.bs-selected-row__actions button:disabled{opacity:.35;cursor:default}
+.bs-promo-box{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:grid;gap:8px}
+.bs-promo-card{display:grid;gap:8px;padding:9px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}
+.bs-promo-card__head{display:flex;align-items:center;justify-content:space-between;gap:8px}.bs-promo-card__head strong{font-size:10.5px}.bs-promo-card__head label{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--ink-soft)}.bs-promo-card__head input{width:auto;margin:0}
+.bs-promo-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px}.bs-promo-fields label{display:grid;gap:4px;color:var(--ink-soft);font-size:9.5px}.bs-promo-fields input{height:36px;min-width:0;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--ink);padding:7px 8px;font:inherit;font-size:10px}.bs-promo-fields.is-disabled{opacity:.45;pointer-events:none}
+.bs-mode-field-hidden{display:none!important}
+@media(max-width:640px){.bs-promo-fields{grid-template-columns:1fr}}
