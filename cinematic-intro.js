@@ -14,6 +14,23 @@
 
   var video = intro.querySelector('.cinematic-intro-video');
   var shell = document.getElementById('storefront-reveal-shell');
+
+  /* Storefront Editor previews the real page without replaying/locking on the
+     cinematic intro. Normal visitors still get the exact existing behavior. */
+  var editorPreview = false;
+  try { editorPreview = new URLSearchParams(window.location.search).get('editorPreview') === '1'; } catch (e) {}
+  if (editorPreview) {
+    try { if (video) video.pause(); } catch (e) {}
+    if (intro.parentNode) intro.remove();
+    document.body.classList.remove('cinematic-intro-active', 'cinematic-transition-fallback-run');
+    if (shell) {
+      shell.style.transform = 'none';
+      shell.style.opacity = '1';
+    }
+    window.scrollTo(0, 0);
+    return;
+  }
+
   var leaving = false;
   var ready = false;
   var frameReady = false;
@@ -57,9 +74,6 @@
 
     if (intro && intro.parentNode) intro.remove();
 
-    /* Remove the staging state first. At this point the storefront animation
-       is already at translateY(0) / opacity 1, so returning it to normal flow
-       is visually identical and cannot flash. */
     document.body.classList.remove(
       'cinematic-intro-active',
       'cinematic-transition-fallback-run'
@@ -83,8 +97,6 @@
     return;
   }
 
-  /* This class stages the real storefront one viewport below the screen for
-     the whole intro, so no layout/setup work is needed when the handoff starts. */
   document.body.classList.add('cinematic-intro-active');
   window.scrollTo(0, 0);
 
@@ -137,7 +149,6 @@
     var shellAnimation;
 
     try {
-      /* Intro stays completely stationary. Only its opacity changes. */
       introAnimation = intro.animate([
         { opacity: 1 },
         { opacity: 0 }
@@ -147,8 +158,6 @@
         fill: 'forwards'
       });
 
-      /* Storefront starts exactly one viewport below and rises into place while
-         becoming visible during the same 1000ms interval. */
       shellAnimation = shell.animate([
         { transform: 'translate3d(0,100%,0)', opacity: 0 },
         { transform: 'translate3d(0,0,0)', opacity: 1 }
@@ -158,8 +167,6 @@
         fill: 'forwards'
       });
 
-      /* Give both animations the exact same document-timeline start time so
-         their first and last frames are synchronized, not merely similar. */
       var sharedStart = document.timeline && document.timeline.currentTime;
       if (typeof sharedStart === 'number') {
         introAnimation.startTime = sharedStart;
@@ -180,8 +187,6 @@
 
     introAnimation.finished.then(animationFinished).catch(animationFinished);
     shellAnimation.finished.then(animationFinished).catch(animationFinished);
-
-    /* Safety only. Normal cleanup is driven by both 1000ms animations ending. */
     cleanupTimer = window.setTimeout(cleanupTransition, HANDOFF_MS + 120);
   }
 
@@ -198,8 +203,6 @@
       try { video.pause(); } catch (e) {}
     }
 
-    /* No native scrolling and no staging/layout work occurs here. The
-       storefront has already been sitting below the viewport since intro load. */
     runExactHandoff();
   }
 
@@ -229,7 +232,6 @@
       if (!ready && video.currentTime >= CUE_AT_SECONDS) showCue();
     });
 
-    /* The automatic handoff begins immediately when the video actually ends. */
     video.addEventListener('ended', function () {
       showCue();
       finishIntro(true);
@@ -250,8 +252,6 @@
     tryPlay();
     scheduleLoadRetry();
 
-    /* If the browser cannot start the video at all, do not trap the visitor.
-       The manual cue is exposed while the existing poster remains visible. */
     noVideoCueTimer = window.setTimeout(function () {
       if (!frameReady && !leaving) showCue();
     }, NO_VIDEO_CUE_MS);
