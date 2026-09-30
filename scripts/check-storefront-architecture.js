@@ -31,6 +31,8 @@ function includesAll(text, tokens, label) {
 
 const index = read('index.html');
 const home = read('storefront-home.js');
+const educationJs = read('storefront-education.js');
+const educationCss = read('storefront-education.css');
 const editor = read('panel/storefront-editor.js');
 const panel = read('panel/index.html');
 const legacy = read('panel/legacy-merge.js');
@@ -41,27 +43,47 @@ const qaCss = read('storefront-qa.css');
 includesAll(index, [
   'id="storefront-home-root"',
   'storefront-home.js',
+  'storefront-education.css',
+  'storefront-education.js',
   'storefront-qa.css',
   'storefront-qa.js',
   'class="skip-link"',
   'rel="canonical"',
 ], 'Home shell');
 
+// The current requested primary flow intentionally omits the legacy hero and
+// generic product collection. Keep this list in sync with REQUESTED in
+// storefront-home.js instead of requiring retired section types.
 [
-  'search', 'hero', 'categories', 'product-collection', 'best-sellers',
-  'campaign', 'videos', 'banner', 'support-banner', 'trust', 'footer',
+  'search', 'videos', 'best-sellers', 'campaign', 'categories',
 ].forEach((type) => ok(home.includes(`registerSection('${type}'`), `Section registry: ${type}`));
+
+ok(home.includes('function footer(') && home.includes('sf-footer'), 'Home footer renderer');
 
 includesAll(home, [
   "apiFetch('/storefront/public/'",
   "apiFetch('/storefront-insights/public/'",
   'serverNow',
   'clockSkewMs',
-  'preload="none"',
+  'preload="metadata"',
   'loading="lazy"',
-  'renderFallback',
+  'sf-load-error',
   'storefront-preview-config',
 ], 'Storefront runtime');
+
+includesAll(educationCss, [
+  'min-height:33svh',
+  'grid-auto-columns:min(65vw,270px)',
+  'scroll-snap-type:x mandatory',
+  'aspect-ratio:9/16',
+], 'Education rail CSS');
+
+includesAll(educationJs, [
+  "allLink.href='education.html'",
+  'video.autoplay=false',
+  "video.preload='metadata'",
+  'other.pause()',
+], 'Education rail runtime');
 
 includesAll(editor, [
   'data-section-toggle',
@@ -106,8 +128,8 @@ includesAll(qa, [
   "event.key !== 'Escape'",
 ], 'Runtime accessibility');
 
-ok(!/javascript\s*:/i.test(home + editor), 'Dynamic storefront/editor do not emit javascript: URLs');
-ok(!/document\.write\s*\(/.test(home + editor + qa), 'No document.write in dynamic runtime');
+ok(!/javascript\s*:/i.test(home + educationJs + editor), 'Dynamic storefront/editor do not emit javascript: URLs');
+ok(!/document\.write\s*\(/.test(home + educationJs + editor + qa), 'No document.write in dynamic runtime');
 
 const ids = [...index.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
