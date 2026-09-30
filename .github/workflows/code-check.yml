@@ -17,6 +17,7 @@ jobs:
         run: |
           node --check api.js
           node --check storefront-home.js
+          node --check storefront-qa.js
           node --check cinematic-intro.js
       - name: Check all panel JavaScript
         run: |
@@ -24,4 +25,7 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done
-      - run: node scripts/check-html.js
+      - name: Check HTML and local assets
+        run: node scripts/check-html.js
+      - name: Check storefront architecture
+        run: node scripts/check-storefront-architecture.js
