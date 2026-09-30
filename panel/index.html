@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="legacy-merge.css">
 <link rel="stylesheet" href="neumorphism.css">
 <link rel="stylesheet" href="storefront-editor.css?v=20260930-v1">
+<link rel="stylesheet" href="qa-accessibility.css?v=20260930-v1">
 <script src="../api.js"></script>
 <script>requireSellerAuth();</script>
 <script>
@@ -33,8 +34,8 @@
     </div>
   </header>
 
-  <main class="view" id="view"></main>
-  <nav class="bottom-nav" id="bottomNav"></nav>
+  <main class="view" id="view" tabindex="-1"></main>
+  <nav class="bottom-nav" id="bottomNav" aria-label="ناوبری اصلی پنل"></nav>
 </div>
 
 <script src="app.js"></script>

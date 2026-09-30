@@ -1,0 +1,53 @@
+/* Final management-panel QA layer. Keep readability above decorative neumorphism. */
+
+:is(button, a, input, select, textarea, summary, [role="button"]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary, #0f5257) 72%, #fff);
+  outline-offset: 3px;
+}
+
+:is(button, .btn, .tbtn, .nav-item, .settings-row, .chip) {
+  min-height: 42px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-height: 44px;
+}
+
+.field textarea { min-height: 96px; }
+
+.rec-card,
+.settings-group,
+.chart-card,
+.store-editor-card,
+.store-preview-card {
+  contain: layout style;
+}
+
+.store-preview-frame { background: #fff; }
+
+@media (max-width: 640px) {
+  :is(button, .btn, .tbtn, .nav-item, .settings-row, .chip) { min-height: 44px; }
+  .store-section-actions { gap: 5px; }
+  .store-section-action { min-width: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :is(button, a, input, select, textarea, summary, [role="button"]):focus-visible { outline: 2px solid Highlight; }
+  .rec-card,
+  .settings-group,
+  .chart-card,
+  .store-editor-card,
+  .store-section-row,
+  .store-media-item { border: 1px solid CanvasText !important; }
+}
