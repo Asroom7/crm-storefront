@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ویدیوهای آموزشی، نکات استفاده از محصولات آرایشی و مراقبتی و معرفی محصولات.">
+  <meta name="theme-color" content="#fffdfc">
+  <title>آموزش‌ها | Lumière</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="storefront-home.css?v=20260930-v2">
+  <link rel="stylesheet" href="storefront-education.css?v=20260930-v1">
+  <script src="api.js"></script>
+  <style>
+    body{margin:0;background:var(--sf-bg,#fffdfc);color:var(--sf-ink,#211b1e)}
+    .edu-page{min-height:100vh;padding-bottom:64px}
+    .edu-header{position:sticky;top:0;z-index:40;background:rgba(255,253,252,.94);border-bottom:1px solid var(--sf-line,#eee5e8);backdrop-filter:blur(16px)}
+    .edu-header-inner{width:min(calc(100% - 32px),1180px);margin:auto;min-height:62px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px}
+    .edu-back,.edu-cart{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;color:var(--sf-ink,#211b1e);text-decoration:none;font-size:18px}
+    .edu-back:hover,.edu-cart:hover{background:#f7f2f4}
+    .edu-logo{text-align:center;font-weight:900;color:var(--sf-plum,#452b45);font-size:20px}
+    .edu-hero{width:min(calc(100% - 32px),1180px);margin:0 auto;padding:34px 0 18px}
+    .edu-kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:var(--sf-rose-soft,#fae9ef);color:var(--sf-rose-dark,#a92f58);font-size:10px;font-weight:900}
+    .edu-hero h1{margin:10px 0 6px;font-size:clamp(26px,7vw,42px);line-height:1.35}
+    .edu-hero p{margin:0;max-width:680px;color:var(--sf-muted,#746b70);font-size:13px;line-height:2}
+    .edu-grid{width:min(calc(100% - 32px),1180px);margin:14px auto 0;display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:14px}
+    .edu-card{display:grid;grid-template-columns:minmax(108px,38%) minmax(0,1fr);min-height:236px;border:1px solid var(--sf-line,#eee5e8);border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(67,37,50,.06)}
+    .edu-media{position:relative;min-width:0;background:#eee8eb;overflow:hidden}
+    .edu-media video{display:block;width:100%;height:100%;object-fit:cover;background:#eee8eb}
+    .edu-copy{min-width:0;padding:16px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+    .edu-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:var(--sf-rose-soft,#fae9ef);color:var(--sf-rose-dark,#a92f58);font-size:9.5px;font-weight:900}
+    .edu-copy h2{width:100%;margin:9px 0 7px;font-size:14px;line-height:1.8;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+    .edu-copy p{margin:0;color:var(--sf-muted,#746b70);font-size:10.5px;line-height:1.8}
+    .edu-product-link{margin-top:auto;display:inline-flex;align-items:center;gap:5px;min-height:36px;color:var(--sf-plum,#452b45);font-size:11px;font-weight:900;text-decoration:none}
+    .edu-empty,.edu-error{width:min(calc(100% - 32px),1180px);margin:20px auto;padding:30px;border:1px dashed var(--sf-line,#eee5e8);border-radius:20px;text-align:center;color:var(--sf-muted,#746b70);background:#fff}
+    .edu-loading{width:min(calc(100% - 32px),1180px);margin:20px auto;display:grid;gap:12px}
+    .edu-skeleton{height:236px;border-radius:22px;background:linear-gradient(90deg,#f5f0f2 25%,#faf7f8 40%,#f5f0f2 60%);background-size:300% 100%;animation:eduShimmer 1.2s infinite}
+    @keyframes eduShimmer{to{background-position:-100% 0}}
+    @media(min-width:760px){.edu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.edu-card{min-height:260px}.edu-skeleton{height:260px}}
+    @media(min-width:1120px){.edu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.edu-card{grid-template-columns:minmax(118px,40%) minmax(0,1fr)}}
+    @media(prefers-reduced-motion:reduce){.edu-skeleton{animation:none}}
+  </style>
+</head>
+<body>
+  <main class="edu-page">
+    <header class="edu-header">
+      <div class="edu-header-inner">
+        <a class="edu-back" href="index.html#education-videos" aria-label="بازگشت به صفحه اصلی">→</a>
+        <div class="edu-logo">Lumière</div>
+        <a class="edu-cart" href="cart.html" aria-label="سبد خرید">🛍</a>
+      </div>
+    </header>
+
+    <section class="edu-hero">
+      <span class="edu-kicker">LEARN · BEAUTY · CARE</span>
+      <h1>آموزش‌ها</h1>
+      <p>نکات، ترفندها و ویدیوهای کوتاه برای استفاده بهتر از محصولات آرایشی و مراقبتی.</p>
+    </section>
+
+    <div id="education-list" class="edu-loading" aria-live="polite">
+      <div class="edu-skeleton"></div>
+      <div class="edu-skeleton"></div>
+      <div class="edu-skeleton"></div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      'use strict';
+      const root=document.getElementById('education-list');
+      const toArray=v=>Array.isArray(v)?v:[];
+      const mediaUrl=value=>{
+        if(!value)return'';
+        try{
+          const u=new URL(String(value),location.href);
+          return (u.protocol==='http:'||u.protocol==='https:')?u.href:'';
+        }catch(e){return'';}
+      };
+
+      function buildCard(row,index){
+        const card=document.createElement('article');
+        card.className='edu-card';
+
+        const media=document.createElement('div');
+        media.className='edu-media';
+        const video=document.createElement('video');
+        video.controls=true;
+        video.muted=true;
+        video.playsInline=true;
+        video.preload='metadata';
+        video.setAttribute('aria-label','ویدیوی آموزشی '+(index+1));
+        const source=document.createElement('source');
+        source.src=row.url;
+        video.appendChild(source);
+        media.appendChild(video);
+
+        const copy=document.createElement('div');
+        copy.className='edu-copy';
+        const badge=document.createElement('span');
+        badge.className='edu-badge';
+        badge.textContent='محتوای آموزشی';
+        const title=document.createElement('h2');
+        title.textContent=row.product.name||'آموزش محصول';
+        const description=document.createElement('p');
+        description.textContent='نکات و روش استفاده از محصول';
+        const link=document.createElement('a');
+        link.className='edu-product-link';
+        link.href='product-detail.html?id='+encodeURIComponent(row.product.id);
+        link.textContent='مشاهده محصول مرتبط ‹';
+        copy.append(badge,title,description,link);
+        card.append(media,copy);
+        return {card,video};
+      }
+
+      async function load(){
+        try{
+          if(typeof apiFetch!=='function'||typeof SELLER_ID==='undefined')throw new Error('Store API is unavailable');
+          const products=await apiFetch('/products/public/'+SELLER_ID);
+          const rows=[];
+          toArray(products).forEach(product=>{
+            toArray(product&&product.media).forEach(media=>{
+              const url=media&&media.kind==='video'?mediaUrl(media.url):'';
+              if(url)rows.push({product,url});
+            });
+          });
+
+          if(!rows.length){
+            root.className='edu-empty';
+            root.textContent='هنوز ویدیوی آموزشی برای نمایش ثبت نشده است.';
+            return;
+          }
+
+          const grid=document.createElement('section');
+          grid.className='edu-grid';
+          grid.setAttribute('aria-label','همه ویدیوهای آموزشی');
+          const videos=[];
+          rows.forEach((row,index)=>{
+            const built=buildCard(row,index);
+            videos.push(built.video);
+            grid.appendChild(built.card);
+          });
+          videos.forEach(video=>video.addEventListener('play',()=>{
+            videos.forEach(other=>{if(other!==video&&!other.paused)other.pause();});
+          }));
+          root.replaceWith(grid);
+        }catch(error){
+          console.error(error);
+          root.className='edu-error';
+          root.textContent='در دریافت ویدیوهای آموزشی مشکلی پیش آمد. لطفاً صفحه را دوباره بارگذاری کنید.';
+        }
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>
