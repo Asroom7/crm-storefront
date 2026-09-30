@@ -4,50 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>پنل مدیریت</title>
-<meta name="theme-color" content="#0F5257">
+<meta name="theme-color" content="#315d68">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="modernize.css">
 <link rel="stylesheet" href="modal-scroll-fix.css">
 <link rel="stylesheet" href="customer-crm-features.css">
 <link rel="stylesheet" href="legacy-merge.css">
 <link rel="stylesheet" href="neumorphism.css">
+<link rel="stylesheet" href="theme-2026.css?v=20260930-v1">
 <link rel="stylesheet" href="storefront-editor.css?v=20260930-v1">
 <link rel="stylesheet" href="qa-accessibility.css?v=20260930-v1">
 <script src="../api.js"></script>
 <script>requireSellerAuth();</script>
-<script>
-  (function () {
-    try {
-      var t = localStorage.getItem('crm-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    } catch (e) {}
-  })();
-</script>
+<script>(function(){try{var t=localStorage.getItem('crm-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 </head>
 <body>
-<div id="app">
-  <header class="topbar">
-    <div class="topbar__title">پنل مدیریت</div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="topbarSearchBtn" style="background:none;border:none;color:inherit;padding:4px;cursor:pointer;display:flex;" aria-label="جستجو"></button>
-      <div class="topbar__date" id="topbarDate"></div>
-    </div>
-  </header>
-
-  <main class="view" id="view" tabindex="-1"></main>
-  <nav class="bottom-nav" id="bottomNav" aria-label="ناوبری اصلی پنل"></nav>
-</div>
-
-<script src="app.js"></script>
-<script src="order-payment-workflow.js"></script>
-<script src="customer-connectivity.js"></script>
-<script src="customer-crm-features.js"></script>
-<script src="modernize.js"></script>
-<script src="modal-scroll-fix.js"></script>
-<script src="customer-profile-polish.js"></script>
-<script src="customer-list-address.js"></script>
-<script src="legacy-merge.js"></script>
-<script src="storefront-editor.js?v=20260930-v1"></script>
-<script src="storefront-editor-router.js?v=20260930-v1"></script>
-</body>
-</html>
+<div id="app"><header class="topbar"><div class="topbar__title">پنل مدیریت</div><div style="display:flex;align-items:center;gap:10px;"><button id="topbarSearchBtn" style="background:none;border:none;color:inherit;padding:4px;cursor:pointer;display:flex;" aria-label="جستجو"></button><div class="topbar__date" id="topbarDate"></div></div></header><main class="view" id="view" tabindex="-1"></main><nav class="bottom-nav" id="bottomNav" aria-label="ناوبری اصلی پنل"></nav></div>
+<script src="app.js"></script><script src="order-payment-workflow.js"></script><script src="customer-connectivity.js"></script><script src="customer-crm-features.js"></script><script src="modernize.js"></script><script src="modal-scroll-fix.js"></script><script src="customer-profile-polish.js"></script><script src="customer-list-address.js"></script><script src="legacy-merge.js"></script><script src="storefront-editor.js?v=20260930-v1"></script><script src="storefront-editor-router.js?v=20260930-v1"></script>
+</body></html>
