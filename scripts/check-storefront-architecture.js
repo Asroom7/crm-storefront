@@ -36,6 +36,7 @@ const panel = read('panel/index.html');
 const legacy = read('panel/legacy-merge.js');
 const intro = read('cinematic-intro.js');
 const qa = read('storefront-qa.js');
+const qaCss = read('storefront-qa.css');
 
 includesAll(index, [
   'id="storefront-home-root"',
@@ -96,10 +97,8 @@ includesAll(legacy, [
   'productRevenue',
 ], 'Legacy safe merge');
 
-includesAll(intro, [
-  'prefers-reduced-motion',
-  'sessionStorage',
-], 'Cinematic intro safeguards');
+includesAll(intro, ['sessionStorage', 'HANDOFF_MS = 1000'], 'Cinematic intro safeguards');
+includesAll(qaCss, ['prefers-reduced-motion', 'focus-visible', 'forced-colors'], 'Accessibility CSS');
 
 includesAll(qa, [
   'IntersectionObserver',
