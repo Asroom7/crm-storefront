@@ -1,0 +1,27 @@
+/* High-contrast soft-neumorphic palette override — presentation only */
+:root{
+  --bg:#edf1f4;
+  --surface:#f4f7f9;
+  --surface-2:#e7edf1;
+  --ink:#17242b;
+  --ink-soft:#52636d;
+  --ink-faint:#7d8d96;
+  --border:rgba(61,82,94,.15);
+  --primary:#315d68;
+  --primary-dark:#234650;
+  --primary-tint:#dce9ec;
+  --accent:#b77952;
+  --accent-tint:#f3e4d9;
+  --danger:#bd4f4f;
+  --danger-tint:#f4dddd;
+  --success:#39745d;
+  --success-tint:#dcebe4;
+  --neo-bg:#edf1f4;
+  --neo-surface:#f4f7f9;
+  --neo-shadow-dark:rgba(45,66,77,.18);
+  --neo-shadow-light:rgba(255,255,255,.94);
+}
+body{background-image:radial-gradient(circle at 12% 0%,rgba(255,255,255,.78),transparent 30%),radial-gradient(circle at 90% 100%,rgba(49,93,104,.07),transparent 34%)}
+.dash-card,.chart-card,.today-panel,.top-products,.payments-today-panel,.settings-group,.panel-note{color:var(--ink)}
+.section-title,.topbar__title{color:var(--ink)}
+.badge,.chip,.btn,.tbtn,input,select,textarea{font-weight:600}
