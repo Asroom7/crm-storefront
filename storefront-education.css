@@ -28,7 +28,7 @@
 .sf-video-demo{
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:min(72vw,285px);
+  grid-auto-columns:min(65vw,270px);
   grid-template-columns:none;
   gap:12px;
   overflow-x:auto;
