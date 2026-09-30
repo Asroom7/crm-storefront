@@ -1,13 +1,13 @@
-/* Educational video rail — mobile-first enhancement for the storefront home. */
+/* Educational video rail — compact, swipeable, mobile-first. */
 .sf-video-section{
   position:relative;
   min-height:33svh;
-  padding-top:28px;
+  padding-top:24px;
   padding-bottom:8px;
 }
 .sf-video-section .sf-section-head{
   align-items:center;
-  margin-bottom:12px;
+  margin-bottom:10px;
 }
 .sf-video-section .sf-section-head h2{
   font-size:clamp(18px,5vw,24px);
@@ -16,12 +16,13 @@
   margin-top:3px;
 }
 .sf-video-section .sf-section-head>a{
-  min-height:36px;
+  min-height:34px;
   padding:7px 11px;
   border:1px solid var(--sf-line);
   border-radius:999px;
-  background:rgba(255,255,255,.86);
+  background:rgba(255,255,255,.88);
   color:var(--sf-plum);
+  box-shadow:0 6px 18px rgba(67,37,50,.05);
 }
 
 .sf-video-grid,
@@ -46,10 +47,9 @@
 .sf-video-card{
   scroll-snap-align:start;
   scroll-snap-stop:always;
-  display:grid;
-  grid-template-columns:minmax(96px,38%) minmax(0,1fr);
-  min-height:220px;
-  max-height:250px;
+  display:flex;
+  min-width:0;
+  height:clamp(220px,27svh,250px);
   border:1px solid var(--sf-line);
   border-radius:22px;
   overflow:hidden;
@@ -64,9 +64,9 @@
 }
 .sf-video-media{
   position:relative;
-  width:100%;
+  flex:0 0 auto;
   height:100%;
-  aspect-ratio:auto;
+  aspect-ratio:9/16;
   background:#eee8eb;
   overflow:hidden;
 }
@@ -85,11 +85,15 @@
   background:rgba(35,25,31,.58);
   border:1px solid rgba(255,255,255,.45);
   backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
   pointer-events:none;
   opacity:.92;
+  transition:opacity .16s ease,transform .16s ease;
 }
-.sf-video-media:focus-within::after,
-.sf-video-media:hover::after{opacity:0}
+.sf-video-card.is-playing .sf-video-media::after{
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.9);
+}
 .sf-video-media video{
   display:block;
   width:100%;
@@ -99,11 +103,12 @@
 }
 .sf-video-copy{
   min-width:0;
+  flex:1 1 auto;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:flex-start;
-  padding:15px 14px;
+  padding:14px 12px;
 }
 .sf-video-copy>span{
   display:inline-flex;
@@ -114,7 +119,7 @@
   border-radius:999px;
   background:var(--sf-rose-soft);
   color:var(--sf-rose-dark);
-  font-size:9.5px;
+  font-size:9px;
   font-weight:900;
   white-space:nowrap;
   overflow:hidden;
@@ -122,8 +127,8 @@
 }
 .sf-video-copy h3{
   width:100%;
-  margin:8px 0 12px;
-  font-size:13px;
+  margin:8px 0 10px;
+  font-size:12.5px;
   line-height:1.75;
   display:-webkit-box;
   -webkit-box-orient:vertical;
@@ -132,18 +137,18 @@
 }
 .sf-video-copy a{
   margin-top:auto;
-  min-height:32px;
+  min-height:30px;
   display:inline-flex;
   align-items:center;
   gap:4px;
   color:var(--sf-plum);
-  font-size:10.5px;
+  font-size:10px;
   font-weight:900;
 }
 
 .sf-video-demo-card{
   scroll-snap-align:start;
-  min-height:220px;
+  height:clamp(220px,27svh,250px);
   border-radius:22px;
   background:linear-gradient(145deg,#f6eef2,#eee8ee);
   border:1px solid var(--sf-line);
@@ -162,33 +167,35 @@
   box-shadow:0 10px 24px rgba(69,43,69,.18);
 }
 
-/* A subtle fade at the left edge hints that more cards are available. */
+/* A subtle fade on the left is another hint that the rail continues. */
 .sf-video-section::after{
   content:'';
   position:absolute;
   left:16px;
   bottom:8px;
   width:24px;
-  height:220px;
+  height:clamp(220px,27svh,250px);
   pointer-events:none;
   background:linear-gradient(90deg,var(--sf-bg),transparent);
-  opacity:.58;
+  opacity:.55;
   z-index:2;
 }
 
+@media (max-width:430px){
+  .sf-video-section .sf-section-head p{display:none}
+}
+
 @media (min-width:700px){
-  .sf-video-section{padding-top:42px}
+  .sf-video-section{padding-top:36px}
   .sf-video-grid,.sf-video-demo{
     grid-auto-columns:min(43vw,360px);
     gap:14px;
   }
-  .sf-video-card{
-    grid-template-columns:minmax(120px,40%) minmax(0,1fr);
-    min-height:250px;
-    max-height:280px;
+  .sf-video-card,
+  .sf-video-demo-card{
+    height:clamp(240px,28svh,280px);
   }
-  .sf-video-demo-card{min-height:250px}
-  .sf-video-section::after{height:250px}
+  .sf-video-section::after{height:clamp(240px,28svh,280px)}
 }
 
 @media (min-width:1050px){
@@ -197,10 +204,8 @@
     grid-template-columns:repeat(3,minmax(0,1fr));
     overflow:visible;
   }
-  .sf-video-card{
-    min-height:260px;
-    max-height:300px;
-  }
+  .sf-video-card,
+  .sf-video-demo-card{height:280px}
   .sf-video-section::after{display:none}
 }
 
