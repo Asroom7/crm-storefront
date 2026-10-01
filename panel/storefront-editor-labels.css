@@ -1,0 +1,114 @@
+/* Storefront editor control labels: scoped to the editor UI only. */
+body:has(.store-editor-complete) #topbarSearchBtn{
+  min-width:auto!important;
+  width:auto!important;
+  padding:7px 10px!important;
+  gap:6px;
+  border-radius:12px;
+}
+body:has(.store-editor-complete) #topbarSearchBtn::after{
+  content:'جستجو';
+  font-size:10px;
+  font-weight:850;
+  color:var(--ink-soft);
+  white-space:nowrap;
+}
+
+.store-editor-complete .ec-actions .txt{display:inline!important}
+.store-editor-complete .ec-actions .ec-btn,
+.store-editor-complete .ec-actions .ec-icon-btn{
+  width:auto!important;
+  min-width:0;
+  padding-inline:10px!important;
+  white-space:nowrap;
+}
+.store-editor-complete .ec-actions [data-back]::after{content:'بازگشت'}
+.store-editor-complete .ec-actions [data-undo]::after{content:'برگشت'}
+.store-editor-complete .ec-actions [data-redo]::after{content:'جلو'}
+.store-editor-complete .ec-actions [data-back]::after,
+.store-editor-complete .ec-actions [data-undo]::after,
+.store-editor-complete .ec-actions [data-redo]::after{
+  font-size:10px;
+  font-weight:850;
+}
+
+.store-editor-complete .ec-row-actions{
+  gap:6px;
+  flex-wrap:wrap;
+}
+.store-editor-complete .ec-mini,
+.store-editor-complete .ec-switch{
+  width:auto;
+  min-width:64px;
+  height:32px;
+  padding:0 9px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  font:inherit;
+  font-size:9px;
+  font-weight:850;
+  white-space:nowrap;
+}
+.store-editor-complete .ec-mini[data-edit]::after{content:'ویرایش'}
+.store-editor-complete .ec-mini[data-duplicate]::after{content:'کپی'}
+.store-editor-complete .ec-mini[data-delete]::after{content:'حذف'}
+.store-editor-complete .ec-switch::before{
+  content:'نمایش';
+  position:static;
+  font-size:9px;
+  font-weight:850;
+  color:#6f7280;
+}
+.store-editor-complete .ec-switch.on::before{content:'فعال';color:#fff}
+.store-editor-complete .ec-switch{
+  justify-content:flex-start;
+  padding-right:29px;
+  position:relative;
+}
+.store-editor-complete .ec-switch:after{
+  right:6px;
+  top:8px;
+}
+.store-editor-complete .ec-switch.on:after{right:6px}
+
+@media(max-width:980px){
+  .store-editor-complete .ec-topbar{flex-wrap:wrap}
+  .store-editor-complete .ec-title{min-width:170px}
+  .store-editor-complete .ec-actions{
+    width:100%;
+    overflow-x:auto;
+    padding:2px 0 4px;
+    scrollbar-width:none;
+  }
+  .store-editor-complete .ec-actions::-webkit-scrollbar{display:none}
+  .store-editor-complete .ec-actions .ec-btn,
+  .store-editor-complete .ec-actions .ec-icon-btn{
+    min-height:36px;
+    flex:0 0 auto;
+  }
+}
+
+@media(max-width:640px){
+  .store-editor-complete .ec-section-row{
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .store-editor-complete .ec-section-copy{min-width:180px}
+  .store-editor-complete .ec-row-actions{
+    order:4;
+    width:100%;
+    padding-top:8px;
+    margin-top:3px;
+    border-top:1px solid rgba(91,91,115,.08);
+    justify-content:flex-start;
+  }
+  .store-editor-complete .ec-mini,
+  .store-editor-complete .ec-switch{
+    min-width:72px;
+    height:34px;
+    font-size:9.5px;
+  }
+  body:has(.store-editor-complete) #topbarSearchBtn::after{font-size:9px}
+}
