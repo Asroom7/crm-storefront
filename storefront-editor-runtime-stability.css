@@ -1,0 +1,13 @@
+/* Runtime stability overrides for editor-managed storefront sections. */
+@media(max-width:700px){
+  /* Avoid the self-referential --sec-visible override from the earlier runtime
+     stylesheet. Mobile keeps two columns/cards while still respecting the
+     configured card minimum width, producing the intended partial-next-card
+     behavior when cards are wider. */
+  .sf-editor-items{grid-auto-columns:minmax(var(--sec-card-min,180px),calc((100% - var(--sec-gap,12px))/2))}
+  .sf-editor-items.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:430px){
+  .sf-editor-items{scroll-padding-inline:2px;-webkit-overflow-scrolling:touch}
+  .sf-editor-section{max-width:100%;overflow:hidden}
+}
