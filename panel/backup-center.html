@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مرکز بکاپ امن</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="backup-center.css?v=20261001-v1">
+<script src="../api.js"></script>
+<script>requireSellerAuth();</script>
+</head>
+<body>
+<main class="backup-shell">
+  <div class="backup-top">
+    <div>
+      <h1>مرکز بکاپ امن</h1>
+      <p>سه لایه‌ی جدا برای کد، تنظیمات سایت و داده‌های واقعی. چون ظاهراً اعتماد کورکورانه به یک نسخه، ورزش پرخطری است.</p>
+    </div>
+    <a class="back-link" href="index.html#/settings">بازگشت به پنل</a>
+  </div>
+
+  <div class="backup-notice">
+    فایل بکاپ داده می‌تواند شامل اطلاعات مشتری، سفارش و پرداخت باشد. این فایل فقط روی دستگاه شما دانلود می‌شود و نباید داخل مخزن عمومی GitHub آپلود یا Commit شود.
+  </div>
+
+  <section class="backup-grid" aria-label="انواع بکاپ">
+    <article class="backup-card">
+      <div class="backup-card__icon" aria-hidden="true">⌘</div>
+      <h2>۱. بکاپ کد</h2>
+      <p>نسخه‌ی تأییدشده‌ی کد از توسعه‌ی روزمره جدا نگه داشته شده و نقطه‌ی بازگشت مستقل دارد.</p>
+      <div class="backup-meta">stable-approved<br>backup-code-approved-2026-10-01<br>afd0c66d51f742548d7c63abfb0faa307f355cca</div>
+      <button class="backup-btn secondary" type="button" disabled>بکاپ کد فعال است ✓</button>
+    </article>
+
+    <article class="backup-card">
+      <div class="backup-card__icon" aria-hidden="true">⚙</div>
+      <h2>۲. تنظیمات و محتوای سایت</h2>
+      <p>تنظیمات فروشگاه، نسخه‌های ویرایشگر و اطلاعات رسانه‌ای قابل دریافت از بک‌اند را در یک JSON محلی ذخیره می‌کند.</p>
+      <div class="backup-meta">Storefront config<br>Versions<br>Media metadata</div>
+      <button class="backup-btn" id="backupSettingsBtn" type="button">دانلود بکاپ تنظیمات</button>
+    </article>
+
+    <article class="backup-card">
+      <div class="backup-card__icon" aria-hidden="true">▦</div>
+      <h2>۳. داده‌های واقعی</h2>
+      <p>محصولات، مشتریان، فروش‌ها، پرداخت‌ها، سفارش‌ها، گفتگوها و دسته‌بندی‌های قابل دریافت را خروجی می‌گیرد.</p>
+      <div class="backup-meta">Customers · Products · Sales<br>Payments · Orders · Conversations · Categories</div>
+      <button class="backup-btn" id="backupDataBtn" type="button">دانلود بکاپ داده</button>
+    </article>
+  </section>
+
+  <section class="backup-full">
+    <div>
+      <h2>بکاپ کامل سه‌لایه</h2>
+      <p>متادیتای نسخه‌ی کد + تنظیمات فروشگاه + داده‌های واقعی را در یک فایل JSON واحد ذخیره می‌کند.</p>
+    </div>
+    <button class="backup-btn" id="backupFullBtn" type="button">دانلود بکاپ کامل</button>
+  </section>
+
+  <div class="backup-log" id="backupLog" aria-live="polite"></div>
+</main>
+<script src="backup-center.js?v=20261001-v1"></script>
+</body>
+</html>
