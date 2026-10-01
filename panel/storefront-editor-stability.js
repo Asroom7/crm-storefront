@@ -8,7 +8,7 @@ function clone(v){return JSON.parse(JSON.stringify(v));}
 function toastSafe(m){if(typeof toast==='function')toast(m);}
 function productRows(){try{return typeof state!=='undefined'&&Array.isArray(state.products)?state.products:[];}catch(e){return[];}}
 function productImage(p){if(!p)return'';const m=Array.isArray(p.media)?p.media.find(x=>x&&(!x.kind||x.kind==='image')&&x.url):null;return(m&&m.url)||p.imageUrl||p.image||p.thumbnailUrl||p.coverUrl||p.photoUrl||'';}
-function safe(v){if(typeof esc==='function')return esc(v==null?'':String(v));return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));}
+function safe(v){if(typeof esc==='function')return esc(v==null?'':String(v));return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function fa(v){return typeof faDigits==='function'?faDigits(v):String(v);}
 
 /* The legacy editor also registered a hash listener. Capture the editor route
@@ -90,8 +90,10 @@ function replaceVideoRefs(oldUrl,newUrl){
   if(changed&&E.iframe&&E.iframe.contentWindow)try{E.iframe.contentWindow.postMessage({type:'storefront-preview-config',config:clone(E.config),theme:clone(E.theme||{})},location.origin);}catch(e){}
 }
 document.addEventListener('click',function(event){
+  const normalUpload=event.target.closest&&event.target.closest('[data-upload],[data-video-upload]');
+  if(normalUpload){pendingReplaceUrl='';return;}
   const replace=event.target.closest&&event.target.closest('.ec-media-item [data-replace]');
-  if(replace){const item=replace.closest('.ec-media-item'),media=item&&item.querySelector('.ec-media-visual img,.ec-media-visual video');pendingReplaceUrl=media?(media.currentSrc||media.src||''):'';return;}
+  if(replace){const item=replace.closest('.ec-media-item'),media=item&&item.querySelector('.ec-media-visual img,.ec-media-visual video');pendingReplaceUrl=media?(media.currentSrc||media.src||''):'';window.setTimeout(()=>{pendingReplaceUrl='';},30000);return;}
   const del=event.target.closest&&event.target.closest('.ec-media-item [data-del]');
   if(del){const item=del.closest('.ec-media-item'),media=item&&item.querySelector('.ec-media-visual img,.ec-media-visual video'),url=media?(media.currentSrc||media.src||''):'';const refs=refCount(url);if(refs>0){event.preventDefault();event.stopImmediatePropagation();toastSafe('این رسانه در '+fa(refs)+' بخش استفاده شده؛ اول «جایگزین» کن تا لینک شکسته ایجاد نشود.');}}
 },true);
