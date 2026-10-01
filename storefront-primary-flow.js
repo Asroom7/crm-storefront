@@ -24,6 +24,9 @@
     const allLink = campaign.querySelector('.sf-section-head>a');
     if (allLink && !allLink.textContent.trim()) allLink.innerHTML = 'مشاهده همه <span>‹</span>';
 
+    /* Editor-aware campaign renderer owns the timer. Only legacy markup gets a placeholder. */
+    if (campaign.hasAttribute('data-section-id')) return;
+
     const head = campaign.querySelector('.sf-section-head');
     if (head && !head.querySelector('.sf-countdown')) {
       const countdown = document.createElement('div');
@@ -37,19 +40,16 @@
 
   function applyPrimaryFlow() {
     queued = false;
+    const pinkBox = root.querySelector('.sf-campaign-section');
+    preparePinkBox(pinkBox);
 
-    /* The complete visual editor is authoritative for order and per-section
-       behavior (including hiding the campaign timer). Do not "help" it by
-       reordering nodes or restoring legacy UI that the user explicitly hid. */
     if (root.dataset.editorManagedOrder === '1' || root.querySelector('[data-section-id]')) return;
 
     const searchSection = root.querySelector('.sf-search-block');
     const magicBox = root.querySelector('.sf-video-section');
     const bestSellers = root.querySelector('.sf-best-sellers');
-    const pinkBox = root.querySelector('.sf-campaign-section');
     const categories = root.querySelector('#sf-categories');
 
-    preparePinkBox(pinkBox);
     if (searchSection && magicBox) placeAfter(magicBox, searchSection);
     if (magicBox && bestSellers) placeAfter(bestSellers, magicBox);
     if (bestSellers && pinkBox) placeAfter(pinkBox, bestSellers);

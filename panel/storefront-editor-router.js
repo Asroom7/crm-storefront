@@ -30,11 +30,7 @@
   router = async function () {
     const routeName = location.hash.replace(/^#\/?/, '').split('/')[0];
     if (routeName === 'storefront-editor') {
-      /* The complete editor owns best-seller mode, ordering and promotions.
-         Loading the legacy enhancer here would monkey-patch sellerApiFetch and
-         force best-sellers back to manual mode. Keep it only as a fallback for
-         older builds where the complete editor is unavailable. */
-      if (!window.StorefrontEditorComplete) await ensureBestSellerEnhancer();
+      await ensureBestSellerEnhancer();
       if (typeof closeMenu === 'function') closeMenu();
       if (typeof renderNav === 'function') renderNav('settings');
       const view = document.getElementById('view');
@@ -47,11 +43,5 @@
     return baseRouter();
   };
 
-  if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'storefront-editor' && !window.StorefrontEditorComplete) {
-    /* During the initial synchronous script pass the complete editor may not be
-       loaded yet. Defer once so later scripts can register it before deciding. */
-    window.setTimeout(function () {
-      if (!window.StorefrontEditorComplete) ensureBestSellerEnhancer();
-    }, 0);
-  }
+  if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'storefront-editor') ensureBestSellerEnhancer();
 })();
