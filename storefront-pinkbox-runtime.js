@@ -1,8 +1,11 @@
-/* Pink-box campaign renderer: shows discounted products only. */
+/* Pink-box campaign renderer: shows discounted products only, even when legacy saved config omits the campaign section. */
 (function () {
   'use strict';
 
   if (!window.StorefrontHome || !window.StorefrontHome.registry) return;
+
+  const root = document.getElementById('storefront-home-root');
+  let fallbackStarted = false;
 
   function asArray(value) { return Array.isArray(value) ? value : []; }
 
@@ -79,22 +82,55 @@
     return '<div class="sf-countdown" data-end-at="' + escapeHtml(end.toISOString()) + '"><span>تا پایان پیشنهاد</span><strong>--:--:--</strong></div>';
   }
 
-  window.StorefrontHome.registry.campaign = function (block, ctx) {
-    const settings = block.settings || {};
-    const selected = productByIds(settings.productIds, ctx.products).filter(isDiscounted);
-    let products = selected.length ? selected : asArray(ctx.products).filter(isDiscounted);
-    products = products.slice(0, Math.max(1, Math.min(10, safeNumber(settings.limit) || 8)));
+  function renderPinkBox(products, settings) {
+    settings = settings || {};
+    const selected = productByIds(settings.productIds, products).filter(isDiscounted);
+    let discounted = selected.length ? selected : asArray(products).filter(isDiscounted);
+    discounted = discounted.slice(0, Math.max(1, Math.min(10, safeNumber(settings.limit) || 8)));
 
-    const timer = countdown(settings.endsAt);
     const head = '<div class="sf-section-head">' +
       '<div><h2>جعبه صورتی</h2><p>تخفیف‌های ویژه و محدود</p></div>' +
-      timer +
+      countdown(settings.endsAt) +
       '<a href="products.html">مشاهده همه <span>‹</span></a>' +
     '</div>';
 
     return '<section class="sf-section sf-container sf-campaign-section sf-pink-box" data-section-role="pink-box"><div class="sf-campaign">' +
       head +
-      (products.length ? '<div class="sf-product-scroll">' + products.map(card).join('') + '</div>' : '<div class="sf-section-empty">هنوز محصول تخفیف‌دار برای جعبه صورتی ثبت نشده است.</div>') +
+      (discounted.length ? '<div class="sf-product-scroll">' + discounted.map(card).join('') + '</div>' : '<div class="sf-section-empty">هنوز محصول تخفیف‌دار برای جعبه صورتی ثبت نشده است.</div>') +
     '</div></section>';
+  }
+
+  window.StorefrontHome.registry.campaign = function (block, ctx) {
+    return renderPinkBox(ctx.products, block.settings || {});
   };
+
+  async function ensureFallbackPinkBox() {
+    if (!root || root.querySelector('.sf-campaign-section')) return;
+    if (fallbackStarted) return;
+    fallbackStarted = true;
+
+    try {
+      const products = await apiFetch('/products/public/' + SELLER_ID);
+      if (root.querySelector('.sf-campaign-section')) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = renderPinkBox(products || [], {});
+      const section = wrapper.firstElementChild;
+      const bestSellers = root.querySelector('.sf-best-sellers');
+      const footer = root.querySelector('.sf-footer');
+
+      if (bestSellers && bestSellers.nextSibling) root.insertBefore(section, bestSellers.nextSibling);
+      else if (bestSellers) root.appendChild(section);
+      else if (footer) root.insertBefore(section, footer);
+      else root.appendChild(section);
+    } catch (error) {
+      console.error('Pink box fallback failed', error);
+    }
+  }
+
+  window.addEventListener('storefront:home-ready', function () {
+    window.requestAnimationFrame(ensureFallbackPinkBox);
+  });
+
+  window.setTimeout(ensureFallbackPinkBox, 1800);
 })();
