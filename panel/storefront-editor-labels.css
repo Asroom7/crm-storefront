@@ -55,13 +55,13 @@ body:has(.store-editor-complete) #topbarSearchBtn::after{
 .store-editor-complete .ec-mini[data-duplicate]::after{content:'کپی'}
 .store-editor-complete .ec-mini[data-delete]::after{content:'حذف'}
 .store-editor-complete .ec-switch::before{
-  content:'نمایش';
+  content:'مخفی';
   position:static;
   font-size:9px;
   font-weight:850;
   color:#6f7280;
 }
-.store-editor-complete .ec-switch.on::before{content:'فعال';color:#fff}
+.store-editor-complete .ec-switch.on::before{content:'نمایش';color:#fff}
 .store-editor-complete .ec-switch{
   justify-content:flex-start;
   padding-right:29px;
