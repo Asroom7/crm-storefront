@@ -1,8 +1,6 @@
 {
-  "task": "stabilize-complete-storefront-editor-preview",
-  "allowed_locked_paths": [
-    "panel/index.html"
-  ],
-  "user_approved_shared_change": true,
-  "note": "Panel-only fix: pin the approved complete editor, cache-bust editor assets, and refresh the editor preview/pink-box fallback. Storefront source files remain locked and unchanged."
+  "task": "label-storefront-editor-controls",
+  "allowed_locked_paths": [],
+  "user_approved_shared_change": false,
+  "note": "Panel editor only: make the circled storefront-editor controls readable by adding visible Persian labels and clearer mobile spacing. Storefront source files and all approved storefront sections remain locked and unchanged."
 }
