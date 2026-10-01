@@ -4,8 +4,13 @@
   'use strict';
 
   var ROUTE = 'storefront-editor';
-  var BUILD = '20261001-complete-v5';
+  var BUILD = '20261001-complete-v6';
   var view = document.getElementById('view');
+  var editorUi = {
+    lastChangeCount: null,
+    lastEditAt: null,
+    timer: 0
+  };
 
   function routeName() {
     return location.hash.replace(/^#\/?/, '').split('/')[0];
@@ -20,10 +25,77 @@
     document.head.appendChild(link);
   }
 
+  function ensureLastEditCSS() {
+    if (document.querySelector('style[data-storefront-editor-last-edit]')) return;
+    var style = document.createElement('style');
+    style.dataset.storefrontEditorLastEdit = '1';
+    style.textContent = [
+      '.store-editor-complete .ec-statusbar{display:none!important}',
+      '.store-editor-complete .ec-actions .ec-last-edit-state{display:inline-flex!important;align-items:center;justify-content:center;min-width:auto!important;max-width:220px;height:36px;margin:0;padding:0 10px;border:1px solid rgba(255,255,255,.86);border-radius:13px;background:var(--surface);box-shadow:0 5px 14px rgba(73,78,98,.08);font-size:9.5px;font-weight:800;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto}',
+      '@media(max-width:640px){.store-editor-complete .ec-actions .ec-last-edit-state{height:34px;max-width:190px;padding-inline:9px;border-radius:11px;font-size:9px}}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
   function completeEditor() {
     return window.StorefrontEditorComplete && typeof window.StorefrontEditorComplete.render === 'function'
       ? window.StorefrontEditorComplete
       : null;
+  }
+
+  function relativeEditTime(value) {
+    if (!value) return 'ثبت نشده';
+    var date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return 'ثبت نشده';
+    var seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+    if (seconds < 20) return 'همین الان';
+    if (seconds < 60) return 'کمتر از یک دقیقه پیش';
+    var minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes.toLocaleString('fa-IR') + ' دقیقه پیش';
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours.toLocaleString('fa-IR') + ' ساعت پیش';
+    var days = Math.floor(hours / 24);
+    return days.toLocaleString('fa-IR') + ' روز پیش';
+  }
+
+  function syncEditClock(complete) {
+    if (!complete || !complete.state) return;
+    var state = complete.state;
+    var count = Number(state.changeCount || 0);
+
+    if (editorUi.lastChangeCount === null) {
+      editorUi.lastChangeCount = count;
+      if (state.lastSavedAt) editorUi.lastEditAt = new Date(state.lastSavedAt);
+      return;
+    }
+
+    if (count > editorUi.lastChangeCount) editorUi.lastEditAt = new Date();
+    editorUi.lastChangeCount = count;
+
+    if (!editorUi.lastEditAt && state.lastSavedAt) {
+      editorUi.lastEditAt = new Date(state.lastSavedAt);
+    }
+  }
+
+  function placeTopEditStatus(root, complete) {
+    if (!root) return;
+    syncEditClock(complete);
+
+    var bottomStatus = root.querySelector('.ec-statusbar');
+    if (bottomStatus) bottomStatus.remove();
+
+    var actions = root.querySelector('.ec-actions');
+    var publish = actions && actions.querySelector('[data-publish]');
+    var status = root.querySelector('.ec-save-state');
+    if (!actions || !publish || !status) return;
+
+    if (status.parentNode !== actions || status.nextSibling !== publish) {
+      actions.insertBefore(status, publish);
+    }
+
+    status.classList.add('ec-last-edit-state');
+    var label = 'آخرین ویرایش: ' + relativeEditTime(editorUi.lastEditAt);
+    if (status.textContent !== label) status.textContent = label;
   }
 
   function ensurePinkBoxInPreview(frame) {
@@ -72,6 +144,7 @@
   function enforceCompleteEditor() {
     if (routeName() !== ROUTE) return;
     ensureControlLabelsCSS();
+    ensureLastEditCSS();
     var complete = completeEditor();
     if (!complete || !view) return;
 
@@ -84,6 +157,8 @@
       complete.render(view);
       return;
     }
+
+    placeTopEditStatus(root, complete);
     freshenPreview(root);
   }
 
@@ -103,6 +178,12 @@
     new MutationObserver(function () {
       if (routeName() === ROUTE) enforceCompleteEditor();
     }).observe(view, { childList: true, subtree: true });
+  }
+
+  if (!editorUi.timer) {
+    editorUi.timer = window.setInterval(function () {
+      if (routeName() === ROUTE) enforceCompleteEditor();
+    }, 30000);
   }
 
   schedule();
