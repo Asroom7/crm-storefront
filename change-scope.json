@@ -1,6 +1,6 @@
 {
-  "task": "label-storefront-editor-controls",
+  "task": "move-storefront-editor-last-edit-status",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "Panel editor only: make the circled storefront-editor controls readable by adding visible Persian labels and clearer mobile spacing. Storefront source files and all approved storefront sections remain locked and unchanged."
+  "note": "Panel storefront editor only: remove the duplicate bottom publish/status bar and show the latest edit time beside the existing top publish button. Do not change storefront source files, section order, live storefront runtime, or any other panel section."
 }
