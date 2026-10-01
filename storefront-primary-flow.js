@@ -24,10 +24,11 @@
     const allLink = campaign.querySelector('.sf-section-head>a');
     if (allLink && !allLink.textContent.trim()) allLink.innerHTML = 'مشاهده همه <span>‹</span>';
 
+    /* Editor-aware campaign renderer owns the timer. Only legacy markup gets a placeholder. */
+    if (campaign.hasAttribute('data-section-id')) return;
+
     const head = campaign.querySelector('.sf-section-head');
-    const campaignSection = campaign.closest('[data-section-id]');
-    const wantsTimer = !campaignSection || !campaignSection.dataset.hideTimer;
-    if (wantsTimer && head && !head.querySelector('.sf-countdown')) {
+    if (head && !head.querySelector('.sf-countdown')) {
       const countdown = document.createElement('div');
       countdown.className = 'sf-countdown sf-countdown-placeholder';
       countdown.setAttribute('aria-label', 'زمان باقی‌مانده پیشنهاد');
@@ -39,11 +40,9 @@
 
   function applyPrimaryFlow() {
     queued = false;
-
     const pinkBox = root.querySelector('.sf-campaign-section');
     preparePinkBox(pinkBox);
 
-    /* Once the visual editor runtime owns the page, saved drag/drop order is authoritative. */
     if (root.dataset.editorManagedOrder === '1' || root.querySelector('[data-section-id]')) return;
 
     const searchSection = root.querySelector('.sf-search-block');
