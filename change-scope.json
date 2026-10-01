@@ -1,6 +1,8 @@
 {
-  "task": "bootstrap-change-safety-and-backups",
-  "allowed_locked_paths": [],
-  "user_approved_shared_change": false,
-  "note": "For each future task, list only the locked paths explicitly approved for that task. If a shared-core file is required, stop and get explicit user approval before setting user_approved_shared_change=true."
+  "task": "restore-approved-panel-without-storefront-changes",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
+  "user_approved_shared_change": true,
+  "note": "User explicitly approved restoring the management panel and the previously approved professional storefront editor. Storefront files are out of scope and must remain byte-for-byte unchanged in this task."
 }
