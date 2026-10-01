@@ -1,8 +1,8 @@
 {
-  "task": "restore-approved-panel-without-storefront-changes",
+  "task": "restore-approved-complete-storefront-editor",
   "allowed_locked_paths": [
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved restoring the management panel and the previously approved professional storefront editor. Storefront files are out of scope and must remain byte-for-byte unchanged in this task."
+  "note": "User explicitly approved restoring the previously designed and bug-fixed storefront editor. Storefront files are locked and must not be changed in this task."
 }
