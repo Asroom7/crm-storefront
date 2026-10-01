@@ -1,8 +1,8 @@
 {
-  "task": "restore-approved-complete-storefront-editor",
+  "task": "stabilize-complete-storefront-editor-preview",
   "allowed_locked_paths": [
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved restoring the previously designed and bug-fixed storefront editor. Storefront files are locked and must not be changed in this task."
+  "note": "Panel-only fix: pin the approved complete editor, cache-bust editor assets, and refresh the editor preview/pink-box fallback. Storefront source files remain locked and unchanged."
 }
