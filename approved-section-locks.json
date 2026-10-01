@@ -1,0 +1,46 @@
+{
+  "baseline_commit": "afd0c66d51f742548d7c63abfb0faa307f355cca",
+  "stable_branch": "stable-approved",
+  "code_backup_branch": "backup-code-approved-2026-10-01",
+  "policy": "docs/CHANGE-SAFETY-POLICY.md",
+  "shared_core": [
+    "index.html",
+    "style.css",
+    "storefront-home.js",
+    "storefront-home.css",
+    "storefront-primary-flow.js",
+    "api.js",
+    "panel/index.html",
+    "panel/app.js",
+    "panel/app.css"
+  ],
+  "locked_surfaces": {
+    "storefront_best_sellers": [
+      "storefront-bestsellers.css"
+    ],
+    "storefront_pink_box": [
+      "storefront-pinkbox.css",
+      "storefront-pinkbox-runtime.js"
+    ],
+    "storefront_category_showcase": [
+      "storefront-category-showcase.css",
+      "storefront-category-showcase.js"
+    ],
+    "storefront_existing_layout": [
+      "storefront-layout-v4.css",
+      "storefront-layout-v4.js",
+      "storefront-polish.css",
+      "storefront-dynamic.css"
+    ],
+    "panel_existing_sections": [
+      "panel/app.js",
+      "panel/app.css",
+      "panel/index.html",
+      "panel/theme-2026.css",
+      "panel/neumorphism.css",
+      "panel/legacy-merge.css",
+      "panel/customer-crm-features.css"
+    ]
+  },
+  "rule": "Locked/shared paths may only be changed when they are explicitly named in change-scope.json. Shared core additionally requires user_approved_shared_change=true."
+}
