@@ -1,4 +1,4 @@
-/* Primary storefront flow: search -> magic box -> best sellers -> pink discount box. */
+/* Primary storefront flow: search -> magic box -> best sellers -> pink discount box -> categories. */
 (function () {
   'use strict';
 
@@ -39,17 +39,16 @@
   function applyPrimaryFlow() {
     queued = false;
 
-    const categorySection = root.querySelector('#sf-categories');
-    if (categorySection) categorySection.remove();
-
     const searchSection = root.querySelector('.sf-search-block');
     const magicBox = root.querySelector('.sf-video-section');
     const bestSellers = root.querySelector('.sf-best-sellers');
     const pinkBox = root.querySelector('.sf-campaign-section');
+    const categories = root.querySelector('#sf-categories');
 
     if (searchSection && magicBox) placeAfter(magicBox, searchSection);
     if (magicBox && bestSellers) placeAfter(bestSellers, magicBox);
     if (bestSellers && pinkBox) placeAfter(pinkBox, bestSellers);
+    if (pinkBox && categories) placeAfter(categories, pinkBox);
 
     preparePinkBox(pinkBox);
   }
