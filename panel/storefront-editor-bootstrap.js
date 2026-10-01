@@ -4,11 +4,20 @@
   'use strict';
 
   var ROUTE = 'storefront-editor';
-  var BUILD = '20261001-complete-v4';
+  var BUILD = '20261001-complete-v5';
   var view = document.getElementById('view');
 
   function routeName() {
     return location.hash.replace(/^#\/?/, '').split('/')[0];
+  }
+
+  function ensureControlLabelsCSS() {
+    if (document.querySelector('link[data-storefront-editor-labels]')) return;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'storefront-editor-labels.css?v=20261001-v1';
+    link.dataset.storefrontEditorLabels = '1';
+    document.head.appendChild(link);
   }
 
   function completeEditor() {
@@ -62,6 +71,7 @@
 
   function enforceCompleteEditor() {
     if (routeName() !== ROUTE) return;
+    ensureControlLabelsCSS();
     var complete = completeEditor();
     if (!complete || !view) return;
 
