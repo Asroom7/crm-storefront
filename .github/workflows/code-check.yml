@@ -16,9 +16,11 @@ jobs:
       - name: Check storefront JavaScript
         run: |
           node --check api.js
-          node --check storefront-home.js
-          node --check storefront-qa.js
           node --check cinematic-intro.js
+          for file in storefront-*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
       - name: Check all panel JavaScript
         run: |
           for file in panel/*.js; do
