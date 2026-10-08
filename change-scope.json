@@ -1,6 +1,8 @@
 {
-  "task": "phase-6-online-payment-gateway",
-  "allowed_locked_paths": [],
+  "task": "phase-7-shipping-and-tracking",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved phase 6 shared changes. Scope: activate online gateway alongside existing manual card-to-card checkout. Allowed shared edits: backend src/app.js, src/routes/orders.js, src/routes/paymentGateway.js and storefront checkout.html; order-status.html only for online payment status wording/result. The 5000/10000 unique-payment adjustment remains manual-only. Promotions/coupons apply to both methods. Do not change storefront home, products, product detail, wishlist/reviews, cart, panel/editor/dashboard/CRM, or unrelated APIs."
+  "note": "User explicitly approved phase 7 shared changes. Scope: selectable shipping methods in checkout, shipment metadata/tracking on orders, seller shipping form, and customer shipping timeline. Allowed shared edits: backend prisma/schema.prisma and src/routes/orders.js; storefront checkout.html, order-status.html, and panel/index.html only for scoped shipping loaders/hooks. Do not change storefront home, products, product detail, wishlist/reviews, cart, payment gateway, promotions, editor, dashboard, CRM, or unrelated panel sections."
 }
