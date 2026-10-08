@@ -520,7 +520,7 @@
       var onlineInput = document.querySelector('input[name="payment-method"][value="online"]');
       var onlineLabel = document.getElementById('online-method-label');
       var desc = document.getElementById('online-method-desc');
-      onlineInput.disabled = !gatewayAvailable;
+      onlineInput.disabled = paymentSession ? true : !gatewayAvailable;
       onlineLabel.classList.toggle('is-disabled', !gatewayAvailable);
       desc.textContent = gatewayAvailable ? 'پرداخت مستقیم از طریق درگاه بانکی' : 'درگاه آنلاین هنوز فعال نشده است';
       if (gatewayAvailable && !paymentSession) {
@@ -540,7 +540,7 @@
       renderSupport(config);
       if (!config.payment || !config.payment.cardNumber) {
         document.getElementById('card-number').textContent = 'اطلاعات پرداخت هنوز تنظیم نشده';
-        showError('شماره کارت فروشگاه در سرور تنظیم نشده است. لطفاً با پشتیبانی تماس بگیرید.');
+        paymentConfigReady = false;
         return;
       }
       rawCardNumber = String(config.payment.cardNumber).replace(/\D/g, '');
@@ -548,10 +548,10 @@
       document.getElementById('card-owner').textContent = config.payment.cardOwner ? 'به نام: ' + config.payment.cardOwner : '';
       document.getElementById('copy-card-btn').style.display = '';
       paymentConfigReady = true;
-    }).catch(function (err) {
+    }).catch(function () {
       renderSupport(null);
       document.getElementById('card-number').textContent = 'خطا در دریافت اطلاعات پرداخت';
-      showError(err.message);
+      paymentConfigReady = false;
     });
 
     apiFetch('/orders/mine/pending-payment').then(function (order) {
