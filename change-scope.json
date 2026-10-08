@@ -1,8 +1,6 @@
 {
-  "task": "phase-7-shipping-and-tracking",
-  "allowed_locked_paths": [
-    "panel/index.html"
-  ],
+  "task": "phase-8-returns-refunds",
+  "allowed_locked_paths": ["panel/index.html"],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved phase 7 shared changes. Scope: selectable shipping methods in checkout, shipment metadata/tracking on orders, seller shipping form, and customer shipping timeline. Allowed shared edits: backend prisma/schema.prisma and src/routes/orders.js; storefront checkout.html, order-status.html, and panel/index.html only for scoped shipping loaders/hooks. Do not change storefront home, products, product detail, wishlist/reviews, cart, payment gateway, promotions, editor, dashboard, CRM, or unrelated panel sections."
+  "note": "Approved scope: returns and refunds only. Shared edits allowed only for prisma/schema.prisma, src/routes/orders.js, order-status.html, and panel/index.html. All unrelated storefront, payment, shipping, editor, dashboard, and CRM sections remain locked."
 }
