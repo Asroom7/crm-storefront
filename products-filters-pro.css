@@ -68,6 +68,7 @@
   margin-bottom:12px;
 }
 .products-pro-page .products-filter-head strong{color:#211b1e;font-size:13px}
+.products-pro-page #products-filter-close{display:none}
 .products-pro-page .products-filter-reset{
   border:0;
   background:transparent;
@@ -380,6 +381,7 @@
   .products-pro-page .products-toolbar-actions{width:auto}
   .products-pro-page .products-sort{min-width:132px}
   .products-pro-page .products-filter-categories{max-height:none}
+  .products-pro-page #products-filter-close{display:inline-block}
 }
 @media(max-width:440px){
   .products-pro-page .products-grid{gap:8px}
