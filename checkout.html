@@ -6,6 +6,7 @@
   <title>تکمیل خرید</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="checkout-promotions.css?v=20261008-v1">
+  <link rel="stylesheet" href="checkout-online-payment.css?v=20261009-v1">
   <script src="api.js"></script>
   <script>requireCustomerAuth();</script>
 </head>
@@ -21,7 +22,7 @@
   <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
 
   <section class="checkout-block">
-    <div class="trust-note"><span class="trust-icon">🛡</span><p>برای اینکه واریزی شما با سفارش دیگری اشتباه نشود، سیستم مبلغ دقیق پرداخت را برای سفارش رزرو می‌کند. اگر مبلغ سفارش با سفارش فعال دیگری یکسان باشد، فقط تخفیف یکتاسازی ۵٬۰۰۰ یا ۱۰٬۰۰۰ تومانی استفاده می‌شود. تصویر رسید برای ثبت پرداخت الزامی است.</p></div>
+    <div class="trust-note"><span class="trust-icon">🛡</span><p>برای اینکه واریزی شما با سفارش دیگری اشتباه نشود، سیستم مبلغ دقیق پرداخت را برای سفارش رزرو می‌کند. در روش کارت‌به‌کارت، اگر مبلغ سفارش با سفارش فعال دیگری یکسان باشد، فقط تخفیف یکتاسازی ۵٬۰۰۰ یا ۱۰٬۰۰۰ تومانی استفاده می‌شود. تصویر رسید برای ثبت پرداخت الزامی است.</p></div>
 
     <div id="checkout-support" class="card-info" style="display:none;margin-bottom:16px;">
       <h2>پشتیبانی ثبت سفارش</h2>
@@ -39,9 +40,28 @@
         </div>
         <small>کد هنگام «دریافت مبلغ دقیق پرداخت» توسط سرور بررسی می‌شود. اگر کدی وارد نکنی، بهترین کمپین خودکار فعال در صورت وجود اعمال می‌شود.</small>
       </div>
+      <div class="checkout-payment-methods" id="checkout-payment-methods">
+        <label class="checkout-payment-method is-disabled" id="online-method-label">
+          <input type="radio" name="payment-method" value="online" disabled>
+          <span><strong>پرداخت آنلاین</strong><small id="online-method-desc">در حال بررسی وضعیت درگاه...</small></span>
+        </label>
+        <label class="checkout-payment-method">
+          <input type="radio" name="payment-method" value="manual" checked>
+          <span><strong>کارت‌به‌کارت</strong><small>واریز مبلغ دقیق و ثبت تصویر رسید</small></span>
+        </label>
+      </div>
+      <div class="checkout-online-note" id="checkout-method-note">در کارت‌به‌کارت، مبلغ یکتا رزرو می‌شود و پس از واریز باید تصویر رسید را ثبت کنید.</div>
       <p id="checkout-error" style="color:#c0392b;display:none;line-height:1.8;"></p>
       <button id="prepare-payment-btn" class="btn-dark btn-full" type="button">دریافت مبلغ دقیق پرداخت</button>
-      <p style="font-size:12.5px;color:#888;line-height:1.8;margin-bottom:0;">با دریافت مبلغ، موجودی کالا و مبلغ پرداخت برای مدت محدود رزرو می‌شود.</p>
+      <p style="font-size:12.5px;color:#888;line-height:1.8;margin-bottom:0;">با ادامه پرداخت، موجودی کالا و مبلغ سفارش برای مدت محدود رزرو می‌شود.</p>
+
+      <div class="checkout-gateway-box" id="online-payment-box" style="display:none;">
+        <h3>پرداخت امن آنلاین</h3>
+        <p id="online-payment-summary">سفارش برای پرداخت آنلاین آماده است.</p>
+        <div id="online-payment-timer" style="text-align:center;margin:10px 0;font-size:12px;font-weight:700;"></div>
+        <button type="button" class="checkout-gateway-button" id="online-pay-btn">ورود به درگاه پرداخت</button>
+        <button type="button" class="btn-outline btn-full" id="online-cancel-btn" style="margin-top:8px;">لغو این پرداخت و بازگشت به سبد</button>
+      </div>
     </div>
 
     <div class="card-info" id="payment-step" style="display:none;margin-top:16px;">
@@ -127,6 +147,8 @@
     var evidenceStep = document.getElementById('evidence-step');
     var rawCardNumber = '';
     var paymentConfigReady = false;
+    var gatewayAvailable = false;
+    var gatewayChecked = false;
     var paymentSession = null;
     var timerId = null;
     var receiptPreviewUrl = null;
@@ -139,6 +161,30 @@
       errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     function clearError() { errorBox.style.display = 'none'; }
+
+    function selectedPaymentMethod() {
+      var selected = document.querySelector('input[name="payment-method"]:checked');
+      return selected ? selected.value : 'manual';
+    }
+
+    function lockPaymentMethods(method) {
+      document.querySelectorAll('input[name="payment-method"]').forEach(function (input) {
+        input.checked = input.value === method;
+        input.disabled = true;
+      });
+    }
+
+    function syncPaymentMethodUI() {
+      var method = selectedPaymentMethod();
+      var note = document.getElementById('checkout-method-note');
+      if (method === 'online') {
+        prepareBtn.textContent = 'ادامه و پرداخت آنلاین';
+        note.textContent = 'در پرداخت آنلاین، تخفیف کمپین یا کد تخفیف اعمال می‌شود و تخفیف یکتاسازی ۵٬۰۰۰/۱۰٬۰۰۰ تومانی استفاده نمی‌شود.';
+      } else {
+        prepareBtn.textContent = 'دریافت مبلغ دقیق پرداخت';
+        note.textContent = 'در کارت‌به‌کارت، مبلغ یکتا رزرو می‌شود و پس از واریز باید تصویر رسید را ثبت کنید.';
+      }
+    }
 
     function formatCardNumber(value) {
       var digits = String(value || '').replace(/\D/g, '');
@@ -187,6 +233,7 @@
         promotionName: data.promotionName || meta.promotionName || null,
         promotionCode: data.promotionCode || meta.promotionCode || null,
         paymentAdjustmentAmount: Number(data.paymentAdjustmentAmount != null ? data.paymentAdjustmentAmount : (data.discountAmount != null ? data.discountAmount : (meta.paymentAdjustmentAmount != null ? meta.paymentAdjustmentAmount : (meta.discountAmount || 0)))),
+        paymentMethod: data.paymentMethod || meta.paymentMethod || (data.transaction && data.transaction.provider === 'zarinpal' ? 'online' : 'manual'),
         expiresAt: data.expiresAt || meta.expiresAt || null
       };
       if (!paymentSession.orderId || !paymentSession.payableAmount) {
@@ -197,7 +244,23 @@
       addressInput.disabled = true;
       couponInput.disabled = true;
       if (paymentSession.promotionCode) couponInput.value = paymentSession.promotionCode;
+      lockPaymentMethods(paymentSession.paymentMethod);
       prepareBtn.disabled = true;
+
+      if (paymentSession.paymentMethod === 'online') {
+        prepareBtn.style.display = 'none';
+        paymentStep.style.display = 'none';
+        evidenceStep.style.display = 'none';
+        document.getElementById('online-payment-box').style.display = '';
+        document.getElementById('online-payment-summary').textContent =
+          'مبلغ نهایی پرداخت: ' + formatPrice(paymentSession.payableAmount) + ' تومان' +
+          (paymentSession.promotionDiscountAmount > 0 ? ' · تخفیف: ' + formatPrice(paymentSession.promotionDiscountAmount) + ' تومان' : '');
+        startTimer();
+        document.getElementById('online-payment-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return;
+      }
+
+      document.getElementById('online-payment-box').style.display = 'none';
       prepareBtn.textContent = 'مبلغ پرداخت رزرو شد ✓';
       paymentStep.style.display = '';
       evidenceStep.style.display = '';
@@ -238,24 +301,36 @@
       if (timerId) clearInterval(timerId);
       function tick() {
         var timer = document.getElementById('payment-timer');
+        var onlineTimer = document.getElementById('online-payment-timer');
         if (!paymentSession || !paymentSession.expiresAt) {
           timer.textContent = '';
+          if (onlineTimer) onlineTimer.textContent = '';
           return;
         }
         var remaining = Date.parse(paymentSession.expiresAt) - Date.now();
         if (!Number.isFinite(remaining) || remaining <= 0) {
           timer.textContent = 'مهلت این مبلغ تمام شده است. برای ساخت مبلغ جدید به سبد برگردید.';
           timer.style.color = '#c0392b';
+          if (onlineTimer) {
+            onlineTimer.textContent = timer.textContent;
+            onlineTimer.style.color = '#c0392b';
+          }
           receiptInput.disabled = true;
           submitBtn.disabled = true;
+          var onlineButton = document.getElementById('online-pay-btn');
+          if (onlineButton) onlineButton.disabled = true;
           if (timerId) clearInterval(timerId);
           return;
         }
         var totalSeconds = Math.floor(remaining / 1000);
         var minutes = Math.floor(totalSeconds / 60);
         var seconds = totalSeconds % 60;
-        timer.textContent = 'مهلت واریز این مبلغ: ' + toFaDigits(minutes) + ':' + toFaDigits(String(seconds).padStart(2, '0'));
+        timer.textContent = 'مهلت پرداخت این سفارش: ' + toFaDigits(minutes) + ':' + toFaDigits(String(seconds).padStart(2, '0'));
         timer.style.color = '';
+        if (onlineTimer) {
+          onlineTimer.textContent = timer.textContent;
+          onlineTimer.style.color = '';
+        }
       }
       tick();
       timerId = setInterval(tick, 1000);
@@ -317,27 +392,67 @@
       updateSubmitState();
     });
 
+    function beginOnlinePayment() {
+      if (!paymentSession || paymentSession.paymentMethod !== 'online') return;
+      var button = document.getElementById('online-pay-btn');
+      button.disabled = true;
+      button.textContent = 'در حال اتصال به درگاه...';
+      apiFetch('/payment-gateway/start/' + paymentSession.orderId, { method: 'POST' })
+        .then(function (data) {
+          if (!data || !data.paymentUrl) throw new Error('آدرس درگاه از سرور دریافت نشد.');
+          window.location.href = data.paymentUrl;
+        })
+        .catch(function (err) {
+          button.disabled = false;
+          button.textContent = 'ورود به درگاه پرداخت';
+          showError(err.message);
+        });
+    }
+
+    document.getElementById('online-pay-btn').addEventListener('click', beginOnlinePayment);
+    document.getElementById('online-cancel-btn').addEventListener('click', function () {
+      if (!paymentSession) { window.location.href = 'cart.html'; return; }
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'در حال لغو...';
+      apiFetch('/orders/' + paymentSession.orderId + '/cancel', { method: 'POST' })
+        .then(function () { window.location.href = 'cart.html'; })
+        .catch(function (err) {
+          btn.disabled = false;
+          btn.textContent = 'لغو این پرداخت و بازگشت به سبد';
+          showError(err.message);
+        });
+    });
+
+    document.querySelectorAll('input[name="payment-method"]').forEach(function (input) {
+      input.addEventListener('change', syncPaymentMethodUI);
+    });
+
     prepareBtn.addEventListener('click', function () {
       clearError();
-      if (!paymentConfigReady) { showError('اطلاعات کارت فروشگاه هنوز آماده نشده است.'); return; }
+      var paymentMethod = selectedPaymentMethod();
+      if (paymentMethod === 'manual' && !paymentConfigReady) { showError('اطلاعات کارت فروشگاه هنوز آماده نشده است.'); return; }
+      if (paymentMethod === 'online' && (!gatewayChecked || !gatewayAvailable)) { showError('درگاه پرداخت آنلاین در حال حاضر در دسترس نیست.'); return; }
       if (!cart.length) { window.location.href = 'cart.html'; return; }
       var address = addressInput.value.trim();
       if (address.length < 5) { showError('آدرس کامل را وارد کنید.'); return; }
 
       prepareBtn.disabled = true;
-      prepareBtn.textContent = 'در حال ساخت مبلغ دقیق...';
+      prepareBtn.textContent = paymentMethod === 'online' ? 'در حال آماده‌سازی درگاه...' : 'در حال ساخت مبلغ دقیق...';
       apiFetch('/orders/prepare', {
         method: 'POST',
         body: JSON.stringify({
           items: cart.map(function (item) { return { productId: Number(item.productId), quantity: Number(item.quantity) }; }),
           shippingAddress: address,
-          couponCode: couponInput.value.trim() || undefined
+          couponCode: couponInput.value.trim() || undefined,
+          paymentMethod: paymentMethod
         })
       }).then(function (data) {
         renderPaymentSession(data, Boolean(data.resumed));
+        if ((data.paymentMethod || paymentMethod) === 'online') beginOnlinePayment();
       }).catch(function (err) {
         prepareBtn.disabled = false;
-        prepareBtn.textContent = 'دریافت مبلغ دقیق پرداخت';
+        syncPaymentMethodUI();
         showError(err.message);
       });
     });
@@ -397,6 +512,28 @@
           updateSubmitState();
           showError(err.message);
         });
+    });
+
+    apiFetch('/payment-gateway/config').then(function (config) {
+      gatewayChecked = true;
+      gatewayAvailable = Boolean(config && config.enabled);
+      var onlineInput = document.querySelector('input[name="payment-method"][value="online"]');
+      var onlineLabel = document.getElementById('online-method-label');
+      var desc = document.getElementById('online-method-desc');
+      onlineInput.disabled = !gatewayAvailable;
+      onlineLabel.classList.toggle('is-disabled', !gatewayAvailable);
+      desc.textContent = gatewayAvailable ? 'پرداخت مستقیم از طریق درگاه بانکی' : 'درگاه آنلاین هنوز فعال نشده است';
+      if (gatewayAvailable && !paymentSession) {
+        onlineInput.checked = true;
+        document.querySelector('input[name="payment-method"][value="manual"]').checked = false;
+      }
+      syncPaymentMethodUI();
+    }).catch(function () {
+      gatewayChecked = true;
+      gatewayAvailable = false;
+      var desc = document.getElementById('online-method-desc');
+      if (desc) desc.textContent = 'درگاه آنلاین در دسترس نیست';
+      syncPaymentMethodUI();
     });
 
     fetchStoreConfig().then(function (config) {
