@@ -1,0 +1,117 @@
+/* Phase 7 shipment timeline. Scoped to order status shipping section only. */
+.order-shipping-tracking{
+  margin-top:14px;
+  border:1px solid rgba(69,43,69,.10);
+  border-radius:18px;
+  background:#fff;
+  padding:15px;
+  box-shadow:0 10px 28px rgba(60,46,60,.045);
+}
+.order-shipping-tracking h2{
+  margin:0 0 4px;
+  color:#211b1e;
+  font-size:15px;
+}
+.order-shipping-tracking .ost-sub{
+  margin:0 0 13px;
+  color:#81757c;
+  font-size:9.5px;
+  line-height:1.8;
+}
+.order-shipping-tracking .ost-timeline{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.order-shipping-tracking .ost-step{
+  position:relative;
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:9px;
+  padding:0 0 14px;
+}
+.order-shipping-tracking .ost-step:last-child{padding-bottom:0}
+.order-shipping-tracking .ost-step:not(:last-child)::after{
+  content:"";
+  position:absolute;
+  top:24px;
+  right:13px;
+  bottom:0;
+  width:2px;
+  background:#ece6ea;
+}
+.order-shipping-tracking .ost-dot{
+  position:relative;
+  z-index:1;
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#f0ebee;
+  color:#9a8d94;
+  font-size:10px;
+  font-weight:900;
+}
+.order-shipping-tracking .ost-step.done .ost-dot{
+  background:#eaf7f2;
+  color:#1d7a5d;
+}
+.order-shipping-tracking .ost-step.current .ost-dot{
+  background:#452b45;
+  color:#fff;
+}
+.order-shipping-tracking .ost-body strong{
+  display:block;
+  color:#211b1e;
+  font-size:10.5px;
+  line-height:1.6;
+}
+.order-shipping-tracking .ost-body span{
+  display:block;
+  margin-top:2px;
+  color:#8e8188;
+  font-size:8.8px;
+  line-height:1.7;
+}
+.order-shipping-tracking .ost-meta{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.order-shipping-tracking .ost-meta>div{
+  border-radius:12px;
+  background:#faf7f9;
+  padding:9px 10px;
+}
+.order-shipping-tracking .ost-meta span{
+  display:block;
+  color:#94868e;
+  font-size:8.5px;
+  margin-bottom:3px;
+}
+.order-shipping-tracking .ost-meta strong{
+  display:block;
+  color:#452b45;
+  font-size:10px;
+  line-height:1.65;
+  word-break:break-word;
+}
+.order-shipping-tracking .ost-copy{
+  margin-top:6px;
+  min-height:30px;
+  border:1px solid #eadfe5;
+  border-radius:9px;
+  background:#fff;
+  color:#b33165;
+  padding:0 8px;
+  font:inherit;
+  font-size:8.8px;
+  font-weight:800;
+  cursor:pointer;
+}
+@media(max-width:520px){
+  .order-shipping-tracking{padding:13px}
+  .order-shipping-tracking .ost-meta{grid-template-columns:1fr}
+}
