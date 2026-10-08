@@ -107,13 +107,17 @@
       var transaction = order.transaction || {};
       var meta = transaction.rawResponse || {};
       var payableAmount = Number(meta.payableAmount || transaction.amount || order.totalAmount || 0);
-      var discountAmount = Number(meta.discountAmount || 0);
+      var promotionDiscountAmount = Number(meta.promotionDiscountAmount || 0);
+      var paymentAdjustmentAmount = Number(meta.paymentAdjustmentAmount != null ? meta.paymentAdjustmentAmount : (meta.discountAmount || 0));
+      var isOnline = transaction.provider === 'zarinpal';
       var tracking = transaction.refId || '';
       var receiptUrl = meta.receiptUrl ? safeMediaUrl(meta.receiptUrl) : '';
       box.innerHTML = '<h2>جزئیات سفارش</h2>' + itemsHtml +
-        (discountAmount > 0 ? '<div class="order-summary-meta"><span>تخفیف اختصاصی پرداخت</span><strong>' + formatPrice(discountAmount) + ' تومان</strong></div>' : '') +
-        '<div class="order-summary-total"><span>مبلغ واریزی</span><strong>' + formatPrice(payableAmount) + ' تومان</strong></div>' +
-        (tracking ? '<div class="order-summary-meta"><span>شماره پیگیری پرداخت</span><strong dir="ltr" style="unicode-bidi:isolate;">' + escapeHtml(tracking) + '</strong></div>' : '') +
+        '<div class="order-summary-meta"><span>روش پرداخت</span><strong>' + (isOnline ? 'پرداخت آنلاین' : 'کارت‌به‌کارت') + '</strong></div>' +
+        (promotionDiscountAmount > 0 ? '<div class="order-summary-meta"><span>تخفیف کمپین</span><strong>' + formatPrice(promotionDiscountAmount) + ' تومان</strong></div>' : '') +
+        (paymentAdjustmentAmount > 0 ? '<div class="order-summary-meta"><span>تخفیف یکتاسازی پرداخت</span><strong>' + formatPrice(paymentAdjustmentAmount) + ' تومان</strong></div>' : '') +
+        '<div class="order-summary-total"><span>مبلغ پرداخت</span><strong>' + formatPrice(payableAmount) + ' تومان</strong></div>' +
+        (tracking ? '<div class="order-summary-meta"><span>' + (isOnline ? 'کد پیگیری درگاه' : 'شماره پیگیری پرداخت') + '</span><strong dir="ltr" style="unicode-bidi:isolate;">' + escapeHtml(tracking) + '</strong></div>' : '') +
         (receiptUrl ? '<div class="order-summary-meta" style="display:block;"><span style="display:block;margin-bottom:8px;">تصویر رسید پرداخت</span><a href="' + escapeHtml(receiptUrl) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(receiptUrl) + '" alt="رسید پرداخت" style="display:block;max-width:100%;max-height:300px;margin:auto;border-radius:12px;object-fit:contain;"></a></div>' : '') +
         '<div class="order-summary-meta"><span>آدرس ارسال</span><strong>' + escapeHtml(order.shippingAddress || '') + '</strong></div>';
       box.hidden = false;
@@ -136,6 +140,8 @@
           document.getElementById('status-badge').textContent = statusLabel(order);
           document.getElementById('status-badge').className = 'status-badge ' + visual.className;
           var desc = statusDescriptions[order.status] || 'وضعیت سفارش در حال به‌روزرسانی است.';
+          var isOnline = order.transaction && order.transaction.provider === 'zarinpal';
+          if (order.status === 'pending_payment' && isOnline) desc = 'سفارش برای پرداخت آنلاین رزرو شده است. برای ادامه پرداخت وارد صفحه تکمیل خرید شوید.';
           if (order.status === 'cancelled' && order.transaction && order.transaction.status === 'expired') desc = 'مهلت مبلغ رزروشده تمام شده است. برای خرید دوباره از سبد سفارش جدید بسازید.';
           document.getElementById('status-desc').textContent = desc;
           document.getElementById('continue-payment-wrap').hidden = order.status !== 'pending_payment';
