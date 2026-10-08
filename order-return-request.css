@@ -1,0 +1,119 @@
+/* Phase 8 return request UI. Scoped to order status only. */
+.order-return-box{
+  margin-top:14px;
+  border:1px solid rgba(69,43,69,.10);
+  border-radius:18px;
+  background:#fff;
+  padding:15px;
+  box-shadow:0 10px 28px rgba(60,46,60,.045);
+}
+.order-return-box h2{
+  margin:0 0 4px;
+  color:#211b1e;
+  font-size:15px;
+}
+.order-return-box .orb-sub{
+  margin:0 0 12px;
+  color:#81757c;
+  font-size:9.5px;
+  line-height:1.8;
+}
+.order-return-box .orb-status{
+  border-radius:13px;
+  padding:10px 11px;
+  font-size:10px;
+  line-height:1.8;
+  margin-bottom:10px;
+}
+.order-return-box .orb-status.requested{background:#fff5df;color:#8c650a}
+.order-return-box .orb-status.approved{background:#edf4ff;color:#37679d}
+.order-return-box .orb-status.rejected{background:#fdeef1;color:#a63d51}
+.order-return-box .orb-status.received{background:#f0eef9;color:#6f5aa1}
+.order-return-box .orb-status.refunded{background:#eaf7f2;color:#1d7a5d}
+.order-return-box .orb-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin-top:10px;
+}
+.order-return-box .orb-meta>div{
+  border-radius:12px;
+  background:#faf7f9;
+  padding:9px 10px;
+}
+.order-return-box .orb-meta span{
+  display:block;
+  color:#94868e;
+  font-size:8.5px;
+  margin-bottom:3px;
+}
+.order-return-box .orb-meta strong{
+  display:block;
+  color:#452b45;
+  font-size:10px;
+  line-height:1.7;
+  word-break:break-word;
+}
+.order-return-box .orb-form{
+  border-top:1px solid #eee7eb;
+  margin-top:10px;
+  padding-top:12px;
+}
+.order-return-box .orb-form label{
+  display:block;
+  margin-top:9px;
+  color:#5f555b;
+  font-size:9.5px;
+  font-weight:800;
+}
+.order-return-box .orb-form input,
+.order-return-box .orb-form textarea{
+  width:100%;
+  box-sizing:border-box;
+  margin-top:5px;
+  border:1px solid #e5dce2;
+  border-radius:11px;
+  background:#fbf9fa;
+  color:#211b1e;
+  padding:9px 10px;
+  font:inherit;
+  font-size:10px;
+  outline:none;
+}
+.order-return-box .orb-form textarea{
+  min-height:92px;
+  resize:vertical;
+  line-height:1.8;
+}
+.order-return-box .orb-form input:focus,
+.order-return-box .orb-form textarea:focus{
+  border-color:#cf4772;
+  box-shadow:0 0 0 3px rgba(207,71,114,.07);
+}
+.order-return-box .orb-submit{
+  width:100%;
+  min-height:40px;
+  margin-top:11px;
+  border:0;
+  border-radius:12px;
+  background:#452b45;
+  color:#fff;
+  font:inherit;
+  font-size:10px;
+  font-weight:850;
+  cursor:pointer;
+}
+.order-return-box .orb-submit:disabled{opacity:.55;cursor:wait}
+.order-return-box .orb-error{
+  margin-top:9px;
+  border-radius:11px;
+  background:#fdeef1;
+  color:#a63d51;
+  padding:8px 9px;
+  font-size:9.5px;
+  line-height:1.7;
+}
+@media(max-width:520px){
+  .order-return-box{padding:13px}
+  .order-return-box .orb-meta{grid-template-columns:1fr}
+}
