@@ -1,0 +1,103 @@
+/* Phase 6 online payment. Scoped to checkout only. */
+.checkout-block .checkout-payment-methods{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+.checkout-block .checkout-payment-method{
+  position:relative;
+  display:block;
+  cursor:pointer;
+}
+.checkout-block .checkout-payment-method input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.checkout-block .checkout-payment-method span{
+  min-height:72px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  border:1px solid #eadde5;
+  border-radius:14px;
+  background:#fff;
+  padding:10px 12px;
+  color:#746b70;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+.checkout-block .checkout-payment-method strong{
+  color:#452b45;
+  font-size:12px;
+}
+.checkout-block .checkout-payment-method small{
+  color:#91858c;
+  font-size:9.5px;
+  line-height:1.6;
+}
+.checkout-block .checkout-payment-method input:checked+span{
+  border-color:#cf4772;
+  background:#fff8fb;
+  box-shadow:0 0 0 3px rgba(207,71,114,.08);
+}
+.checkout-block .checkout-payment-method.is-disabled{
+  opacity:.48;
+  cursor:not-allowed;
+}
+.checkout-block .checkout-online-note{
+  margin:10px 0 0;
+  border-radius:12px;
+  background:#f5fbf8;
+  color:#356a58;
+  padding:9px 10px;
+  font-size:10px;
+  line-height:1.8;
+}
+.checkout-block .checkout-gateway-box{
+  margin-top:14px;
+  border:1px solid #dcece4;
+  border-radius:14px;
+  background:#f8fcfa;
+  padding:13px;
+}
+.checkout-block .checkout-gateway-box h3{
+  margin:0 0 6px;
+  color:#315f50;
+  font-size:13px;
+}
+.checkout-block .checkout-gateway-box p{
+  margin:0 0 10px;
+  color:#678277;
+  font-size:10.5px;
+  line-height:1.8;
+}
+.checkout-block .checkout-gateway-button{
+  width:100%;
+  min-height:48px;
+  border:0;
+  border-radius:14px;
+  background:#315f50;
+  color:#fff;
+  font:inherit;
+  font-size:11.5px;
+  font-weight:850;
+  cursor:pointer;
+}
+.checkout-block .checkout-gateway-button:disabled{
+  opacity:.55;
+  cursor:wait;
+}
+.checkout-block .checkout-payment-result{
+  margin-bottom:12px;
+  border-radius:13px;
+  padding:10px 11px;
+  font-size:10.5px;
+  line-height:1.8;
+}
+.checkout-block .checkout-payment-result.success{background:#eaf7f2;color:#1d7a5d}
+.checkout-block .checkout-payment-result.warn{background:#fff5df;color:#8c650a}
+@media(max-width:520px){
+  .checkout-block .checkout-payment-methods{grid-template-columns:1fr}
+}
