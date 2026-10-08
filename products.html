@@ -2,9 +2,10 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>محصولات</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="products-filters-pro.css?v=20261009-v1">
   <script src="api.js"></script>
 </head>
 <body>
@@ -16,112 +17,71 @@
     <div class="side-menu-sep"></div>
   </nav>
 
-  <section class="page-title"><h1>محصولات</h1><a href="index.html" class="breadcrumb">خانه /</a></section>
-  <section class="store-search"><input id="store-search-input" type="search" placeholder="جستجوی نام محصول..." autocomplete="off"></section>
-  <section class="filter-bar" id="filter-bar"><button type="button" class="filter-chip active" data-category="">همه</button></section>
-  <section class="sort-bar"><span id="product-count">در حال بارگذاری...</span><select class="sort-select" id="sort-select"><option value="default">مرتب‌سازی: جدیدترین</option><option value="cheap">ارزان‌ترین</option><option value="expensive">گران‌ترین</option></select></section>
-  <section class="section-block"><div class="product-grid" id="product-grid"></div></section>
+  <section class="page-title"><a href="index.html" class="breadcrumb">خانه /</a></section>
+
+  <main class="products-pro-page">
+    <div class="products-pro-head">
+      <div><h1>محصولات</h1><p>جستجو و فیلتر کن تا سریع‌تر به محصول مناسب برسی.</p></div>
+      <label class="products-pro-search" aria-label="جستجوی محصولات"><span>⌕</span><input id="products-search" type="search" placeholder="جستجوی نام، توضیحات یا دسته‌بندی..." autocomplete="off"></label>
+    </div>
+
+    <div class="products-pro-layout">
+      <aside class="products-filter-panel" id="products-filter-panel" aria-label="فیلتر محصولات">
+        <div class="products-filter-head">
+          <strong>فیلترها</strong>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <button type="button" class="products-filter-reset" id="products-reset">پاک کردن همه</button>
+            <button type="button" class="products-filter-reset" id="products-filter-close" style="display:none;" aria-label="بستن فیلتر">بستن</button>
+          </div>
+        </div>
+
+        <div class="products-filter-group">
+          <strong>دسته‌بندی</strong>
+          <div class="products-filter-categories" id="products-category-options"></div>
+        </div>
+
+        <div class="products-filter-group">
+          <strong>وضعیت موجودی</strong>
+          <div class="products-filter-options" id="products-availability-options">
+            <button type="button" class="active" data-availability="all">همه</button>
+            <button type="button" data-availability="in">موجود</button>
+            <button type="button" data-availability="low">رو به اتمام</button>
+            <button type="button" data-availability="out">ناموجود</button>
+          </div>
+        </div>
+
+        <div class="products-filter-group">
+          <strong>بازه قیمت</strong>
+          <div class="products-price-grid">
+            <label><span>از قیمت</span><input id="products-min-price" type="text" inputmode="numeric" placeholder="۰"></label>
+            <label><span>تا قیمت</span><input id="products-max-price" type="text" inputmode="numeric" placeholder="بدون سقف"></label>
+          </div>
+        </div>
+      </aside>
+
+      <section class="products-results">
+        <div class="products-toolbar">
+          <div class="products-count" id="products-count">در حال بارگذاری...</div>
+          <div class="products-toolbar-actions">
+            <button type="button" class="products-mobile-filter" id="products-mobile-filter">فیلترها</button>
+            <select class="products-sort" id="products-sort" aria-label="مرتب‌سازی محصولات">
+              <option value="newest">جدیدترین</option>
+              <option value="bestseller">پرفروش‌ترین</option>
+              <option value="cheap">ارزان‌ترین</option>
+              <option value="expensive">گران‌ترین</option>
+            </select>
+          </div>
+        </div>
+        <div class="products-active-filters" id="products-active-filters"></div>
+        <div class="products-grid" id="products-grid"></div>
+      </section>
+    </div>
+
+    <div class="products-filter-backdrop" id="products-filter-backdrop"></div>
+  </main>
+
   <footer class="site-footer"><div class="footer-links"><a href="#">تماس با ما</a><a href="#">قوانین بازگشت کالا</a></div><div class="footer-social"><span>📷</span><span>✈️</span><span>💬</span></div></footer>
 
-  <script>
-    var toggle = document.querySelector('.menu-toggle');
-    var closeBtn = document.querySelector('.close-menu');
-    var overlay = document.querySelector('.side-menu-overlay');
-    var menu = document.querySelector('.side-menu');
-    function openMenu() { menu.classList.add('open'); overlay.classList.add('open'); }
-    function closeMenu() { menu.classList.remove('open'); overlay.classList.remove('open'); }
-    if (toggle) toggle.addEventListener('click', openMenu);
-    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-    if (overlay) overlay.addEventListener('click', closeMenu);
-
-    var queryParams = new URLSearchParams(window.location.search);
-    var allProducts = [];
-    var currentCategoryId = Number(queryParams.get('category')) || 0;
-    var searchTerm = queryParams.get('q') || '';
-    var grid = document.getElementById('product-grid');
-    var countEl = document.getElementById('product-count');
-    var sortSelect = document.getElementById('sort-select');
-    var filterBar = document.getElementById('filter-bar');
-    var searchInput = document.getElementById('store-search-input');
-    searchInput.value = searchTerm;
-
-    function renderProducts() {
-      var normalizedSearch = searchTerm.trim().toLocaleLowerCase('fa');
-      var list = allProducts.filter(function (p) {
-        var categoryOk = !currentCategoryId || (p.category && Number(p.category.id) === currentCategoryId);
-        var searchable = [p.name, p.description, p.category && p.category.name].filter(Boolean).join(' ').toLocaleLowerCase('fa');
-        var searchOk = !normalizedSearch || searchable.includes(normalizedSearch);
-        return categoryOk && searchOk;
-      });
-      if (sortSelect.value === 'cheap') list = list.slice().sort(function (a, b) {
-        var ap = getProductMinPrice(a) || Number.MAX_SAFE_INTEGER;
-        var bp = getProductMinPrice(b) || Number.MAX_SAFE_INTEGER;
-        return ap - bp;
-      });
-      if (sortSelect.value === 'expensive') list = list.slice().sort(function (a, b) { return getProductMinPrice(b) - getProductMinPrice(a); });
-      countEl.textContent = toFaDigits(list.length) + ' محصول';
-
-      if (!list.length) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:30px 0;color:#888;">محصولی با این فیلتر پیدا نشد</p>';
-        return;
-      }
-
-      grid.innerHTML = list.map(function (p) {
-        var imageUrl = getProductImageUrl(p);
-        var image = imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' : '<span class="product-img-placeholder">بدون تصویر</span>';
-        return '<a href="product-detail.html?id=' + p.id + '" class="product-card">' +
-          '<div class="product-img">' + image + '</div>' +
-          '<h3>' + escapeHtml(p.name) + '</h3>' +
-          '<div class="price">' + getProductPriceLabel(p) + '</div>' +
-          '</a>';
-      }).join('');
-    }
-
-    function setCategory(categoryId) {
-      currentCategoryId = Number(categoryId) || 0;
-      filterBar.querySelectorAll('[data-category]').forEach(function (chip) {
-        chip.classList.toggle('active', Number(chip.dataset.category) === currentCategoryId);
-      });
-      var url = new URL(window.location.href);
-      if (currentCategoryId) url.searchParams.set('category', currentCategoryId);
-      else url.searchParams.delete('category');
-      history.replaceState(null, '', url.pathname + url.search);
-      renderProducts();
-    }
-
-    function syncSearchUrl() {
-      var url = new URL(window.location.href);
-      if (searchTerm.trim()) url.searchParams.set('q', searchTerm.trim());
-      else url.searchParams.delete('q');
-      history.replaceState(null, '', url.pathname + url.search);
-    }
-
-    fetchPublicCategories().then(function (categories) {
-      filterBar.innerHTML = '<button type="button" class="filter-chip" data-category="">همه</button>' + categories.map(function (category) {
-        return '<button type="button" class="filter-chip" data-category="' + category.id + '">' + escapeHtml(category.name) + '</button>';
-      }).join('');
-      filterBar.querySelectorAll('[data-category]').forEach(function (chip) {
-        chip.addEventListener('click', function () { setCategory(chip.dataset.category); });
-      });
-      setCategory(currentCategoryId);
-    }).catch(function () {
-      filterBar.querySelector('[data-category]').classList.add('active');
-    });
-
-    sortSelect.addEventListener('change', renderProducts);
-    searchInput.addEventListener('input', function () {
-      searchTerm = searchInput.value;
-      syncSearchUrl();
-      renderProducts();
-    });
-
-    apiFetch('/products/public/' + SELLER_ID).then(function (products) {
-      allProducts = products;
-      renderProducts();
-    }).catch(function (err) {
-      countEl.textContent = '';
-      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:30px 0;color:#c0392b;">خطا در بارگذاری محصولات: ' + escapeHtml(err.message) + '</p>';
-    });
-  </script>
+  <script src="products-filters-pro.js?v=20261009-v1"></script>
 </body>
 </html>
