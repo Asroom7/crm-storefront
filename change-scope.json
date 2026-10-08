@@ -1,8 +1,6 @@
 {
-  "task": "phase-3-promotions-campaigns-coupons",
-  "allowed_locked_paths": [
-    "panel/index.html"
-  ],
-  "user_approved_shared_change": true,
-  "note": "User explicitly approved phase 3 shared changes. Scope: real promotions/campaigns/coupon management in the admin panel and coupon application in checkout only. panel/index.html may only load the new scoped promotion manager assets. Do not change storefront home sections, product detail, cart, storefront editor, dashboard, customers, sales, conversations, or unrelated panel sections."
+  "task": "phase-4-professional-product-filters",
+  "allowed_locked_paths": [],
+  "user_approved_shared_change": false,
+  "note": "User approved phase 4. Scope is only products.html plus new page-scoped product filter assets. Add professional search, category, availability, price range, bestseller sorting, active-filter summary, reset, and mobile filter sheet using existing public product and best-seller APIs. Do not change storefront home sections, product detail, cart, checkout, storefront editor, panel, backend, shared CSS, shared runtime, or data schema."
 }
