@@ -1,8 +1,6 @@
 {
-  "task": "phase-5-wishlist-and-reviews",
-  "allowed_locked_paths": [
-    "panel/index.html"
-  ],
+  "task": "phase-6-online-payment-gateway",
+  "allowed_locked_paths": [],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved phase 5 shared changes. Scope: wishlist on product detail, wishlist list in customer profile, product ratings/reviews with verified-purchase status, and seller review moderation. panel/index.html may only load the new scoped review-moderation assets. Do not change storefront home sections, product filters, cart, checkout, promotions, storefront editor, dashboard, customers, sales, conversations, or unrelated panel sections."
+  "note": "User explicitly approved phase 6 shared changes. Scope: activate online gateway alongside existing manual card-to-card checkout. Allowed shared edits: backend src/app.js, src/routes/orders.js, src/routes/paymentGateway.js and storefront checkout.html; order-status.html only for online payment status wording/result. The 5000/10000 unique-payment adjustment remains manual-only. Promotions/coupons apply to both methods. Do not change storefront home, products, product detail, wishlist/reviews, cart, panel/editor/dashboard/CRM, or unrelated APIs."
 }
