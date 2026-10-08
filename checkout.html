@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="checkout-promotions.css?v=20261008-v1">
   <link rel="stylesheet" href="checkout-online-payment.css?v=20261009-v1">
+  <link rel="stylesheet" href="checkout-shipping.css?v=20261009-v1">
   <script src="api.js"></script>
   <script>requireCustomerAuth();</script>
 </head>
@@ -234,6 +235,7 @@
         promotionCode: data.promotionCode || meta.promotionCode || null,
         paymentAdjustmentAmount: Number(data.paymentAdjustmentAmount != null ? data.paymentAdjustmentAmount : (data.discountAmount != null ? data.discountAmount : (meta.paymentAdjustmentAmount != null ? meta.paymentAdjustmentAmount : (meta.discountAmount || 0)))),
         paymentMethod: data.paymentMethod || meta.paymentMethod || (data.transaction && data.transaction.provider === 'zarinpal' ? 'online' : 'manual'),
+        shippingMethod: data.shippingMethod || meta.shippingMethod || 'standard',
         expiresAt: data.expiresAt || meta.expiresAt || null
       };
       if (!paymentSession.orderId || !paymentSession.payableAmount) {
@@ -245,6 +247,7 @@
       couponInput.disabled = true;
       if (paymentSession.promotionCode) couponInput.value = paymentSession.promotionCode;
       lockPaymentMethods(paymentSession.paymentMethod);
+      if (window.lockCheckoutShippingMethod) window.lockCheckoutShippingMethod(paymentSession.shippingMethod);
       prepareBtn.disabled = true;
 
       if (paymentSession.paymentMethod === 'online') {
@@ -444,6 +447,7 @@
         body: JSON.stringify({
           items: cart.map(function (item) { return { productId: Number(item.productId), quantity: Number(item.quantity) }; }),
           shippingAddress: address,
+          shippingMethod: window.getSelectedShippingMethod ? window.getSelectedShippingMethod() : 'standard',
           couponCode: couponInput.value.trim() || undefined,
           paymentMethod: paymentMethod
         })
@@ -566,5 +570,6 @@
       else showError(err.message);
     });
   </script>
+  <script src="checkout-shipping.js?v=20261009-v1"></script>
 </body>
 </html>
