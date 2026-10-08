@@ -1,6 +1,8 @@
 {
-  "task": "phase-9-dashboard-decision-metrics",
-  "allowed_locked_paths": [],
-  "user_approved_shared_change": false,
-  "note": "Scope is only the management dashboard decision layer: daily sales comparison, order-status counts, low-stock alerts, 30-day average order value, repeat-purchase rate, and published products with no recorded sale. Changes are limited to backend src/routes/dashboard.js and existing dashboard-specific panel/dashboard-visuals.js and panel/dashboard-visuals.css. Do not change panel core, navigation, storefront, checkout/payment, shipping, returns, products, customers, editor, or unrelated APIs."
+  "task": "phase-10-notification-center",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
+  "user_approved_shared_change": true,
+  "note": "User explicitly approved changing panel/index.html only to load the independent notification center assets. Scope: seller action notifications derived from existing APIs for pending payments, orders ready to ship, pending reviews, requested returns, and low-stock products. Do not change panel/app.js, navigation core, dashboard logic, storefront, checkout/payment, shipping, returns, products, customers, editor, backend, database, or unrelated panel sections."
 }
