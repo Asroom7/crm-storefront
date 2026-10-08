@@ -37,6 +37,8 @@ function render(order){
   if(old)old.remove();
 
   var rank=statusRank(order.status);
+  var paymentDone=['confirmed','paid','shipped'].includes(order.status);
+  var paymentReview=order.status==='pending_review';
   var section=document.createElement('section');
   section.className='order-shipping-tracking';
   section.id='order-shipping-tracking';
@@ -49,8 +51,8 @@ function render(order){
 
   var timeline='';
   timeline+=step(rank>=1?'done':'current',1,'سفارش ثبت شد',created||'ثبت سفارش انجام شده است');
-  timeline+=step(rank>=2?'done':(rank===1?'current':''),2,'پرداخت سفارش',rank>=2?'پرداخت ثبت شده است':'در انتظار تکمیل یا تأیید پرداخت');
-  timeline+=step(rank>=3?'done':(rank===2?'current':''),3,'آماده‌سازی سفارش',rank>=3?'سفارش برای ارسال آماده شده است':'پس از تأیید پرداخت آغاز می‌شود');
+  timeline+=step(paymentDone?'done':((order.status==='pending_payment'||paymentReview)?'current':''),2,paymentReview?'بررسی پرداخت':'پرداخت سفارش',paymentDone?'پرداخت تأیید شده است':(paymentReview?'رسید ثبت شده و در انتظار بررسی فروشگاه است':'در انتظار تکمیل پرداخت'));
+  timeline+=step(order.status==='shipped'?'done':(paymentDone?'current':''),3,'آماده‌سازی سفارش',order.status==='shipped'?'آماده‌سازی تکمیل شده است':(paymentDone?'سفارش در حال آماده‌سازی برای ارسال است':'پس از تأیید پرداخت آغاز می‌شود'));
   timeline+=step(rank>=4?'done':(rank===3?'current':''),4,'ارسال مرسوله',rank>=4?(shipped?'ارسال در '+shipped:'ارسال ثبت شده است'):'هنوز تحویل شرکت حمل نشده است');
   timeline+=step(rank>=4?'current':'',5,'بازه تقریبی تحویل',eta);
 
