@@ -1,0 +1,150 @@
+/* Phase 7 shipping manager. Scoped to shipping modal/enhancements only. */
+.shipping-modal-wrap{
+  position:fixed;
+  inset:0;
+  z-index:130;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(24,20,26,.42);
+  backdrop-filter:blur(5px);
+}
+.shipping-modal-wrap[hidden]{display:none}
+.shipping-modal{
+  width:min(620px,100%);
+  max-height:min(88vh,760px);
+  overflow:auto;
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:24px;
+  background:var(--surface);
+  box-shadow:0 24px 70px rgba(35,27,37,.20);
+  padding:17px;
+}
+.shipping-modal__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:13px;
+}
+.shipping-modal__head h3{margin:0;color:var(--ink);font-size:17px}
+.shipping-modal__head p{margin:4px 0 0;color:var(--ink-soft);font-size:9.5px;line-height:1.7}
+.shipping-modal__close{
+  width:36px;
+  height:36px;
+  border:1px solid var(--border);
+  border-radius:50%;
+  background:var(--surface-2);
+  color:var(--ink);
+  font:inherit;
+  font-size:18px;
+  cursor:pointer;
+}
+.shipping-modal__info{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin-bottom:12px;
+}
+.shipping-modal__info>div{
+  border-radius:12px;
+  background:var(--surface-2);
+  padding:9px 10px;
+}
+.shipping-modal__info span{display:block;color:var(--ink-faint);font-size:8.5px;margin-bottom:3px}
+.shipping-modal__info strong{display:block;color:var(--ink);font-size:10px;line-height:1.6}
+.shipping-modal__grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.shipping-modal__grid label{display:block}
+.shipping-modal__grid label.wide{grid-column:1/-1}
+.shipping-modal__grid label>span{
+  display:block;
+  margin-bottom:5px;
+  color:var(--ink-soft);
+  font-size:9.5px;
+  font-weight:800;
+}
+.shipping-modal__grid input{
+  width:100%;
+  height:42px;
+  box-sizing:border-box;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface-2);
+  color:var(--ink);
+  padding:0 10px;
+  font:inherit;
+  font-size:10.5px;
+  outline:none;
+}
+.shipping-modal__grid input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px var(--primary-tint);
+}
+.shipping-modal__error{
+  margin:10px 0 0;
+  border-radius:11px;
+  background:var(--danger-tint);
+  color:var(--danger);
+  padding:8px 10px;
+  font-size:9.5px;
+  line-height:1.7;
+}
+.shipping-modal__error[hidden]{display:none}
+.shipping-modal__actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid var(--border);
+}
+.shipping-modal__actions button{
+  min-height:40px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:0 13px;
+  background:var(--surface-2);
+  color:var(--ink);
+  font:inherit;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+.shipping-modal__actions .primary{
+  border-color:transparent;
+  background:var(--primary);
+  color:#fff;
+}
+.shipping-tracking-chip{
+  margin-top:8px;
+  border-radius:11px;
+  background:var(--success-tint);
+  color:var(--success);
+  padding:7px 9px;
+  font-size:9px;
+  line-height:1.7;
+}
+.shipping-edit-btn{
+  margin-top:7px;
+  min-height:32px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface-2);
+  color:var(--ink-soft);
+  padding:0 9px;
+  font:inherit;
+  font-size:9px;
+  font-weight:800;
+  cursor:pointer;
+}
+@media(max-width:620px){
+  .shipping-modal-wrap{align-items:end;padding:0}
+  .shipping-modal{width:100%;max-width:none;max-height:92svh;border-radius:24px 24px 0 0;padding:15px 13px calc(15px + env(safe-area-inset-bottom))}
+  .shipping-modal__grid{grid-template-columns:1fr}
+  .shipping-modal__grid label.wide{grid-column:auto}
+  .shipping-modal__info{grid-template-columns:1fr}
+}
