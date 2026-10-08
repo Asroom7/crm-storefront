@@ -1,0 +1,78 @@
+/* Phase 7 checkout shipping. Scoped to checkout only. */
+.checkout-block .checkout-shipping-box{
+  margin:14px 0 0;
+  border:1px solid #eadfe5;
+  border-radius:15px;
+  background:#fff;
+  padding:13px;
+}
+.checkout-block .checkout-shipping-box h3{
+  margin:0 0 4px;
+  color:#452b45;
+  font-size:12px;
+}
+.checkout-block .checkout-shipping-box>p{
+  margin:0 0 10px;
+  color:#8c8087;
+  font-size:9.5px;
+  line-height:1.75;
+}
+.checkout-block .checkout-shipping-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.checkout-block .checkout-shipping-option{
+  position:relative;
+  display:block;
+  cursor:pointer;
+}
+.checkout-block .checkout-shipping-option input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.checkout-block .checkout-shipping-option span{
+  min-height:68px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  border:1px solid #eadfe5;
+  border-radius:13px;
+  background:#fbf9fa;
+  padding:9px 10px;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+.checkout-block .checkout-shipping-option strong{
+  color:#452b45;
+  font-size:10.5px;
+}
+.checkout-block .checkout-shipping-option small{
+  color:#8c8087;
+  font-size:8.8px;
+  line-height:1.6;
+}
+.checkout-block .checkout-shipping-option input:checked+span{
+  border-color:#cf4772;
+  background:#fff8fb;
+  box-shadow:0 0 0 3px rgba(207,71,114,.07);
+}
+.checkout-block .checkout-shipping-option input:disabled+span{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.checkout-block .checkout-shipping-loading,
+.checkout-block .checkout-shipping-error{
+  border:1px dashed #eadfe5;
+  border-radius:12px;
+  padding:11px;
+  text-align:center;
+  color:#8c8087;
+  font-size:9.5px;
+  line-height:1.7;
+}
+.checkout-block .checkout-shipping-error{color:#a44758;background:#fff8fa}
+@media(max-width:520px){
+  .checkout-block .checkout-shipping-options{grid-template-columns:1fr}
+}
