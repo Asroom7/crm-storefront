@@ -1,6 +1,8 @@
 {
-  "task": "phase-4-professional-product-filters",
-  "allowed_locked_paths": [],
-  "user_approved_shared_change": false,
-  "note": "User approved phase 4. Scope is only products.html plus new page-scoped product filter assets. Add professional search, category, availability, price range, bestseller sorting, active-filter summary, reset, and mobile filter sheet using existing public product and best-seller APIs. Do not change storefront home sections, product detail, cart, checkout, storefront editor, panel, backend, shared CSS, shared runtime, or data schema."
+  "task": "phase-5-wishlist-and-reviews",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
+  "user_approved_shared_change": true,
+  "note": "User explicitly approved phase 5 shared changes. Scope: wishlist on product detail, wishlist list in customer profile, product ratings/reviews with verified-purchase status, and seller review moderation. panel/index.html may only load the new scoped review-moderation assets. Do not change storefront home sections, product filters, cart, checkout, promotions, storefront editor, dashboard, customers, sales, conversations, or unrelated panel sections."
 }
