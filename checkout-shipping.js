@@ -105,4 +105,8 @@
       (error.message || 'دریافت روش‌های ارسال ناموفق بود.') +
       '</div>';
   });
+
+  apiFetch('/orders/mine/pending-payment').then(function (order) {
+    if (order && order.shippingMethod) window.lockCheckoutShippingMethod(order.shippingMethod);
+  }).catch(function () {});
 }());
