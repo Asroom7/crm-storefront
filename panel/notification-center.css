@@ -1,0 +1,266 @@
+/* Phase 10 notification center. Scoped to notification center UI only. */
+.notification-center-trigger{
+  position:relative;
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  cursor:pointer;
+}
+.notification-center-trigger:hover{
+  background:rgba(116,88,217,.08);
+}
+.notification-center-trigger__icon{
+  font-size:17px;
+  line-height:1;
+}
+.notification-center-trigger__badge{
+  position:absolute;
+  top:1px;
+  left:0;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  box-sizing:border-box;
+  border:2px solid var(--surface);
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:var(--danger);
+  color:#fff;
+  font-size:7.5px;
+  font-weight:900;
+  line-height:1;
+}
+.notification-center-trigger__badge[hidden]{display:none}
+.notification-center-overlay{
+  position:fixed;
+  inset:0;
+  z-index:150;
+  background:rgba(22,19,24,.36);
+  backdrop-filter:blur(4px);
+}
+.notification-center-overlay[hidden]{display:none}
+.notification-center{
+  position:absolute;
+  top:max(64px,calc(env(safe-area-inset-top) + 54px));
+  left:14px;
+  width:min(430px,calc(100vw - 28px));
+  max-height:min(78vh,720px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:22px;
+  background:var(--surface);
+  box-shadow:0 24px 70px rgba(35,27,37,.22);
+}
+.notification-center__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding:15px 15px 12px;
+  border-bottom:1px solid var(--border);
+}
+.notification-center__head h2{
+  margin:0;
+  color:var(--ink);
+  font-size:16px;
+}
+.notification-center__head p{
+  margin:4px 0 0;
+  color:var(--ink-soft);
+  font-size:9px;
+  line-height:1.7;
+}
+.notification-center__head-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.notification-center__refresh,
+.notification-center__close{
+  min-width:34px;
+  height:34px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:var(--surface-2);
+  color:var(--ink);
+  font:inherit;
+  font-size:12px;
+  cursor:pointer;
+}
+.notification-center__refresh.is-loading{
+  opacity:.55;
+  cursor:wait;
+}
+.notification-center__summary{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface-2);
+}
+.notification-center__summary div{
+  min-width:0;
+  border-radius:11px;
+  background:var(--surface);
+  padding:7px 5px;
+  text-align:center;
+}
+.notification-center__summary strong{
+  display:block;
+  color:var(--ink);
+  font-size:12px;
+}
+.notification-center__summary span{
+  display:block;
+  margin-top:2px;
+  color:var(--ink-faint);
+  font-size:7.2px;
+  white-space:nowrap;
+}
+.notification-center__body{
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:10px;
+}
+.notification-group{
+  margin-bottom:12px;
+}
+.notification-group:last-child{margin-bottom:0}
+.notification-group__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:0 2px 6px;
+}
+.notification-group__head strong{
+  color:var(--ink);
+  font-size:9.5px;
+}
+.notification-group__head span{
+  min-width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:var(--primary-tint);
+  color:var(--primary);
+  font-size:8px;
+  font-weight:900;
+}
+.notification-item{
+  width:100%;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  border:1px solid var(--border);
+  border-radius:13px;
+  background:var(--surface);
+  padding:9px;
+  margin-bottom:6px;
+  color:inherit;
+  font:inherit;
+  text-align:right;
+  cursor:pointer;
+}
+.notification-item:last-child{margin-bottom:0}
+.notification-item:hover{
+  background:var(--surface-2);
+}
+.notification-item__icon{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:11px;
+  background:var(--primary-tint);
+  color:var(--primary);
+  font-size:14px;
+}
+.notification-item.payment .notification-item__icon{background:var(--danger-tint);color:var(--danger)}
+.notification-item.shipping .notification-item__icon{background:#edf4ff;color:#37679d}
+.notification-item.review .notification-item__icon{background:#fff5df;color:#8c650a}
+.notification-item.return .notification-item__icon{background:#f0eef9;color:#6f5aa1}
+.notification-item.stock .notification-item__icon{background:var(--success-tint);color:var(--success)}
+.notification-item__body{
+  min-width:0;
+}
+.notification-item__title{
+  display:block;
+  color:var(--ink);
+  font-size:9.5px;
+  font-weight:850;
+  line-height:1.55;
+}
+.notification-item__meta{
+  display:block;
+  margin-top:2px;
+  color:var(--ink-soft);
+  font-size:8px;
+  line-height:1.55;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.notification-item__chev{
+  color:var(--ink-faint);
+  font-size:15px;
+}
+.notification-center__empty,
+.notification-center__error{
+  min-height:170px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:1px dashed var(--border);
+  border-radius:15px;
+  color:var(--ink-soft);
+  text-align:center;
+  font-size:9.5px;
+  line-height:1.8;
+  padding:16px;
+}
+.notification-center__empty strong{
+  color:var(--success);
+  font-size:11px;
+}
+.notification-center__error{
+  color:var(--danger);
+}
+[data-theme="dark"] .notification-center{
+  border-color:rgba(255,255,255,.05);
+}
+@media(max-width:620px){
+  .notification-center{
+    position:absolute;
+    top:auto;
+    right:0;
+    left:0;
+    bottom:0;
+    width:100%;
+    max-height:84svh;
+    border-radius:24px 24px 0 0;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .notification-center__summary{
+    grid-template-columns:repeat(5,minmax(54px,1fr));
+    overflow-x:auto;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .notification-center-trigger,
+  .notification-item{transition:none!important}
+}
