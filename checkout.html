@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تکمیل خرید</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="checkout-promotions.css?v=20261008-v1">
   <script src="api.js"></script>
   <script>requireCustomerAuth();</script>
 </head>
@@ -20,7 +21,7 @@
   <section class="page-title"><h1>تکمیل خرید</h1><a href="index.html" class="breadcrumb">خانه</a> <a href="cart.html" class="breadcrumb">/ سبد خرید /</a></section>
 
   <section class="checkout-block">
-    <div class="trust-note"><span class="trust-icon">🛡</span><p>برای اینکه واریزی شما با سفارش دیگری اشتباه نشود، سیستم مبلغ دقیق پرداخت را برای سفارش رزرو می‌کند. تصویر رسید برای ثبت پرداخت الزامی است.</p></div>
+    <div class="trust-note"><span class="trust-icon">🛡</span><p>برای اینکه واریزی شما با سفارش دیگری اشتباه نشود، سیستم مبلغ دقیق پرداخت را برای سفارش رزرو می‌کند. اگر مبلغ سفارش با سفارش فعال دیگری یکسان باشد، فقط تخفیف یکتاسازی ۵٬۰۰۰ یا ۱۰٬۰۰۰ تومانی استفاده می‌شود. تصویر رسید برای ثبت پرداخت الزامی است.</p></div>
 
     <div id="checkout-support" class="card-info" style="display:none;margin-bottom:16px;">
       <h2>پشتیبانی ثبت سفارش</h2>
@@ -31,6 +32,13 @@
       <h2>۱. آدرس ارسال</h2>
       <label for="f-address">آدرس کامل</label>
       <textarea rows="3" id="f-address" maxlength="2000" placeholder="استان، شهر، خیابان، پلاک..."></textarea>
+      <div class="checkout-promo-box">
+        <label for="coupon-code">کد تخفیف <span style="color:#999;font-weight:400;">(اختیاری)</span></label>
+        <div class="checkout-promo-input">
+          <input id="coupon-code" type="text" maxlength="40" autocomplete="off" placeholder="مثلاً BEAUTY20" dir="ltr">
+        </div>
+        <small>کد هنگام «دریافت مبلغ دقیق پرداخت» توسط سرور بررسی می‌شود. اگر کدی وارد نکنی، بهترین کمپین خودکار فعال در صورت وجود اعمال می‌شود.</small>
+      </div>
       <p id="checkout-error" style="color:#c0392b;display:none;line-height:1.8;"></p>
       <button id="prepare-payment-btn" class="btn-dark btn-full" type="button">دریافت مبلغ دقیق پرداخت</button>
       <p style="font-size:12.5px;color:#888;line-height:1.8;margin-bottom:0;">با دریافت مبلغ، موجودی کالا و مبلغ پرداخت برای مدت محدود رزرو می‌شود.</p>
@@ -40,9 +48,15 @@
       <h2>۲. واریز مبلغ دقیق</h2>
       <div id="resumed-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(15,82,87,.08);font-size:13px;line-height:1.8;">پرداخت فعال قبلی شما بازیابی شد. از همین مبلغ استفاده کنید.</div>
 
-      <div id="discount-row" style="display:none;text-align:center;margin:8px 0 12px;">
-        <span style="font-size:13px;color:#777;">تخفیف اختصاصی این پرداخت:</span>
-        <strong id="discount-amount" style="margin-right:6px;"></strong>
+      <div class="checkout-discount-summary" id="discount-summary" style="display:none;">
+        <div class="checkout-discount-row is-promo" id="promotion-discount-row" style="display:none;">
+          <span>تخفیف کمپین <small class="checkout-promo-name" id="promotion-name"></small></span>
+          <strong id="promotion-discount-amount"></strong>
+        </div>
+        <div class="checkout-discount-row is-adjustment" id="payment-adjustment-row" style="display:none;">
+          <span>تخفیف یکتاسازی مبلغ پرداخت</span>
+          <strong id="payment-adjustment-amount"></strong>
+        </div>
       </div>
 
       <div style="text-align:center;margin:10px 0 8px;color:#666;font-size:13px;">مبلغی که باید دقیقاً واریز شود</div>
@@ -106,6 +120,7 @@
     var errorBox = document.getElementById('checkout-error');
     var addressInput = document.getElementById('f-address');
     var prepareBtn = document.getElementById('prepare-payment-btn');
+    var couponInput = document.getElementById('coupon-code');
     var submitBtn = document.getElementById('submit-payment-btn');
     var receiptInput = document.getElementById('f-receipt');
     var paymentStep = document.getElementById('payment-step');
@@ -168,7 +183,10 @@
       paymentSession = {
         orderId: Number(data.orderId || data.id),
         payableAmount: Number(data.payableAmount || data.totalAmount || meta.payableAmount || 0),
-        discountAmount: Number(data.discountAmount != null ? data.discountAmount : (meta.discountAmount || 0)),
+        promotionDiscountAmount: Number(data.promotionDiscountAmount != null ? data.promotionDiscountAmount : (meta.promotionDiscountAmount || 0)),
+        promotionName: data.promotionName || meta.promotionName || null,
+        promotionCode: data.promotionCode || meta.promotionCode || null,
+        paymentAdjustmentAmount: Number(data.paymentAdjustmentAmount != null ? data.paymentAdjustmentAmount : (data.discountAmount != null ? data.discountAmount : (meta.paymentAdjustmentAmount != null ? meta.paymentAdjustmentAmount : (meta.discountAmount || 0)))),
         expiresAt: data.expiresAt || meta.expiresAt || null
       };
       if (!paymentSession.orderId || !paymentSession.payableAmount) {
@@ -177,6 +195,8 @@
       }
 
       addressInput.disabled = true;
+      couponInput.disabled = true;
+      if (paymentSession.promotionCode) couponInput.value = paymentSession.promotionCode;
       prepareBtn.disabled = true;
       prepareBtn.textContent = 'مبلغ پرداخت رزرو شد ✓';
       paymentStep.style.display = '';
@@ -184,13 +204,30 @@
       document.getElementById('payable-amount').textContent = formatPrice(paymentSession.payableAmount);
       document.getElementById('resumed-note').style.display = resumed ? '' : 'none';
 
-      var discountRow = document.getElementById('discount-row');
-      if (paymentSession.discountAmount > 0) {
-        document.getElementById('discount-amount').textContent = formatPrice(paymentSession.discountAmount) + ' تومان';
-        discountRow.style.display = '';
+      var summary = document.getElementById('discount-summary');
+      var promoRow = document.getElementById('promotion-discount-row');
+      var adjustmentRow = document.getElementById('payment-adjustment-row');
+      var hasPromo = paymentSession.promotionDiscountAmount > 0;
+      var hasAdjustment = paymentSession.paymentAdjustmentAmount > 0;
+
+      if (hasPromo) {
+        document.getElementById('promotion-discount-amount').textContent = '− ' + formatPrice(paymentSession.promotionDiscountAmount) + ' تومان';
+        document.getElementById('promotion-name').textContent = paymentSession.promotionCode
+          ? ('کد ' + paymentSession.promotionCode)
+          : (paymentSession.promotionName || 'کمپین خودکار');
+        promoRow.style.display = '';
       } else {
-        discountRow.style.display = 'none';
+        promoRow.style.display = 'none';
       }
+
+      if (hasAdjustment) {
+        document.getElementById('payment-adjustment-amount').textContent = '− ' + formatPrice(paymentSession.paymentAdjustmentAmount) + ' تومان';
+        adjustmentRow.style.display = '';
+      } else {
+        adjustmentRow.style.display = 'none';
+      }
+
+      summary.style.display = (hasPromo || hasAdjustment) ? '' : 'none';
 
       startTimer();
       updateSubmitState();
@@ -244,6 +281,10 @@
         .catch(function () { showError('کپی خودکار مبلغ انجام نشد؛ مبلغ را دقیقاً از روی صفحه وارد کنید.'); });
     });
 
+    couponInput.addEventListener('input', function () {
+      couponInput.value = couponInput.value.toUpperCase().replace(/\s+/g, '');
+    });
+
     receiptInput.addEventListener('change', function () {
       clearError();
       var file = receiptInput.files && receiptInput.files[0];
@@ -289,7 +330,8 @@
         method: 'POST',
         body: JSON.stringify({
           items: cart.map(function (item) { return { productId: Number(item.productId), quantity: Number(item.quantity) }; }),
-          shippingAddress: address
+          shippingAddress: address,
+          couponCode: couponInput.value.trim() || undefined
         })
       }).then(function (data) {
         renderPaymentSession(data, Boolean(data.resumed));
