@@ -1,6 +1,8 @@
 {
-  "task": "phase-2-professional-product-detail",
-  "allowed_locked_paths": [],
-  "user_approved_shared_change": false,
-  "note": "User approved phase 2. Scope is only the storefront product-detail page: product gallery, purchase box, stock/quantity UX, description/details, related products, and mobile usability using existing public product APIs. Do not change storefront home sections, storefront editor, cart, checkout, panel sections, shared CSS/runtime, data schema, or backend."
+  "task": "phase-3-promotions-campaigns-coupons",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
+  "user_approved_shared_change": true,
+  "note": "User explicitly approved phase 3 shared changes. Scope: real promotions/campaigns/coupon management in the admin panel and coupon application in checkout only. panel/index.html may only load the new scoped promotion manager assets. Do not change storefront home sections, product detail, cart, storefront editor, dashboard, customers, sales, conversations, or unrelated panel sections."
 }
