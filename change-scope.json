@@ -1,6 +1,8 @@
 {
-  "task": "move-storefront-editor-last-edit-status",
-  "allowed_locked_paths": [],
-  "user_approved_shared_change": false,
-  "note": "Panel storefront editor only: remove the duplicate bottom publish/status bar and show the latest edit time beside the existing top publish button. Do not change storefront source files, section order, live storefront runtime, or any other panel section."
+  "task": "phase-1-professional-product-management",
+  "allowed_locked_paths": [
+    "panel/index.html"
+  ],
+  "user_approved_shared_change": true,
+  "note": "User explicitly approved phase 1. Scope is panel Products only: professional product list/form, sales prices, inventory, and product media using existing backend product APIs. Storefront, storefront editor, dashboard, customers, sales, conversations, and all other approved sections must remain unchanged. panel/index.html may only load the new scoped product-management CSS/JS files."
 }
