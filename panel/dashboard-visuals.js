@@ -5,6 +5,8 @@
 
   let productsCache = null;
   let processing = false;
+  let decisionCache = null;
+  let decisionRequest = null;
 
   function safeText(value) {
     if (typeof esc === 'function') return esc(value == null ? '' : value);
@@ -151,8 +153,144 @@
     }
   }
 
+
+  function dashboardRouteActive() {
+    const route = location.hash.replace(/^#\/?/, '').split('/')[0];
+    return !route || route === 'dashboard';
+  }
+
+  function moneyLabel(value) {
+    const amount = Number(value || 0);
+    if (typeof fmtPrice === 'function') return fmtPrice(amount);
+    return amount.toLocaleString('fa-IR') + ' تومان';
+  }
+
+  function numberLabel(value) {
+    const number = Number(value || 0);
+    return typeof faDigits === 'function' ? faDigits(number) : String(number);
+  }
+
+  function changeLabel(metric, kind) {
+    const current = Number(metric.today && metric.today[kind] || 0);
+    const previous = Number(metric.yesterday && metric.yesterday[kind] || 0);
+    const percent = metric[kind === 'amount' ? 'amountChangePercent' : 'countChangePercent'];
+    if (previous === 0 && current > 0) return { text: 'شروع فروش نسبت به دیروز', tone: 'up' };
+    if (current === previous) return { text: 'بدون تغییر نسبت به دیروز', tone: 'flat' };
+    const direction = current > previous ? 'up' : 'down';
+    const sign = current > previous ? '+' : '';
+    const value = percent == null
+      ? (kind === 'amount' ? moneyLabel(current - previous) : numberLabel(current - previous))
+      : sign + numberLabel(percent) + '٪';
+    return {
+      text: value + ' نسبت به دیروز',
+      tone: direction,
+    };
+  }
+
+  async function getDecisionMetrics() {
+    if (decisionCache) return decisionCache;
+    if (decisionRequest) return decisionRequest;
+    if (typeof sellerApiFetch !== 'function') return null;
+    decisionRequest = sellerApiFetch('/dashboard/summary')
+      .then(function (data) {
+        decisionCache = data || null;
+        return decisionCache;
+      })
+      .catch(function () { return null; })
+      .finally(function () { decisionRequest = null; });
+    return decisionRequest;
+  }
+
+  function metricCard(label, value, note, tone) {
+    return '<div class="decision-metric ' + safeText(tone || '') + '">' +
+      '<span class="decision-metric__label">' + safeText(label) + '</span>' +
+      '<strong class="decision-metric__value">' + safeText(value) + '</strong>' +
+      '<small class="decision-metric__note">' + safeText(note || '') + '</small>' +
+    '</div>';
+  }
+
+  function productRows(items, type) {
+    const rows = Array.isArray(items) ? items : [];
+    if (!rows.length) {
+      return '<div class="decision-empty">' + (type === 'low' ? 'هشدار موجودی فعالی نیست' : 'همه محصولات منتشرشده سابقه فروش دارند') + '</div>';
+    }
+    return rows.slice(0, 5).map(function (product) {
+      const stock = Number(product.stockQty || 0);
+      const meta = type === 'low'
+        ? 'موجودی ' + numberLabel(stock) + ' · حد هشدار ' + numberLabel(product.lowStockAt || 0)
+        : 'بدون فروش ثبت‌شده';
+      return '<button type="button" class="decision-product-row" data-decision-product="' + Number(product.id) + '">' +
+        '<span>' + safeText(product.name || 'محصول') + '</span><small>' + safeText(meta) + '</small>' +
+      '</button>';
+    }).join('');
+  }
+
+  function orderStatusHTML(statuses) {
+    const rows = [
+      ['در انتظار پرداخت', statuses.pendingPayment || 0],
+      ['بررسی پرداخت', statuses.pendingReview || 0],
+      ['آماده ارسال', statuses.readyToShip || 0],
+      ['ارسال‌شده', statuses.shipped || 0],
+      ['لغو / رد', statuses.cancelledOrRejected || 0],
+    ];
+    return rows.map(function (row) {
+      return '<div class="decision-status"><strong>' + numberLabel(row[1]) + '</strong><span>' + row[0] + '</span></div>';
+    }).join('');
+  }
+
+  async function injectDecisionMetrics() {
+    if (!dashboardRouteActive()) return;
+    const view = document.getElementById('view');
+    if (!view || view.querySelector('[data-dashboard-decision="1"]')) return;
+    const grid = view.querySelector('.dash-grid');
+    if (!grid) return;
+
+    const data = await getDecisionMetrics();
+    if (!data || !data.decisionMetrics || !dashboardRouteActive()) return;
+    const liveView = document.getElementById('view');
+    if (!liveView || liveView.querySelector('[data-dashboard-decision="1"]')) return;
+    const liveGrid = liveView.querySelector('.dash-grid');
+    if (!liveGrid) return;
+
+    const decision = data.decisionMetrics;
+    const comparison = decision.dailyComparison || {};
+    const amountChange = changeLabel(comparison, 'amount');
+    const aov = decision.averageOrderValue30d || {};
+    const repeat = decision.repeatPurchase || {};
+    const statuses = decision.orderStatuses || {};
+
+    const section = document.createElement('section');
+    section.className = 'dashboard-decision-layer';
+    section.dataset.dashboardDecision = '1';
+    section.innerHTML =
+      '<div class="section-title decision-section-title">' +
+        (typeof ic === 'function' ? ic('target') : '') +
+        ' شاخص‌های تصمیم‌گیری' +
+      '</div>' +
+      '<div class="decision-metrics-grid">' +
+        metricCard('فروش امروز', moneyLabel(comparison.today && comparison.today.amount || 0), amountChange.text, amountChange.tone) +
+        metricCard('میانگین سفارش ۳۰ روز', moneyLabel(aov.amount || 0), numberLabel(aov.orderCount || 0) + ' سفارش تکمیل‌شده', 'neutral') +
+        metricCard('خرید تکراری', numberLabel(repeat.rate || 0) + '٪', numberLabel(repeat.repeatBuyers || 0) + ' مشتری تکراری از ' + numberLabel(repeat.buyers || 0) + ' خریدار', 'neutral') +
+        metricCard('نیاز به توجه', numberLabel((statuses.pendingReview || 0) + (statuses.readyToShip || 0) + (decision.lowStockCount || 0)), 'پرداخت، ارسال و موجودی', 'attention') +
+      '</div>' +
+      '<div class="decision-statuses">' + orderStatusHTML(statuses) + '</div>' +
+      '<div class="decision-lists">' +
+        '<div class="decision-list-card"><div class="decision-list-head"><strong>هشدار موجودی</strong><span>' + numberLabel(decision.lowStockCount || 0) + '</span></div>' + productRows(data.lowStock, 'low') + '</div>' +
+        '<div class="decision-list-card"><div class="decision-list-head"><strong>محصولات بدون فروش</strong><span>' + numberLabel(decision.noSaleProductCount || 0) + '</span></div>' + productRows(decision.noSaleProducts, 'no-sale') + '</div>' +
+      '</div>';
+
+    liveGrid.insertAdjacentElement('afterend', section);
+    section.querySelectorAll('[data-decision-product]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const id = Number(row.dataset.decisionProduct);
+        if (typeof openProductForm === 'function') openProductForm(id);
+      });
+    });
+  }
+
   function scheduleMerge() {
     Promise.resolve().then(mergeDashboardBestSellers);
+    Promise.resolve().then(injectDecisionMetrics);
   }
 
   const view = document.getElementById('view');
@@ -161,6 +299,9 @@
     observer.observe(view, { childList: true, subtree: true });
   }
 
-  window.addEventListener('hashchange', scheduleMerge);
+  window.addEventListener('hashchange', function () {
+    if (dashboardRouteActive()) decisionCache = null;
+    scheduleMerge();
+  });
   setTimeout(scheduleMerge, 0);
 }());
