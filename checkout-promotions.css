@@ -1,0 +1,77 @@
+/* Phase 3 checkout promotions. Scoped to checkout only. */
+.checkout-block .checkout-promo-box{
+  margin:14px 0 0;
+  padding:13px;
+  border:1px solid rgba(207,71,114,.16);
+  border-radius:14px;
+  background:linear-gradient(145deg,#fff,#fff8fb);
+}
+.checkout-block .checkout-promo-box label{
+  display:block;
+  margin-bottom:7px;
+  color:#452b45;
+  font-size:12px;
+  font-weight:800;
+}
+.checkout-block .checkout-promo-input{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.checkout-block .checkout-promo-input input{
+  width:100%;
+  min-width:0;
+  height:44px;
+  box-sizing:border-box;
+  border:1px solid #eadde5;
+  border-radius:12px;
+  background:#fff;
+  padding:0 12px;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  outline:none;
+}
+.checkout-block .checkout-promo-input input:focus{
+  border-color:#cf4772;
+  box-shadow:0 0 0 3px rgba(207,71,114,.09);
+}
+.checkout-block .checkout-promo-box small{
+  display:block;
+  margin-top:7px;
+  color:#8a7d84;
+  font-size:10.5px;
+  line-height:1.8;
+}
+.checkout-block .checkout-discount-summary{
+  margin:10px 0 13px;
+  border-radius:14px;
+  background:#fff9fb;
+  border:1px solid #f1dce5;
+  overflow:hidden;
+}
+.checkout-block .checkout-discount-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:9px 11px;
+  font-size:11.5px;
+  color:#746b70;
+}
+.checkout-block .checkout-discount-row + .checkout-discount-row{border-top:1px solid #f1e4e9}
+.checkout-block .checkout-discount-row strong{color:#452b45;font-size:12px}
+.checkout-block .checkout-discount-row.is-promo strong{color:#b33165}
+.checkout-block .checkout-discount-row.is-adjustment strong{color:#816020}
+.checkout-block .checkout-promo-name{
+  display:block;
+  margin-top:2px;
+  color:#a18f98;
+  font-size:9.5px;
+}
+@media(max-width:520px){
+  .checkout-block .checkout-promo-box{padding:11px}
+  .checkout-block .checkout-discount-row{align-items:flex-start;flex-direction:column;gap:4px}
+}
