@@ -1,8 +1,18 @@
 {
-  "task": "phase-10-notification-center",
+  "task": "item-10-seo-analytics",
   "allowed_locked_paths": [
+    "index.html",
+    "products.html",
+    "product-detail.html",
+    "education.html",
+    "cart.html",
+    "checkout.html",
+    "login.html",
+    "register.html",
+    "profile.html",
+    "order-status.html",
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved changing panel/index.html only to load the independent notification center assets. Scope: seller action notifications derived from existing APIs for pending payments, orders ready to ship, pending reviews, requested returns, and low-stock products. Do not change panel/app.js, navigation core, dashboard logic, storefront, checkout/payment, shipping, returns, products, customers, editor, backend, database, or unrelated panel sections."
+  "note": "User explicitly approved item 10 SEO + Analytics. Scope: SEO head metadata/canonical/robots/structured data loaders on the listed storefront pages; noindex on private/auth/checkout pages; new robots.txt and sitemap.xml; anonymous storefront analytics events and seller analytics report through existing storefront-insights route; new scoped analytics panel assets loaded by panel/index.html. Backend shared changes are limited to prisma/schema.prisma and src/routes/storefrontInsights.js. Do not alter storefront layout/content, panel/app.js, dashboard logic, checkout/payment logic, shipping, returns, products data, customers, editor, or unrelated APIs."
 }
