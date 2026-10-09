@@ -50,11 +50,15 @@ function addSettingsLink(){
   a.className='settings-row';
   a.dataset.analyticsSettingsLink='1';
   a.style.cssText='text-decoration:none;color:inherit;';
-  a.innerHTML='<div class="settings-row__icon">↗</div><div class="settings-row__text"><div class="settings-row__title">SEO و آمار فروشگاه</div><div class="settings-row__desc">بازدید، مشاهده محصول، افزودن به سبد و شروع خرید</div></div><div class="settings-row__chev">‹</div>';
+  a.innerHTML='<div class="settings-row__icon">↗</div><div class="settings-row__text"><div class="settings-row__title">SEO و آمار فروشگاه</div><div class="settings-row__desc">بازدید، رفتار خرید و تبدیل به سفارش</div></div><div class="settings-row__chev">‹</div>';
   target.appendChild(a);
 }
 function metric(label,value,note){
   return '<div class="sa-metric"><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong><small>'+safe(note||'')+'</small></div>';
+}
+function money(value){
+  if(typeof fmtPrice==='function')return fmtPrice(Number(value||0));
+  return Number(value||0).toLocaleString('fa-IR');
 }
 function rangeHtml(){
   return '<div class="sa-range">'+[7,30,90].map(function(value){
@@ -103,6 +107,7 @@ function render(){
         metric('مشاهده محصول',fa(s.productViews||0),'صفحه جزئیات محصول')+
         metric('افزودن به سبد',fa(s.addToCart||0),'تعداد کالاهای افزوده‌شده')+
         metric('شروع خرید',fa(s.beginCheckout||0),'ورود به Checkout')+
+        metric('خرید تکمیل‌شده',fa(s.purchases||0),money(s.revenue||0)+' تومان فروش ثبت‌شده')+
       '</div>'+
       '<div class="sa-card"><div class="sa-card-head"><strong>روند بازدید صفحات</strong><span>'+fa(currentData.days||days)+' روز اخیر</span></div>'+chartHtml(daily)+'</div>'+
       '<div class="sa-card"><div class="sa-card-head"><strong>قیف خرید</strong><span>نرخ‌ها بر اساس رویدادهای ثبت‌شده</span></div>'+
@@ -111,6 +116,7 @@ function render(){
           '<div class="sa-funnel-step"><strong>'+fa(s.productViews||0)+'</strong><span>مشاهده محصول</span></div>'+
           '<div class="sa-funnel-step"><strong>'+fa(s.addToCart||0)+'</strong><span>افزودن به سبد · '+fa(s.productToCartRate||0)+'٪</span></div>'+
           '<div class="sa-funnel-step"><strong>'+fa(s.beginCheckout||0)+'</strong><span>شروع خرید · '+fa(s.visitorToCheckoutRate||0)+'٪</span></div>'+
+          '<div class="sa-funnel-step"><strong>'+fa(s.purchases||0)+'</strong><span>خرید تکمیل‌شده · '+fa(s.checkoutToPurchaseRate||0)+'٪ از Checkout</span></div>'+
         '</div>'+
       '</div>'+
       '<div class="sa-two-col">'+
