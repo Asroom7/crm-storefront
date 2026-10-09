@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /panel/
+Disallow: /admin-
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /login.html
+Disallow: /register.html
+Disallow: /profile.html
+Disallow: /order-status.html
+
+Sitemap: https://asroom7.github.io/crm-storefront/sitemap.xml
