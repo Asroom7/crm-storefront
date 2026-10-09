@@ -211,7 +211,7 @@ function sessionId(){
   return storedId(window.sessionStorage,'storefrontAnalyticsSession','s_');
 }
 function sendEvent(type,data){
-  if(!analyticsAllowed())return Promise.resolve();
+  if(!analyticsAllowed())return Promise.resolve(false);
   var payload=Object.assign({
     visitorId:visitorId(),
     sessionId:sessionId(),
@@ -223,7 +223,7 @@ function sendEvent(type,data){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload),
     keepalive:true
-  }).catch(function(){});
+  }).then(function(response){return response.ok;}).catch(function(){return false;});
 }
 function wireAnalytics(productPromise){
   var file=pageFile();
@@ -236,6 +236,26 @@ function wireAnalytics(productPromise){
   }
   if(file==='checkout.html'){
     sendEvent('begin_checkout');
+  }
+
+  if(file==='order-status.html'){
+    var orderId=Number(new URLSearchParams(window.location.search).get('id'));
+    if(Number.isInteger(orderId)&&orderId>0&&typeof apiFetch==='function'){
+      var purchaseKey='storefrontAnalyticsPurchase_'+orderId;
+      var alreadyTracked=false;
+      try{alreadyTracked=window.localStorage.getItem(purchaseKey)==='1';}catch(e){}
+      if(!alreadyTracked){
+        apiFetch('/orders/mine/'+orderId).then(function(order){
+          if(!order||!['confirmed','paid','shipped'].includes(order.status))return;
+          return sendEvent('purchase',{value:Math.max(0,Math.round(Number(order.totalAmount||0)))})
+            .then(function(ok){
+              if(ok){
+                try{window.localStorage.setItem(purchaseKey,'1');}catch(e){}
+              }
+            });
+        }).catch(function(){});
+      }
+    }
   }
 
   if(typeof window.addToCart==='function'&&!window.addToCart.__analyticsWrapped){
