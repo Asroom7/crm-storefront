@@ -494,4 +494,6 @@
     }
   });
   home.editorCustomizations = { apply, selector };
+  // A slow script download may finish after the initial home-ready event.
+  if (root.querySelector('.sf-footer')) capture();
 })();

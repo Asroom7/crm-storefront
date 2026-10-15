@@ -290,6 +290,26 @@ async function run() {
     ],
   });
   try {
+    const lateState = fixture(origin);
+    lateState.page.publishedConfig.sections.find((s) => s.id === 'best').settings.editorOptionsV1 = {
+      mobile: { gap: 17 },
+    };
+    const lateContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const latePage = await lateContext.newPage();
+    await setup(latePage, lateState);
+    await latePage.route('**/storefront-editor-customizations.js*', (route) =>
+      route.fulfill({ contentType: 'application/javascript', body: '' }),
+    );
+    await latePage.goto(origin + '/new/index.html');
+    await latePage.locator('#storefront-home-root .sf-footer').waitFor();
+    await latePage.addScriptTag({ path: path.join(root, 'storefront-editor-customizations.js') });
+    await latePage.waitForFunction(() => window.StorefrontHome.__editorContext, null, { timeout: 5000 });
+    await latePage.waitForFunction(
+      () => getComputedStyle(document.querySelector('.sf-best-sellers .sf-product-scroll')).gap === '17px',
+    );
+    assert.equal(lateState.writes.length, 0, 'late customization bootstrap wrote to the API');
+    await lateContext.close();
+    console.log('PASS customization script loaded after home-ready');
     if (baseline)
       for (const viewport of [
         { width: 1400, height: 1000 },
