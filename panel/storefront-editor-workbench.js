@@ -485,6 +485,8 @@
     );
   }
   function visibility(s) {
+    if (hiddenKind(s) === 'legacy')
+      return '<div class="sfe-help">برای نمایش این بخش، ابتدا از دکمه «فعال‌سازی در پیش‌نویس» در بالای تنظیمات استفاده کنید.</div>';
     const o = s.settings?.editorOptionsV1 || {};
     let html =
       check(

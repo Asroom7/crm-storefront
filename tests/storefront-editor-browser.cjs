@@ -411,6 +411,8 @@ async function run() {
     );
     await page.locator('[data-hidden-sections] summary').click();
     await page.locator('[data-select="legacy-hero"]').click();
+    await page.locator('[data-tab="visibility"]').click();
+    assert.equal(await page.locator('[data-field="settings.editorOptionsV1.visible"]').count(), 0, 'inactive legacy block showed an enabled visibility control');
     await page.locator('[data-action="activate-section"]').click();
     await page.locator('[data-action="close"]').first().click();
     await page.waitForTimeout(1100);
