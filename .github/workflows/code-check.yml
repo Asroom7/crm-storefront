@@ -17,6 +17,7 @@ jobs:
         run: |
           node --check api.js
           node --check storefront-home.js
+          node --check storefront-editor-customizations.js
           node --check storefront-qa.js
           node --check cinematic-intro.js
       - name: Check all panel JavaScript
@@ -29,3 +30,34 @@ jobs:
         run: node scripts/check-html.js
       - name: Check storefront architecture
         run: node scripts/check-storefront-architecture.js
+      - name: Test draft preservation and recovery
+        run: node --test tests/storefront-editor-model.test.js
+
+  editor-browser:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install browser test tools
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Prepare the pull request baseline
+        env:
+          BASELINE_REF: ${{ github.event.pull_request.base.sha }}
+        run: git worktree add --detach ../storefront-baseline "$BASELINE_REF"
+      - name: Verify editor workflows and unchanged public appearance
+        env:
+          BASELINE_ROOT: ${{ github.workspace }}/../storefront-baseline
+          EDITOR_QA_OUTPUT: ${{ github.workspace }}/editor-qa-output
+        run: node tests/storefront-editor-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storefront-editor-screenshots
+          path: editor-qa-output/
