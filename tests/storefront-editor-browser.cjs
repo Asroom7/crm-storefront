@@ -458,6 +458,18 @@ async function run() {
     );
     assert.deepEqual(state.page.publishedConfig, configuration, 'a new section was automatically published');
     await page.locator('[data-select="best"]').click();
+    await frame.waitForFunction(
+      () => {
+        const section = document.querySelector('.sf-best-sellers');
+        return (
+          section?.hasAttribute('data-sfe-selected') &&
+          section.getBoundingClientRect().top >= 0 &&
+          section.getBoundingClientRect().top < 160
+        );
+      },
+      null,
+      { timeout: 5000 },
+    );
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       false,

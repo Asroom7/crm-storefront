@@ -713,7 +713,8 @@
         if (!doc.getElementById('sfe-inspector-style')) {
           const style = doc.createElement('style');
           style.id = 'sfe-inspector-style';
-          style.textContent = '[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px}';
+          style.textContent =
+            '[data-sfe-section]{scroll-margin-top:80px!important}[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px}';
           doc.head.appendChild(style);
         }
         const bind = () => {
@@ -769,7 +770,7 @@
       if (node) {
         node.setAttribute('data-sfe-selected', '');
         if (E.lastPreviewSection !== E.activeSection) {
-          node.scrollIntoView({ block: 'start', behavior: 'auto' });
+          node.scrollIntoView({ block: 'start', behavior: 'instant' });
           E.lastPreviewSection = E.activeSection;
         }
       }
