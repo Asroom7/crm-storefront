@@ -197,6 +197,55 @@ html[data-theme='dark'] .sfe-workbench {
 .sfe-outline-row.is-selected .sfe-section-mark {
   color: var(--sfe-accent);
 }
+.sfe-outline-label,
+.sfe-hidden-sections summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  font-size: 11px;
+  color: var(--sfe-muted);
+}
+.sfe-hidden-sections {
+  border-top: 1px solid var(--sfe-line);
+  margin-top: 12px;
+  padding-top: 6px;
+}
+.sfe-hidden-sections summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sfe-ink);
+}
+.sfe-hidden-sections summary::before {
+  content: '‹';
+  font-size: 18px;
+}
+.sfe-hidden-sections[open] summary::before {
+  transform: rotate(-90deg);
+}
+.sfe-hidden-sections summary > span:first-child {
+  flex: 1;
+}
+.sfe-hidden-sections > p {
+  margin: 4px 8px 10px;
+  color: var(--sfe-muted);
+  font-size: 11px;
+  line-height: 1.9;
+}
+.sfe-section-notice {
+  padding: 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--sfe-line);
+  border-radius: 8px;
+  background: var(--sfe-bg);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.sfe-section-notice p {
+  margin: 5px 0 10px;
+}
 .sfe-outline-foot {
   display: flex;
   gap: 8px;

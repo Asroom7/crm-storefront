@@ -18,6 +18,15 @@
     trust: 'مزایای فروشگاه',
   };
   const FIXED = ['search', 'videos', 'best-sellers', 'campaign', 'categories', 'footer'];
+  const EXTRA = ['hero', 'banner', 'product-collection', 'support-banner', 'trust'];
+  const PREVIEW_SELECTORS = {
+    search: '.sf-search-block',
+    videos: '.sf-video-section',
+    'best-sellers': '.sf-best-sellers',
+    campaign: '.sf-campaign-section',
+    categories: '#sf-categories',
+    footer: '.sf-footer',
+  };
   const E = {
     root: null,
     page: null,
@@ -48,6 +57,8 @@
     mediaQuery: '',
     mediaKind: 'all',
     modalEpoch: 0,
+    previewSections: null,
+    hiddenSectionsOpen: false,
   };
   const $ = (s, b) => (b || E.root).querySelector(s),
     $$ = (s, b) => Array.from((b || E.root).querySelectorAll(s));
@@ -185,7 +196,9 @@
     changed();
   }
   function mount(view) {
+    E.previewObserver?.disconnect();
     E.lastPreviewSection = null;
+    E.previewSections = null;
     E.root = view;
     view.classList.add('sfe-host');
     view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench>
@@ -212,17 +225,105 @@
   }
   function outline() {
     if (!E.root || !$('[data-outline]')) return;
-    const row = (id, text, type, fixed) =>
-      `<button type="button" class="sfe-outline-row ${E.activeSection === id ? 'is-selected' : ''}" data-select="${esc(id)}" aria-pressed="${E.activeSection === id}"><span class="sfe-section-mark">${ico(type === 'videos' ? 'play' : type === 'best-sellers' ? 'star' : 'box')}</span><span><strong>${esc(text)}</strong><small>${fixed ? 'جایگاه ثابت' : esc(N[type] || type)}</small></span></button>`;
-    $('[data-outline]').innerHTML =
-      row('__header', N.header, 'header', true) +
-      rows()
-        .map((s) => row(s.id, title(s), s.type, FIXED.includes(s.type)))
-        .join('') +
-      (!rows().some((s) => s.type === 'footer') ? row('__footer', N.footer, 'footer', true) : '');
+    const { visible, hidden } = structure();
+    const row = (s, reason = '') =>
+      `<button type="button" class="sfe-outline-row ${E.activeSection === s.id ? 'is-selected' : ''}" data-select="${esc(s.id)}" aria-pressed="${E.activeSection === s.id}"><span class="sfe-section-mark">${ico(s.type === 'videos' ? 'play' : s.type === 'best-sellers' ? 'star' : 'box')}</span><span><strong>${esc(title(s))}</strong><small>${esc(reason || (s.template ? 'نمایش توسط قالب' : FIXED.includes(s.type) || s.type === 'header' ? 'جایگاه ثابت' : N[s.type] || s.type))}</small></span></button>`;
+    const html =
+      `<div class="sfe-outline-label"><span>در پیش‌نمایش ${E.device === 'mobile' ? 'موبایل' : E.device === 'tablet' ? 'تبلت' : 'دسکتاپ'}</span><span>${fa(visible.length)}</span></div><div data-visible-sections>${visible.map((s) => row(s)).join('')}</div>` +
+      (hidden.length
+        ? `<details class="sfe-hidden-sections" data-hidden-sections><summary><span>بخش‌های پنهان</span><span>${fa(hidden.length)}</span></summary><p>در پیش‌نمایش فعلی دیده نمی‌شوند. برای بررسی، یک بخش را انتخاب کنید.</p>${hidden.map((s) => row(s, hiddenLabel(s))).join('')}</details>`
+        : '');
+    const target = $('[data-outline]');
+    if (target.dataset.markup !== html) {
+      const focused = target.contains(document.activeElement) ? document.activeElement.dataset.select : null;
+      target.innerHTML = html;
+      target.dataset.markup = html;
+      const group = $('[data-hidden-sections]');
+      if (group) {
+        group.open = E.hiddenSectionsOpen;
+        group.ontoggle = () => {
+          E.hiddenSectionsOpen = group.open;
+        };
+      }
+      if (focused) target.querySelector('[data-select="' + CSS.escape(focused) + '"]')?.focus();
+    }
+    sectionNotice();
+  }
+  function hiddenKind(s) {
+    if (EXTRA.includes(s.type) && s.settings?.editorManagedV1 !== true) return 'legacy';
+    if (!FIXED.includes(s.type) && !EXTRA.includes(s.type)) return 'unsupported';
+    const visible = s.settings?.editorOptionsV1?.visible;
+    if (s.type !== 'footer' && (visible === false || (visible === undefined && s.enabled === false)))
+      return 'disabled';
+    return 'absent';
+  }
+  function hiddenLabel(s) {
+    return {
+      legacy: 'قدیمی؛ هنوز فعال نشده',
+      disabled: 'نمایش خاموش است',
+      unsupported: 'در قالب فعلی پشتیبانی نمی‌شود',
+      absent: 'در پیش‌نمایش نمایش ندارد',
+    }[hiddenKind(s)];
+  }
+  function structure() {
+    const all = [{ id: '__header', type: 'header' }, ...rows()];
+    if (!rows().some((s) => s.type === 'footer')) all.push({ id: '__footer', type: 'footer' });
+    const lookup = new Map(all.map((s) => [s.id, s]));
+    // DOM order is a view of the draft. Never sort or normalize the stored rows.
+    const order = E.previewSections || [
+      { id: '__header' },
+      ...FIXED.filter((type) => type !== 'footer').flatMap((type) => rows().filter((s) => s.type === type)),
+      ...rows().filter((s) => EXTRA.includes(s.type) && s.settings?.editorManagedV1 === true),
+      all.find((s) => s.type === 'footer'),
+    ];
+    const visible = order
+      .filter(Boolean)
+      .filter((entry) => entry.visible !== false)
+      .map((entry) => {
+        return (
+          lookup.get(entry.id) || (entry.type ? { id: entry.id, type: entry.type, template: true } : null)
+        );
+      })
+      .filter(
+        (s) =>
+          s &&
+          (s.type === 'header' ||
+            s.type === 'footer' ||
+            s.template ||
+            !['legacy', 'disabled', 'unsupported'].includes(hiddenKind(s))),
+      );
+    const ids = new Set(visible.map((s) => s.id));
+    return { visible, hidden: rows().filter((s) => !ids.has(s.id)) };
+  }
+  function sectionNotice() {
+    const node = E.root?.querySelector('[data-section-notice]'),
+      s = active();
+    if (!node || !s) return;
+    const hidden = structure().hidden.some((row) => row.id === s.id);
+    let html = '';
+    if (hidden) {
+      const kind = hiddenKind(s);
+      const text = {
+        legacy:
+          'این بخش از تنظیمات قدیمی مانده و در فروشگاه نمایش داده نمی‌شود. می‌توانید محتوایش را آماده کنید و سپس آن را در پیش‌نویس فعال کنید.',
+        disabled: 'نمایش این بخش خاموش است. از تنظیمات نمایش می‌توانید آن را دوباره در پیش‌نویس نشان دهید.',
+        unsupported: 'قالب فعلی این نوع بخش را نمایش نمی‌دهد. محتوای ذخیره‌شده آن حفظ شده است.',
+        absent: 'این بخش در پیش‌نمایش فعلی نمایش ندارد. محتوا و تنظیمات نمایش آن را بررسی کنید.',
+      }[kind];
+      html =
+        `<strong>${esc(hiddenLabel(s))}</strong><p>${text}</p>` +
+        (kind === 'legacy'
+          ? btn('activate-section', 'فعال‌سازی در پیش‌نویس')
+          : kind === 'disabled'
+            ? btn('section-visibility', 'تنظیمات نمایش')
+            : '');
+    }
+    node.hidden = !html;
+    if (node.innerHTML !== html) node.innerHTML = html;
   }
   function choose(id) {
     const wasVersion = !!E.previewVersion;
+    if (structure().hidden.some((s) => s.id === id)) E.hiddenSectionsOpen = true;
     E.lastPreviewSection = null;
     E.activeSection = id;
     E.previewVersion = null;
@@ -445,6 +546,12 @@
     } else if (E.activeSection === '__footer' || s?.type === 'footer') {
       name = N.footer;
       html = chrome('footer');
+    } else if (E.activeSection?.startsWith('__template-')) {
+      const type = E.activeSection.slice('__template-'.length);
+      name = N[type] || 'بخش قالب';
+      html =
+        '<div class="sfe-help">این بخش از قالب فعلی استفاده می‌کند. تنظیمات اختصاصی آن در این پیش‌نویس در دسترس نیست. برای تنظیم ظاهر کلی، هویت بصری فروشگاه را باز کنید.</div>' +
+        btn('theme', 'هویت بصری فروشگاه');
     } else if (s) {
       name = N[s.type] || s.type;
       html =
@@ -457,7 +564,8 @@
       html = '<div class="sfe-help">یک بخش را از فهرست یا پیش‌نمایش انتخاب کنید.</div>';
     }
     $('[data-inspector]').innerHTML =
-      `<div class="sfe-pane-head"><strong>${esc(name)}</strong><span>تنظیمات بخش انتخاب‌شده</span></div>${html}`;
+      `<div class="sfe-pane-head"><strong>${esc(name)}</strong><span>تنظیمات بخش انتخاب‌شده</span></div>${s ? '<div class="sfe-section-notice" data-section-notice role="status" hidden></div>' : ''}${html}`;
+    sectionNotice();
   }
   function status() {
     if (!E.root || !$('[data-save-status]')) return;
@@ -516,7 +624,11 @@
       }
       const p = await sellerApiFetch(endpoint, {
         method: 'PUT',
-        body: JSON.stringify({ config: sent.config, theme: sent.theme, expectedUpdatedAt: remote.updatedAt }),
+        body: JSON.stringify({
+          config: sent.config,
+          theme: sent.theme,
+          expectedUpdatedAt: remote.updatedAt,
+        }),
       });
       E.page = p;
       E.server = M.snapshot(p.config, p.theme);
@@ -699,9 +811,10 @@
     }, 120);
   }
   function bridge() {
+    const frame = E.iframe;
     let attempts = 0;
     const run = () => {
-      if (!E.iframe?.isConnected) return;
+      if (!frame?.isConnected || frame !== E.iframe) return;
       try {
         const doc = E.iframe.contentDocument,
           win = E.iframe.contentWindow,
@@ -717,27 +830,49 @@
             '[data-sfe-section]{scroll-margin-top:80px!important}[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px}';
           doc.head.appendChild(style);
         }
+        let outlineFrame = 0;
+        const sync = () => {
+          cancelAnimationFrame(outlineFrame);
+          outlineFrame = requestAnimationFrame(() => {
+            if (frame !== E.iframe || !frame.isConnected || !routeActive() || E.previewVersion) return;
+            E.previewSections = Array.from(doc.querySelectorAll('[data-sfe-section]')).map((node) => ({
+              id: node.dataset.sfeSection,
+              type: node.dataset.sfeType,
+              visible: node.getClientRects().length > 0 && win.getComputedStyle(node).visibility !== 'hidden',
+            }));
+            outline();
+            highlight();
+          });
+        };
         const bind = () => {
-          const map = {
-            search: '.sf-search-block',
-            videos: '.sf-video-section',
-            'best-sellers': '.sf-best-sellers',
-            campaign: '.sf-campaign-section',
-            categories: '#sf-categories',
-            footer: '.sf-footer',
-          };
-          rows().forEach((s) => {
-            const node = map[s.type] && doc.querySelector(map[s.type]);
-            if (node) node.dataset.sfeSection = s.id;
+          if (frame !== E.iframe || !frame.isConnected) return;
+          Object.entries(PREVIEW_SELECTORS).forEach(([type, selector]) => {
+            const candidates = rows().filter((s) => s.type === type && hiddenKind(s) !== 'disabled');
+            doc.querySelectorAll(selector).forEach((node, index) => {
+              node.dataset.sfeSection =
+                candidates[index]?.id || (type === 'footer' ? '__footer' : '__template-' + type);
+              node.dataset.sfeType = type;
+            });
           });
           doc.querySelectorAll('[data-editor-section]').forEach((node) => {
             node.dataset.sfeSection = node.dataset.editorSection;
+            node.dataset.sfeType = rows().find((s) => s.id === node.dataset.editorSection)?.type || '';
           });
           const header = doc.querySelector('.site-header');
-          if (header) header.dataset.sfeSection = '__header';
-          const footer = doc.querySelector('.sf-footer');
-          if (footer && !footer.dataset.sfeSection) footer.dataset.sfeSection = '__footer';
-          highlight();
+          if (header) {
+            header.dataset.sfeSection = '__header';
+            header.dataset.sfeType = 'header';
+          }
+          // Only section boundaries affect the outline. Card/countdown updates do not.
+          E.previewObserver?.disconnect();
+          E.previewObserver?.observe(root, { childList: true });
+          doc.querySelectorAll('[data-sfe-section]').forEach((node) => {
+            E.previewObserver?.observe(node, {
+              attributes: true,
+              attributeFilter: ['style', 'hidden', 'class'],
+            });
+          });
+          sync();
         };
         if (!root.dataset.sfeBridge) {
           root.dataset.sfeBridge = '1';
@@ -753,7 +888,9 @@
             },
             true,
           );
-          new MutationObserver(bind).observe(root, { childList: true });
+          E.previewObserver = new MutationObserver(bind);
+          win.addEventListener('storefront:home-ready', bind);
+          win.addEventListener('resize', sync);
         }
         bind();
         preview();
@@ -765,10 +902,12 @@
     try {
       const doc = E.iframe?.contentDocument;
       if (!doc) return;
-      doc.querySelectorAll('[data-sfe-selected]').forEach((n) => n.removeAttribute('data-sfe-selected'));
       const node = doc.querySelector('[data-sfe-section="' + CSS.escape(E.activeSection || '') + '"]');
+      doc.querySelectorAll('[data-sfe-selected]').forEach((n) => {
+        if (n !== node) n.removeAttribute('data-sfe-selected');
+      });
       if (node) {
-        node.setAttribute('data-sfe-selected', '');
+        if (!node.hasAttribute('data-sfe-selected')) node.setAttribute('data-sfe-selected', '');
         if (E.lastPreviewSection !== E.activeSection) {
           node.scrollIntoView({ block: 'start', behavior: 'instant' });
           E.lastPreviewSection = E.activeSection;
@@ -1214,6 +1353,7 @@
       $('[data-frame-wrap]').dataset.device = E.device;
       $$('[data-device]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       fit();
+      outline();
       return;
     }
     if (b.dataset.add) return addType(b.dataset.add);
@@ -1244,6 +1384,31 @@
       media: () => media(),
       videos,
       links,
+      'section-visibility': () => {
+        E.tab = 'visibility';
+        inspector();
+      },
+      'activate-section': () => {
+        const s = active();
+        if (!s || hiddenKind(s) !== 'legacy') return;
+        dialog(
+          'فعال‌سازی بخش قدیمی',
+          `<p>«${esc(title(s))}» با محتوای ذخیره‌شده‌اش در پیش‌نویس نمایش داده شود؟</p><p>بخش‌های اصلی در جایگاه فعلی می‌مانند. فروشگاه زنده فقط پس از مرور و انتشار تغییر می‌کند.</p>`,
+          btn('close', 'انصراف') +
+            btn('confirm-activate-section', 'فعال‌سازی در پیش‌نویس', true, `data-section-id="${esc(s.id)}"`),
+        );
+      },
+      'confirm-activate-section': () => {
+        const s = rows().find((s) => s.id === b.dataset.sectionId);
+        if (!s || hiddenKind(s) !== 'legacy') return;
+        mutate(() => {
+          s.enabled = true;
+          M.setPath(s, 'settings.editorManagedV1', true);
+          if (s.settings?.editorOptionsV1?.visible === false)
+            M.setPath(s, 'settings.editorOptionsV1.visible', true);
+        });
+        close();
+      },
       up: () => move(-1),
       down: () => move(1),
       'reset-scope': () =>
