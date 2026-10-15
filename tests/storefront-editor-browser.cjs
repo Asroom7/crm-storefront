@@ -45,7 +45,10 @@ const configuration = {
       id: 'best',
       type: 'best-sellers',
       enabled: true,
-      content: { title: 'پرفروش‌ترین‌ها', subtitle: 'انتخاب‌های محبوب مشتریان' },
+      content: {
+        title: 'پرفروش‌ترین‌ها',
+        subtitle: 'انتخاب‌های محبوب مشتریان',
+      },
       settings: { mode: 'auto', limit: 8, productIds: [1, 2], promotions: {} },
     },
     {
@@ -59,7 +62,10 @@ const configuration = {
       id: 'videos',
       type: 'videos',
       enabled: true,
-      content: { title: 'ویدیوهای آموزشی', subtitle: 'نکات، آموزش و معرفی محصولات' },
+      content: {
+        title: 'ویدیوهای آموزشی',
+        subtitle: 'نکات، آموزش و معرفی محصولات',
+      },
       settings: { limit: 8 },
     },
     {
@@ -199,10 +205,17 @@ async function setup(page, state) {
     let data;
     if (name === '/storefront/editor/home' && method === 'GET') data = state.page;
     else if (name === '/storefront/editor/home' && method === 'PUT') {
-      if (state.failSave) return route.fulfill({ status: 503, json: { error: 'ذخیره آزمایشی ناموفق بود' } });
+      if (state.failSave)
+        return route.fulfill({
+          status: 503,
+          json: { error: 'ذخیره آزمایشی ناموفق بود' },
+        });
       const body = request.postDataJSON();
       if (body.expectedUpdatedAt !== state.page.updatedAt)
-        return route.fulfill({ status: 409, json: { error: 'پیش‌نویس تغییر کرده است' } });
+        return route.fulfill({
+          status: 409,
+          json: { error: 'پیش‌نویس تغییر کرده است' },
+        });
       state.writes.push({ method, name, body: copy(body) });
       state.page.config = copy(body.config);
       state.page.theme = copy(body.theme);
@@ -213,7 +226,10 @@ async function setup(page, state) {
     } else if (name === '/storefront/editor/home/publish' && method === 'POST') {
       const body = request.postDataJSON();
       if (body.expectedUpdatedAt !== state.page.updatedAt)
-        return route.fulfill({ status: 409, json: { error: 'پیش‌نویس بعد از مرور تغییر کرده است' } });
+        return route.fulfill({
+          status: 409,
+          json: { error: 'پیش‌نویس بعد از مرور تغییر کرده است' },
+        });
       state.writes.push({ method, name, body });
       state.page.publishedConfig = copy(state.page.config);
       state.page.publishedTheme = copy(state.page.theme);
@@ -223,18 +239,33 @@ async function setup(page, state) {
       ).toISOString();
       data = state.page;
     } else if (name === '/storefront/editor/home/versions')
-      data = [{ id: 8, revision: 2, note: 'نسخه نمونه', publishedAt: '2026-10-13T20:00:00Z' }];
+      data = [
+        {
+          id: 8,
+          revision: 2,
+          note: 'نسخه نمونه',
+          publishedAt: '2026-10-13T20:00:00Z',
+        },
+      ];
     else if (name === '/storefront/editor/home/versions/8') {
-      data = { id: 8, revision: 2, config: copy(configuration), theme: copy(theme) };
+      data = {
+        id: 8,
+        revision: 2,
+        config: copy(configuration),
+        theme: copy(theme),
+      };
       data.config.sections.find((s) => s.id === 'best').content.title = 'عنوان نسخه قبلی';
-    } else if (name.startsWith('/storefront/public/'))
+    } else if (name.startsWith('/storefront/public/')) {
+      // Let the local fixture's renderer extensions register before resolving boot.
+      // Immediate mock replies can otherwise race the parser's remaining scripts.
+      await request.frame().waitForFunction(() => document.readyState !== 'loading');
       data = {
         config: state.page.publishedConfig,
         theme: state.page.publishedTheme,
         serverNow: '2026-10-14T20:00:00Z',
         revision: state.page.revision,
       };
-    else if (name.startsWith('/storefront-insights/public/')) data = { productIds: [2, 1] };
+    } else if (name.startsWith('/storefront-insights/public/')) data = { productIds: [2, 1] };
     else if (name === '/storefront/media' && method === 'GET') data = state.assets;
     else if (name === '/storefront/media/upload' && method === 'POST') {
       state.writes.push({ method, name });
@@ -254,7 +285,11 @@ async function setup(page, state) {
     } else if (name.includes('/products')) data = state.products;
     else if (name.includes('/categories')) data = state.categories;
     else if (name.includes('/store/public/'))
-      data = { name: 'Lumière', phone: '02100000000', email: 'shop@example.test' };
+      data = {
+        name: 'Lumière',
+        phone: '02100000000',
+        email: 'shop@example.test',
+      };
     else data = [];
     return route.fulfill({ status: 200, json: copy(data) });
   });
@@ -294,7 +329,9 @@ async function run() {
     lateState.page.publishedConfig.sections.find((s) => s.id === 'best').settings.editorOptionsV1 = {
       mobile: { gap: 17 },
     };
-    const lateContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const lateContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+    });
     const latePage = await lateContext.newPage();
     await setup(latePage, lateState);
     await latePage.route('**/storefront-editor-customizations.js*', (route) =>
@@ -302,7 +339,9 @@ async function run() {
     );
     await latePage.goto(origin + '/new/index.html');
     await latePage.locator('#storefront-home-root .sf-footer').waitFor();
-    await latePage.addScriptTag({ path: path.join(root, 'storefront-editor-customizations.js') });
+    await latePage.addScriptTag({
+      path: path.join(root, 'storefront-editor-customizations.js'),
+    });
     await latePage.waitForFunction(() => window.StorefrontHome.__editorContext, null, { timeout: 5000 });
     await latePage.waitForFunction(
       () => getComputedStyle(document.querySelector('.sf-best-sellers .sf-product-scroll')).gap === '17px',
@@ -328,7 +367,7 @@ async function run() {
             [...root.children].map((n) => ({
               class: n.className,
               id: n.id,
-              text: n.textContent,
+              text: n.innerText,
               top: Math.round(n.getBoundingClientRect().top),
               height: Math.round(n.getBoundingClientRect().height),
             })),
@@ -355,6 +394,31 @@ async function run() {
     await page.waitForTimeout(1300);
     assert.equal(state.writes.length, 0, 'opening wrote a draft');
     assert.deepEqual(await page.evaluate(() => window.StorefrontEditorComplete.state.config), configuration);
+    const visibleOrder = ['__header', 'search', 'videos', 'best', 'campaign', 'categories', 'footer'];
+    await page.waitForFunction(
+      (expected) =>
+        JSON.stringify(
+          [...document.querySelectorAll('[data-visible-sections] [data-select]')].map(
+            (n) => n.dataset.select,
+          ),
+        ) === JSON.stringify(expected),
+      visibleOrder,
+    );
+    assert.equal(await page.locator('[data-hidden-sections]').evaluate((n) => n.open), false);
+    assert.match(
+      await page.locator('[data-hidden-sections] [data-select="legacy-hero"]').textContent(),
+      /قدیمی؛ هنوز فعال نشده/,
+    );
+    await page.locator('[data-hidden-sections] summary').click();
+    await page.locator('[data-select="legacy-hero"]').click();
+    await page.locator('[data-tab="visibility"]').click();
+    assert.equal(await page.locator('[data-field="settings.editorOptionsV1.visible"]').count(), 0, 'inactive legacy block showed an enabled visibility control');
+    await page.locator('[data-action="activate-section"]').click();
+    await page.locator('[data-action="close"]').first().click();
+    await page.waitForTimeout(1100);
+    assert.equal(state.writes.length, 0, 'selecting or cancelling legacy activation saved a draft');
+    assert.deepEqual(await page.evaluate(() => StorefrontEditorComplete.state.config), configuration);
+    await page.locator('[data-select="best"]').click();
     const oldFrame = await page.locator('[data-preview-frame]').elementHandle();
     await page.locator('[data-field="content.title"]').fill('عنوان تازه');
     await page.waitForTimeout(1500);
@@ -454,8 +518,11 @@ async function run() {
     });
     await page.waitForTimeout(200);
     assert.equal(await frame.locator('#sf-categories').isVisible(), false);
+    assert.equal(await page.locator('[data-hidden-sections] [data-select="categories"]').count(), 1);
+    assert.match(await page.locator('[data-section-notice]').innerText(), /نمایش این بخش خاموش است/);
     await page.locator('[data-field="settings.editorOptionsV1.visible"]').check();
     await frame.locator('#sf-categories').waitFor({ state: 'visible' });
+    await page.locator('[data-visible-sections] [data-select="categories"]').waitFor();
     await page.locator('[data-action="add"]').click();
     await page.locator('[data-add="hero"]').click();
     await page.locator('[data-field="content.title"]').fill('بنر تازه در پیش‌نویس');
@@ -507,7 +574,10 @@ async function run() {
     );
     await ui.context.close();
     const mobileState = fixture(origin),
-      mobile = await editor(browser, origin, mobileState, { width: 390, height: 844 });
+      mobile = await editor(browser, origin, mobileState, {
+        width: 390,
+        height: 844,
+      });
     await mobile.page.locator('[data-pane="settings"]').click();
     await mobile.page.locator('[data-field="content.title"]').fill('ویرایش موبایل');
     await mobile.page.waitForTimeout(1500);
@@ -516,6 +586,13 @@ async function run() {
       false,
       'mobile horizontal overflow',
     );
+    const mobileWrites = mobileState.writes.length;
+    await mobile.page.locator('[data-pane="sections"]').click();
+    await mobile.page.locator('[data-hidden-sections] summary').click();
+    await mobile.page.locator('[data-select="legacy-hero"]').click();
+    assert.equal(await mobile.page.locator('[data-storefront-workbench]').getAttribute('data-pane'), 'settings');
+    assert.equal(await mobile.page.locator('[data-action="activate-section"]').isVisible(), true);
+    assert.equal(mobileState.writes.length, mobileWrites, 'mobile hidden section selection saved a draft');
     await mobile.page.evaluate(() => scrollTo(0, 0));
     await mobile.page.screenshot({
       path: path.join(output, 'editor-mobile.png'),
@@ -525,6 +602,86 @@ async function run() {
     assert.deepEqual(mobile.errors, []);
     await mobile.context.close();
     console.log('PASS mobile editor');
+    const activationState = fixture(origin),
+      activation = await editor(browser, origin, activationState);
+    const activationFrame = activation.page.frames().find((f) => f.parentFrame());
+    await activation.page.locator('[data-hidden-sections] summary').click();
+    await activation.page.locator('[data-select="legacy-hero"]').click();
+    await activation.page.locator('[data-action="activate-section"]').click();
+    await activation.page.locator('[data-action="confirm-activate-section"]').click();
+    await activationFrame.locator('[data-editor-section="legacy-hero"]').waitFor({ state: 'visible' });
+    await activation.page.locator('[data-visible-sections] [data-select="legacy-hero"]').waitFor();
+    await activation.page.waitForFunction(
+      () =>
+        !StorefrontEditorComplete.state.saving &&
+        StorefrontEditorComplete.state.server.config.sections.find((s) => s.id === 'legacy-hero').settings
+          .editorManagedV1 === true,
+    );
+    const expectedActivation = copy(configuration);
+    expectedActivation.sections[1].settings.editorManagedV1 = true;
+    assert.deepEqual(
+      activationState.page.config,
+      expectedActivation,
+      'activation changed legacy content, metadata or stored order',
+    );
+    assert.deepEqual(
+      activationState.page.publishedConfig,
+      configuration,
+      'activation published live content',
+    );
+    assert.equal(activationState.writes.filter((w) => w.name.endsWith('/publish')).length, 0);
+    assert.deepEqual(
+      await activation.page
+        .locator('[data-visible-sections] [data-select]')
+        .evaluateAll((nodes) => nodes.map((n) => n.dataset.select).filter((id) => id !== 'legacy-hero')),
+      visibleOrder,
+      'activation moved an existing storefront section',
+    );
+    await activation.page.locator('[data-select="best"]').click();
+    await activationFrame.locator('[data-editor-section="legacy-hero"] h1').click();
+    await activation.page.waitForFunction(
+      () => StorefrontEditorComplete.state.activeSection === 'legacy-hero',
+    );
+    assert.equal(
+      await activation.page.locator('[data-select="legacy-hero"]').getAttribute('aria-pressed'),
+      'true',
+    );
+    await activation.page.locator('[data-action="undo"]').click();
+    await activationFrame.locator('[data-editor-section="legacy-hero"]').waitFor({ state: 'detached' });
+    await activation.page.waitForFunction(
+      () =>
+        !StorefrontEditorComplete.state.saving &&
+        !StorefrontEditorComplete.state.server.config.sections.find((s) => s.id === 'legacy-hero').settings
+          .editorManagedV1,
+    );
+    assert.deepEqual(
+      activationState.page.config,
+      configuration,
+      'undo did not restore the original hidden block',
+    );
+    assert.equal(
+      await activation.page.locator('[data-hidden-sections] [data-select="legacy-hero"]').count(),
+      1,
+    );
+    assert.deepEqual(activation.errors, []);
+    await activation.context.close();
+    console.log('PASS preview-ordered outline, hidden section reasons, explicit legacy activation and undo');
+    const fallbackState = fixture(origin);
+    fallbackState.page.config.sections = [copy(configuration.sections[1])];
+    fallbackState.page.publishedConfig = copy(fallbackState.page.config);
+    const fallback = await editor(browser, origin, fallbackState);
+    await fallback.page.locator('[data-visible-sections] [data-select="__template-best-sellers"]').waitFor();
+    await fallback.page.locator('[data-select="__template-best-sellers"]').click();
+    assert.match(await fallback.page.locator('[data-inspector]').innerText(), /قالب فعلی/);
+    await fallback.page.waitForTimeout(1100);
+    assert.equal(fallbackState.writes.length, 0, 'template fallback inserted draft defaults on opening');
+    assert.deepEqual(
+      await fallback.page.evaluate(() => StorefrontEditorComplete.state.config),
+      fallbackState.page.config,
+    );
+    assert.deepEqual(fallback.errors, []);
+    await fallback.context.close();
+    console.log('PASS template-only sections remain read-only without inserting defaults');
     const recoveryState = fixture(origin),
       recovery = await editor(browser, origin, recoveryState);
     recoveryState.failSave = true;

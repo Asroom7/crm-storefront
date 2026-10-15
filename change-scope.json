@@ -1,9 +1,8 @@
 {
-  "task": "storefront-editor-workbench-preserve-current-storefront",
+  "task": "storefront-editor-preview-outline-and-hidden-section-guidance",
   "allowed_locked_paths": [
-    "index.html",
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User authorized implementing the proposed storefront editor while preserving all current storefront appearance and section positions. panel/index.html changes only load the scoped workbench assets. index.html changes only load opt-in editor customizations; legacy config without new editorOptionsV1/editorManagedV1 metadata renders unchanged. Existing storefront CSS, primary-flow, pink-box/category renderers, api.js, panel/app.js and panel/app.css remain untouched. No real settings/data are migrated, saved or published by this code change. Related backend changes are confined to seller-authenticated editor version reads and optional optimistic save/publish checks and guards against deleting media referenced by storefront drafts, published pages, historical versions or products in src/routes/storefront.js."
+  "note": "User authorized continued improvements to the storefront editor with all current storefront appearance and section positions preserved. This phase changes only the scoped editor controller/styles, browser coverage and documentation. panel/index.html changes only the workbench JS/CSS asset versions so existing users receive the upgrade. The outline reads preview DOM order without sorting saved configuration. Legacy hidden blocks stay inactive until explicit confirmation in the draft. Public storefront code/styles, shared panel runtime and all backend files remain unchanged. No real settings, products or live content are saved or published by this code release."
 }
