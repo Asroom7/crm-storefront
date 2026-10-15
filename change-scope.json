@@ -1,18 +1,9 @@
 {
-  "task": "item-10-seo-analytics",
+  "task": "storefront-editor-workbench-preserve-current-storefront",
   "allowed_locked_paths": [
     "index.html",
-    "products.html",
-    "product-detail.html",
-    "education.html",
-    "cart.html",
-    "checkout.html",
-    "login.html",
-    "register.html",
-    "profile.html",
-    "order-status.html",
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly approved item 10 SEO + Analytics. Scope: SEO head metadata/canonical/robots/structured data loaders on the listed storefront pages; noindex on private/auth/checkout pages; new robots.txt and sitemap.xml; anonymous storefront analytics events (including completed-purchase conversion without storing order/customer identity) and seller analytics report through existing storefront-insights route; new scoped analytics panel assets loaded by panel/index.html. Backend shared changes are limited to prisma/schema.prisma and src/routes/storefrontInsights.js. Do not alter storefront layout/content, panel/app.js, dashboard logic, checkout/payment logic, shipping, returns, products data, customers, editor, or unrelated APIs."
+  "note": "User authorized implementing the proposed storefront editor while preserving all current storefront appearance and section positions. panel/index.html changes only load the scoped workbench assets. index.html changes only load opt-in editor customizations; legacy config without new editorOptionsV1/editorManagedV1 metadata renders unchanged. Existing storefront CSS, primary-flow, pink-box/category renderers, api.js, panel/app.js and panel/app.css remain untouched. No real settings/data are migrated, saved or published by this code change. Related backend changes are confined to seller-authenticated editor version reads and optional optimistic save/publish checks and guards against deleting media referenced by storefront drafts, published pages, historical versions or products in src/routes/storefront.js."
 }

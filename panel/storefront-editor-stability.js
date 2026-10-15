@@ -1,6 +1,7 @@
 /* Stability/UX guards for the complete Storefront Editor. */
 (function(){
 'use strict';
+if(window.StorefrontEditorComplete&&window.StorefrontEditorComplete.version==='workbench-1')return;
 
 function editor(){return window.StorefrontEditorComplete&&window.StorefrontEditorComplete.state;}
 function routeName(){return location.hash.replace(/^#\/?/,'').split('/')[0];}

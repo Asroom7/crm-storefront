@@ -1,6 +1,7 @@
 /* Adds direct video selection/reordering to the complete storefront editor. */
 (function(){
 'use strict';
+if(window.StorefrontEditorComplete&&window.StorefrontEditorComplete.version==='workbench-1')return;
 function state(){return window.StorefrontEditorComplete&&window.StorefrontEditorComplete.state;}
 function toastSafe(m){if(typeof toast==='function')toast(m);}
 function clone(v){return JSON.parse(JSON.stringify(v));}

@@ -143,6 +143,12 @@
 
   function enforceCompleteEditor() {
     if (routeName() !== ROUTE) return;
+    var modern = completeEditor();
+    if (modern && modern.version === 'workbench-1') {
+      window.renderStorefrontEditor = modern.render;
+      if (view && !view.querySelector('[data-storefront-workbench]') && !modern.state.loading) modern.render(view);
+      return;
+    }
     ensureControlLabelsCSS();
     ensureLastEditCSS();
     var complete = completeEditor();
