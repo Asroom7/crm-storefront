@@ -412,7 +412,11 @@ async function run() {
     await page.locator('[data-hidden-sections] summary').click();
     await page.locator('[data-select="legacy-hero"]').click();
     await page.locator('[data-tab="visibility"]').click();
-    assert.equal(await page.locator('[data-field="settings.editorOptionsV1.visible"]').count(), 0, 'inactive legacy block showed an enabled visibility control');
+    assert.equal(
+      await page.locator('[data-field="settings.editorOptionsV1.visible"]').count(),
+      0,
+      'inactive legacy block showed an enabled visibility control',
+    );
     await page.locator('[data-action="activate-section"]').click();
     await page.locator('[data-action="close"]').first().click();
     await page.waitForTimeout(1100);
@@ -590,7 +594,10 @@ async function run() {
     await mobile.page.locator('[data-pane="sections"]').click();
     await mobile.page.locator('[data-hidden-sections] summary').click();
     await mobile.page.locator('[data-select="legacy-hero"]').click();
-    assert.equal(await mobile.page.locator('[data-storefront-workbench]').getAttribute('data-pane'), 'settings');
+    assert.equal(
+      await mobile.page.locator('[data-storefront-workbench]').getAttribute('data-pane'),
+      'settings',
+    );
     assert.equal(await mobile.page.locator('[data-action="activate-section"]').isVisible(), true);
     assert.equal(mobileState.writes.length, mobileWrites, 'mobile hidden section selection saved a draft');
     await mobile.page.evaluate(() => scrollTo(0, 0));
@@ -761,8 +768,10 @@ async function run() {
     server.close();
   }
 }
-run().catch((error) => {
-  console.error(error);
-  server.close();
-  process.exitCode = 1;
-});
+if (require.main === module)
+  run().catch((error) => {
+    console.error(error);
+    server.close();
+    process.exitCode = 1;
+  });
+else module.exports = { server, fixture, editor, setup, configuration, theme };

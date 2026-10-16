@@ -55,7 +55,9 @@ jobs:
         env:
           BASELINE_ROOT: ${{ github.workspace }}/../storefront-baseline
           EDITOR_QA_OUTPUT: ${{ github.workspace }}/editor-qa-output
-        run: node tests/storefront-editor-browser.cjs
+        run: |
+          node tests/storefront-editor-browser.cjs
+          node tests/storefront-editor-regressions.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
