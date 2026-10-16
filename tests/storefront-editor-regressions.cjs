@@ -17,6 +17,21 @@ const settle = (page) =>
   );
 const frames = (page) => page.frames().find((frame) => frame.parentFrame());
 const output = process.env.EDITOR_QA_OUTPUT || path.resolve(__dirname, '../../editor-qa/screenshots');
+async function selectSection(page, id) {
+  const target = page.locator(`[data-select="${id}"]`).first();
+  if (!(await page.locator('.sfe-outline').isVisible()))
+    await page.locator('[data-pane="sections"]').click();
+  const hiddenGroup = target.locator('xpath=ancestor::details[1]');
+  if ((await hiddenGroup.count()) && !(await hiddenGroup.evaluate((node) => node.open)))
+    await hiddenGroup.evaluate((node) => (node.open = true));
+  await target.click();
+}
+async function openDrawerAction(page, action) {
+  const target = page.locator(`.sfe-outline [data-action="${action}"]`).first();
+  if (!(await page.locator('.sfe-outline').isVisible()))
+    await page.locator('[data-pane="sections"]').click();
+  await target.click();
+}
 async function run() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
@@ -109,7 +124,7 @@ async function run() {
       ui = await editor(browser, origin, state),
       p = ui.page,
       frame = frames(p);
-    await p.locator('[data-select="__header"]').click();
+    await selectSection(p, '__header');
     for (const key of ['showMenu', 'showCart'])
       await p.locator('[data-field="editorHeaderV1.' + key + '"]').uncheck();
     await frame.locator('.menu-toggle').waitFor({ state: 'hidden' });
@@ -118,13 +133,13 @@ async function run() {
       await p.locator('[data-field="editorHeaderV1.' + key + '"]').check();
     await frame.locator('.menu-toggle').waitFor({ state: 'visible' });
     await frame.locator('.site-header a[href="cart.html"]').waitFor({ state: 'visible' });
-    await p.locator('[data-select="best"]').click();
+    await selectSection(p, 'best');
     await p.locator('[data-tab="visibility"]').click();
     await p.locator('[data-field="settings.editorOptionsV1.showAll"]').uncheck();
     await frame.locator('.sf-best-sellers .sf-section-head>a').waitFor({ state: 'hidden' });
     await p.locator('[data-field="settings.editorOptionsV1.showAll"]').check();
     await frame.locator('.sf-best-sellers .sf-section-head>a').waitFor({ state: 'visible' });
-    await p.locator('[data-select="campaign"]').click();
+    await selectSection(p, 'campaign');
     await p.locator('[data-tab="visibility"]').click();
     await p.locator('[data-field="settings.editorOptionsV1.showTimer"]').uncheck();
     await frame.locator('.sf-countdown').waitFor({ state: 'hidden' });
@@ -152,7 +167,7 @@ async function run() {
     });
     await frame.locator('.sf-campaign-section').waitFor({ state: 'hidden' });
     await frame.locator('.sf-campaign-section').waitFor({ state: 'visible' });
-    await p.locator('[data-action="add"]').click();
+    await openDrawerAction(p, 'add');
     await p.locator('[data-add="product-collection"]').click();
     await p.locator('[data-action="products"]').click();
     await p.locator('[data-product-id="1"]').check();
@@ -163,7 +178,7 @@ async function run() {
     await frame.waitForFunction(
       () => document.querySelectorAll('.sf-editor-block .sf-product-card').length === 1,
     );
-    await p.locator('[data-action="add"]').click();
+    await openDrawerAction(p, 'add');
     await p.locator('[data-add="hero"]').click();
     await p.locator('[data-field="content.subtitle"]').fill('توضیح کوتاه بنر');
     await settle(p);
@@ -183,7 +198,7 @@ async function run() {
     await p.locator('[data-action="use-media"][data-id="1"]').click();
     await frame.locator('.sf-hero-art img').waitFor();
     assert.equal(await frame.locator('.sf-hero-art img').getAttribute('src'), origin + '/fixtures/1.svg');
-    await p.locator('[data-action="media"]').click();
+    await openDrawerAction(p, 'media');
     const beforeUploads = state.writes.filter(write => write.name === '/storefront/media/upload').length;
     const chooser = p.waitForEvent('filechooser');
     await p.locator('[data-action="replace-media"][data-id="1"]').click();
@@ -209,7 +224,7 @@ async function run() {
     assert.equal(await cp.locator('[data-action="publish"]').isDisabled(), false);
     assert.equal(checkState.writes.filter((write) => write.name.endsWith('/publish')).length, 0);
     await cp.locator('[data-action="close"]').first().click();
-    await cp.locator('[data-action="add"]').click();
+    await openDrawerAction(cp, 'add');
     await cp.locator('[data-add="hero"]').click();
     await cp.locator('[data-field="content.ctaText"]').fill('دیدن');
     await cp.locator('[data-field="content.ctaUrl"]').fill('missing-page.html');
@@ -234,7 +249,7 @@ async function run() {
     assert.equal(await broken.page.locator('[data-action="publish"]').isDisabled(), true);
     assert.match(await broken.page.locator('[data-preflight]').innerText(), /باید فایل تصویر باشد/);
     await broken.page.locator('[data-action="close"]').first().click();
-    await broken.page.locator('[data-select="bad-image"]').click();
+    await selectSection(broken.page, 'bad-image');
     await broken.page.locator('[data-action="choose-image"][data-path="content.imageDesktopUrl"]').click();
     await broken.page.locator('[data-action="use-media"][data-id="1"]').click();
     await settle(broken.page);
@@ -268,11 +283,12 @@ async function run() {
       assert.equal(await qp.evaluate(() => scrollY), 0, 'opening the preview scrolled the outer panel');
       assert.equal(await qp.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await qp.evaluate(() => document.body.textContent.includes('\\n')), false);
-      if (width < 1200) await qp.locator('button[data-pane="sections"]').click();
+      await qp.locator('button[data-pane="sections"]').click();
       await qp.locator('[data-section-query]').fill('بخش قديمي');
       assert.equal(await qp.locator('[data-outline] [data-select]').count(), 1);
       assert.equal(await qp.locator('[data-outline] [data-select="legacy-hero"]').isVisible(), true);
       await qp.locator('[data-section-query]').fill('');
+      await qp.locator('[data-action="outline-dismiss"]').first().click();
       await qp.locator('[data-action="search-settings"]').click();
       await qp.locator('[data-settings-query]').fill('شماره پشتیبانی');
       await qp.locator('[data-find-field="editorFooterV1.phone"]').click();
