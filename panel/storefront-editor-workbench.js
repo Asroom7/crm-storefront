@@ -547,7 +547,8 @@
   }
   function layout(s) {
     const v = s.settings?.editorOptionsV1?.[E.scope] || {},
-      p = 'settings.editorOptionsV1.' + E.scope + '.';
+      p = 'settings.editorOptionsV1.' + E.scope + '.',
+      cards = ['videos', 'best-sellers', 'categories', 'campaign', 'product-collection'].includes(s.type);
     const range = (text, key, min, max, fallback) =>
       `<label class="sfe-field"><span>${text}<output>${fa(v[key] ?? fallback)}</output></span><input type="range" min="${min}" max="${max}" value="${v[key] ?? fallback}" data-field="${p + key}"><small>با حرکت کنترل، مقدار اختصاصی ثبت می‌شود.</small></label>`;
     return (
@@ -568,15 +569,17 @@
       ) +
       range('فاصله بالا', 'paddingTop', 0, 160, 24) +
       range('فاصله پایین', 'paddingBottom', 0, 160, 24) +
-      range('فاصله کارت‌ها', 'gap', 0, 64, 12) +
-      range('گردی کارت‌ها', 'cardRadius', 0, 80, 20) +
-      field(
-        'تعداد کارت در ردیف',
-        p + 'visibleCards',
-        v.visibleCards,
-        'number',
-        'min="1" max="6" placeholder="طبق قالب"',
-      ) +
+      (cards
+        ? range('فاصله کارت‌ها', 'gap', 0, 64, 12) +
+          range('گردی کارت‌ها', 'cardRadius', 0, 80, 20) +
+          field(
+            'تعداد کارت در ردیف',
+            p + 'visibleCards',
+            v.visibleCards,
+            'number',
+            'min="1" max="6" placeholder="طبق قالب"',
+          )
+        : '') +
       btn('reset-scope', 'استفاده از تنظیمات مشترک / قالب')
     );
   }
@@ -584,14 +587,15 @@
     if (hiddenKind(s) === 'legacy')
       return '<div class="sfe-help">برای نمایش این بخش، ابتدا از دکمه «فعال‌سازی در پیش‌نویس» در بالای تنظیمات استفاده کنید.</div>';
     const o = s.settings?.editorOptionsV1 || {};
-    let html =
-      check(
-        'نمایش این بخش',
-        'settings.editorOptionsV1.visible',
-        o.visible === undefined ? s.enabled !== false : o.visible,
-      ) +
-      check('نمایش توضیح کوتاه', 'settings.editorOptionsV1.showSubtitle', o.showSubtitle !== false) +
-      check('نمایش «مشاهده همه»', 'settings.editorOptionsV1.showAll', o.showAll !== false);
+    let html = check(
+      'نمایش این بخش',
+      'settings.editorOptionsV1.visible',
+      o.visible === undefined ? s.enabled !== false : o.visible,
+    );
+    if (['videos', 'best-sellers', 'campaign', ...EXTRA].includes(s.type))
+      html += check('نمایش توضیح کوتاه', 'settings.editorOptionsV1.showSubtitle', o.showSubtitle !== false);
+    if (['videos', 'best-sellers', 'campaign', 'categories'].includes(s.type))
+      html += check('نمایش «مشاهده همه»', 'settings.editorOptionsV1.showAll', o.showAll !== false);
     if (['best-sellers', 'campaign', 'product-collection'].includes(s.type))
       html += check('نمایش قیمت', 'settings.editorOptionsV1.showPrice', o.showPrice !== false);
     if (s.type === 'campaign') {
@@ -829,29 +833,36 @@
     const label = (path) =>
       (labels[path.split('.').pop()] || 'تنظیم بخش') +
       (path.includes('.mobile.') ? ' · موبایل' : path.includes('.desktop.') ? ' · دسکتاپ' : '');
-    const v = (value) =>
-      value === undefined
-        ? 'طبق قالب'
-        : value === null
-          ? 'خالی'
-          : typeof value === 'object'
-            ? JSON.stringify(value).slice(0, 180)
-            : (
-                {
-                  auto: 'خودکار',
-                  manual: 'دستی',
-                  current: 'انتخاب فعلی',
-                  products: 'ویدیوهای محصولات',
-                  library: 'کتابخانه',
-                  true: 'فعال',
-                  false: 'غیرفعال',
-                }[String(value)] || String(value)
-              ).slice(0, 180);
+    const v = (value, path) =>
+      path?.endsWith('productIds') && Array.isArray(value)
+        ? value.length
+          ? value
+              .map((id) => E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول حذف‌شده')
+              .join('، ')
+              .slice(0, 180)
+          : 'بدون محصول منتخب'
+        : value === undefined
+          ? 'طبق قالب'
+          : value === null
+            ? 'خالی'
+            : typeof value === 'object'
+              ? JSON.stringify(value).slice(0, 180)
+              : (
+                  {
+                    auto: 'خودکار',
+                    manual: 'دستی',
+                    current: 'انتخاب فعلی',
+                    products: 'ویدیوهای محصولات',
+                    library: 'کتابخانه',
+                    true: 'فعال',
+                    false: 'غیرفعال',
+                  }[String(value)] || String(value)
+                ).slice(0, 180);
     return changes.length
       ? changes
           .map(
             (c) =>
-              `<article class="sfe-change"><strong>${esc(c.title || N[c.type] || names[c.kind])}</strong><small>${names[c.kind]}</small>${c.fields.map((f) => `<div><span>${esc(label(f.path))}</span><del>${esc(v(f.before))}</del><ins>${esc(v(f.after))}</ins></div>`).join('')}</article>`,
+              `<article class="sfe-change"><strong>${esc(c.title || N[c.type] || names[c.kind])}</strong><small>${names[c.kind]}</small>${c.fields.map((f) => `<div><span>${esc(label(f.path))}</span><del>${esc(v(f.before, f.path))}</del><ins>${esc(v(f.after, f.path))}</ins></div>`).join('')}</article>`,
           )
           .join('')
       : '<div class="sfe-help">تفاوتی وجود ندارد.</div>';

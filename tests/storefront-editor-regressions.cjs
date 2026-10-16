@@ -272,7 +272,16 @@ async function run() {
       assert.equal(await qp.locator('[data-field="editorFooterV1.phone"]').isVisible(), true);
       await qp.locator('[data-action="search-settings"]').click();
       await qp.locator('[data-settings-query]').fill('فاصله کارت');
-      if (width === 390) await qp.screenshot({ path: path.join(output, 'settings-search-mobile.png'), animations: 'disabled' });
+      assert.equal(
+        await qp.locator('[data-find-section="search"],[data-find-section="legacy-hero"]').count(),
+        0,
+        'settings search offered card controls on sections without cards',
+      );
+      if (width === 390)
+        await qp.screenshot({
+          path: path.join(output, 'settings-search-mobile.png'),
+          animations: 'disabled',
+        });
       await qp.locator('[data-find-section="best"][data-find-scope="mobile"]').first().click();
       assert.equal(await qp.locator('[data-field="settings.editorOptionsV1.mobile.gap"]').isVisible(), true);
       assert.equal(
