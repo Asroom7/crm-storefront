@@ -2,6 +2,10 @@
 (function () {
   'use strict';
   const home = window.StorefrontHome;
+  const C = window.StorefrontContentCore,
+    RT = window.StorefrontContentRuntime;
+  const rankings = new Map();
+  let contentTimer = 0;
   const root = document.getElementById('storefront-home-root');
   if (!home || !root) return;
   let current = null;
@@ -48,6 +52,7 @@
     if (node.hidden !== hidden) node.hidden = hidden;
   }
   function blockHtml(block, ctx) {
+    if (block.settings?.builderV1 && RT) return RT.blockHtml(block, ctx);
     const c = block.content || {};
     const subtitle = c.subtitle ? '<p data-editor-subtitle>' + safe(c.subtitle) + '</p>' : '';
     const image = url(
@@ -65,9 +70,15 @@
         : '';
     if (block.type === 'product-collection') {
       const ids = (block.settings || {}).productIds || [];
-      const products = ids.length
-        ? ids.map((id) => (ctx.products || []).find((p) => Number(p.id) === Number(id))).filter(Boolean)
-        : (ctx.products || []).slice(0, 8);
+      const products =
+        C &&
+        (block.settings?.editorOptionsV1?.inStockOnly ||
+          block.settings?.excludedProductIds ||
+          block.settings?.collectionMode)
+          ? C.selectProducts(block, ctx.products)
+          : ids.length
+            ? ids.map((id) => (ctx.products || []).find((p) => Number(p.id) === Number(id))).filter(Boolean)
+            : (ctx.products || []).slice(0, 8);
       return (
         '<section class="sf-section sf-container sf-editor-block" data-editor-section="' +
         safe(block.id) +
@@ -168,11 +179,99 @@
   }
   const originalBestSellers = home.registry['best-sellers'];
   home.registry['best-sellers'] = (block, ctx) => {
-    const selection = (block.settings || {}).editorOptionsV1?.selectionMode;
-    if (selection !== 'auto') return originalBestSellers(block, ctx);
-    const adjusted = { ...block, settings: { ...block.settings, productIds: ctx.bestSellerIds || [] } };
-    return originalBestSellers(adjusted, ctx);
+    const st = block.settings || {},
+      o = st.editorOptionsV1 || {},
+      selection = o.selectionMode;
+    if (!C || (!['auto', 'hybrid'].includes(selection) && !o.inStockOnly && !st.excludedProductIds))
+      return originalBestSellers(block, ctx);
+    const days = Number(st.rankingDays) || 30;
+    const ranked = rankings.get(days)?.ids || ctx.bestSellerIds || [];
+    const products = C.selectProducts(block, ctx.products, ranked);
+    const adjusted = { ...block, settings: { ...st, productIds: products.map((p) => p.id) } };
+    return originalBestSellers(adjusted, { ...ctx, products });
   };
+  const originalCategories = home.registry.categories;
+  home.registry.categories = (block, ctx) => {
+    if (block.settings?.editorOptionsV1?.categorySelectionMode !== 'manual')
+      return originalCategories(block, ctx);
+    const categories = C.ids(block.settings.categoryIds)
+      .map((id) => ctx.categories.find((c) => Number(c.id) === id))
+      .filter(Boolean);
+    return originalCategories(block, { ...ctx, categories });
+  };
+  const originalVideos = home.registry.videos;
+  home.registry.videos = (block, ctx) => {
+    if (block.settings?.editorOptionsV1?.videoSource !== 'education' || !C || !RT)
+      return originalVideos(block, ctx);
+    const shell = document.createElement('template');
+    shell.innerHTML = originalVideos(block, { ...ctx, products: [] });
+    const rail = shell.content.querySelector('.sf-video-demo,.sf-video-grid');
+    if (rail) {
+      rail.className = 'sf-video-grid';
+      rail.innerHTML =
+        C.selectLessons(block, current?.theme, Date.now() + (ctx.clockSkewMs || 0))
+          .map((row) => RT.videoHtml(row, ctx.products || []))
+          .join('') || '<p class="sf-section-empty">آموزشی برای این بخش انتخاب نشده است.</p>';
+    }
+    return shell.innerHTML;
+  };
+  function contentFeatures() {
+    return (
+      current &&
+      (current.theme?.educationLibraryV1 ||
+        current.theme?.editorMenuV1 ||
+        current.sections.some(
+          (s) =>
+            s.settings?.offerV1 ||
+            s.settings?.builderV1 ||
+            ['auto', 'hybrid'].includes(s.settings?.editorOptionsV1?.selectionMode),
+        ))
+    );
+  }
+  function refreshContent() {
+    if (!current || !C) return;
+    clearTimeout(contentTimer);
+    const now = Date.now() + (current.ctx?.clockSkewMs || 0),
+      times = [];
+    current.sections.forEach((s) => {
+      if (s.settings?.offerV1?.enabled) times.push(s.settings.startsAt, s.settings.endsAt);
+    });
+    C.list(current.theme?.educationLibraryV1?.items).forEach((r) => times.push(r.publishAt));
+    const next = times
+      .map(Date.parse)
+      .filter((t) => Number.isFinite(t) && t > now)
+      .sort((a, b) => a - b)[0];
+    if (next)
+      contentTimer = setTimeout(
+        () => {
+          home.renderLayout(current.sections, current.ctx);
+          window.dispatchEvent(new CustomEvent('storefront:home-ready'));
+        },
+        Math.min(next - now + 40, 2147483647),
+      );
+    current.sections
+      .filter(
+        (s) =>
+          s.type === 'best-sellers' &&
+          ['auto', 'hybrid'].includes(s.settings?.editorOptionsV1?.selectionMode),
+      )
+      .forEach((s) => {
+        const days = Number(s.settings.rankingDays) || 30;
+        if (rankings.has(days)) return;
+        const state = { ids: null };
+        rankings.set(days, state);
+        apiFetch('/storefront-insights/public/' + SELLER_ID + '/best-sellers?limit=20&days=' + days)
+          .then((data) => {
+            state.ids = data.productIds || [];
+            if (!current) return;
+            home.renderLayout(current.sections, current.ctx);
+            window.dispatchEvent(new CustomEvent('storefront:home-ready'));
+          })
+          .catch(() => {
+            state.ids = current?.ctx?.bestSellerIds || [];
+          });
+      });
+  }
   function render(config, theme) {
     home.applyTheme(theme || home.defaultTheme);
     home.renderLayout(config.sections, home.__editorContext || {});
@@ -187,7 +286,17 @@
         ? { ...block, enabled: block.settings.editorOptionsV1.visible }
         : block,
     );
-    const result = originalRender(effective, ctx);
+    const renderedContext =
+      C && sections.some((s) => s.settings?.offerV1?.enabled)
+        ? {
+            ...ctx,
+            products: C.decorateProducts(ctx.products, { sections }, Date.now() + (ctx.clockSkewMs || 0)),
+          }
+        : C && ctx.products?.some((p) => p.storefrontOriginalPrices)
+          ? { ...ctx, products: C.decorateProducts(ctx.products, { sections }) }
+          : ctx;
+    const result = originalRender(effective, renderedContext);
+    if (contentFeatures()) refreshContent();
     return result;
   };
   /* Initial boot calls its lexical renderer. Capture the same public context without
@@ -218,7 +327,10 @@
         };
       home.__editorContext = current.ctx;
       if (
-        current.sections.some((block) => block.settings?.editorManagedV1 || block.settings?.editorOptionsV1)
+        current.sections.some(
+          (block) => block.settings?.editorManagedV1 || block.settings?.editorOptionsV1,
+        ) ||
+        contentFeatures()
       ) {
         home.renderLayout(current.sections, current.ctx);
         window.dispatchEvent(new CustomEvent('storefront:home-ready'));
@@ -292,6 +404,24 @@
     clearTimeout(scheduleTimer);
     let nextStart = Infinity;
     applyChrome();
+    if (RT) RT.menu(current.theme);
+    if (current.sections.some((s) => s.settings?.editorOptionsV1?.videoSource === 'education') && RT)
+      RT.bindVideos(root);
+    // Explicit insertion points may sit between fixed native sections.
+    const anchors = new Map();
+    current.sections.forEach((block) => {
+      if (!block.settings?.insertAfterId || !block.settings?.editorManagedV1) return;
+      const node = root.querySelector('[data-editor-section="' + CSS.escape(block.id) + '"]');
+      const id = block.settings.insertAfterId,
+        target = current.sections.find((s) => s.id === id);
+      const anchor =
+        anchors.get(id) ||
+        root.querySelector('[data-editor-section="' + CSS.escape(id) + '"]') ||
+        (target && selector(target.type) && root.querySelector(selector(target.type)));
+      if (!node || !anchor || node === anchor || anchor.contains(node)) return;
+      if (anchor.nextElementSibling !== node) root.insertBefore(node, anchor.nextElementSibling);
+      anchors.set(id, node);
+    });
     const rows = (current.sections || []).filter((s) => s && home.registry[s.type]);
     const primarySeen = new Set();
     rows.forEach((block) => {
@@ -527,7 +657,15 @@
     )
       return;
     if (!home.__editorContext) return;
-    current = { sections: event.data.config.sections, ctx: home.__editorContext, theme: event.data.theme };
+    const ctx = event.data.catalog
+      ? {
+          ...home.__editorContext,
+          products: event.data.catalog.products,
+          categories: event.data.catalog.categories,
+        }
+      : home.__editorContext;
+    current = { sections: event.data.config.sections, ctx, theme: event.data.theme };
+    home.__editorContext = ctx;
     render(event.data.config, event.data.theme);
     window.dispatchEvent(new CustomEvent('storefront:home-ready'));
     setTimeout(apply, 50);

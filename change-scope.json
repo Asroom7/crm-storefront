@@ -1,9 +1,11 @@
 {
-  "task": "storefront-editor-audit-fixes-preflight-and-search",
+  "task": "storefront-content-studio",
   "allowed_locked_paths": [
     "panel/index.html",
-    "index.html"
+    "index.html",
+    "storefront-primary-flow.js",
+    "api.js"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly authorized applying the audited bugs and proposed editor improvements while preserving current storefront appearance and positions. Scoped changes fix publish/edit races, preview scrolling, media type selection, visibility overrides, managed block fields and opt-in scheduling, and add pre-publication checks and section/settings search. panel/index.html only removes the reported stray literal newline and bumps scoped editor asset versions. index.html only bumps the existing customization script version. The customization helper honors explicit editor controls; legacy schedules require scheduleEnabled and opening the editor never migrates settings. Approved storefront CSS, native section renderers, primary flow, shared panel runtime, backend code and stable/backup branches remain untouched. No production configuration or content is saved or published by this code release."
+  "note": "User explicitly requested implementing the detailed content/editor expansion while preserving current public appearance and native section positions. Changes add independent educational content, category management, real server-authoritative offers and custom content blocks. Shared shell edits only load scoped modules and bump cache versions. Primary flow respects explicitly inserted managed blocks without reordering native sections. Existing configs are not migrated or saved on opening; no production content/settings/data writes are made during implementation or tests. Stable and backup branches remain untouched. api.js adds opt-in content navigation for customer pages with an existing side menu; home continues to use its scoped runtime. No navigation changes are applied to legacy configuration."
 }

@@ -210,7 +210,7 @@
     view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench>
     <header class="sfe-topbar"><div class="sfe-heading">${btn('back', ico('chevR'), false, 'aria-label="بازگشت به تنظیمات"')}<div><h2>ویرایش فروشگاه</h2><span>صفحه اصلی</span></div><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-actions">${btn('undo', '↶', false, 'aria-label="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="تکرار تغییر"')}${btn('media', 'رسانه‌ها')}${btn('versions', 'نسخه‌ها')}${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'مرور و انتشار', true)}</div></header>
     <div class="sfe-notice" data-notice role="alert" hidden></div><nav class="sfe-mobile-nav" aria-label="قسمت‌های ویرایشگر">${['sections', 'preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="${k === E.pane}">${['بخش‌ها', 'پیش‌نمایش', 'تنظیمات بخش'][i]}</button>`).join('')}</nav>
-    <div class="sfe-workspace"><aside class="sfe-outline"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-audit"></iframe></div></div></main><aside class="sfe-inspector"><div class="sfe-sheet-handle" aria-hidden="true"></div><div data-inspector></div></aside></div>
+    <div class="sfe-workspace"><aside class="sfe-outline"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><aside class="sfe-inspector"><div class="sfe-sheet-handle" aria-hidden="true"></div><div data-inspector></div></aside></div>
     <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div></div>`;
     E.iframe = $('[data-preview-frame]');
     $('.sfe-outline .sfe-pane-head').insertAdjacentHTML(
@@ -221,6 +221,10 @@
     $('.sfe-actions').insertAdjacentHTML(
       'afterbegin',
       btn('search-settings', 'جستجو', false, 'aria-label="جستجوی تنظیمات" aria-keyshortcuts="Control+K"'),
+    );
+    $('.sfe-actions').insertAdjacentHTML(
+      'afterbegin',
+      btn('studio-library', 'آموزش‌ها') + btn('studio-categories', 'دسته‌ها') + btn('studio-menu', 'منو'),
     );
     E.iframe.addEventListener('load', bridge);
     view.onclick = click;
@@ -487,6 +491,11 @@
   function content(s) {
     const c = s.content || {},
       st = s.settings || {};
+    if (s.settings?.builderV1)
+      return (
+        field('عنوان بخش', 'content.title', c.title, 'text', 'maxlength="180"') +
+        (window.StorefrontEditorStudio?.content(s) || '')
+      );
     if (s.type === 'search')
       return '<div class="sfe-help">جستجو از محصولات و دسته‌بندی‌های فعلی استفاده می‌کند.</div>';
     if (s.type === 'footer') return chrome('footer');
@@ -517,6 +526,7 @@
             ['current', 'انتخاب فعلی'],
             ['manual', 'انتخاب دستی'],
             ['auto', 'خودکار از فروش واقعی'],
+            ['hybrid', 'منتخب‌ها و سپس فروش واقعی'],
           ],
         );
       html += productSummary(s) + btn('products', 'انتخاب و ترتیب محصولات');
@@ -531,6 +541,7 @@
           [
             ['products', 'ویدیوهای محصولات'],
             ['library', 'ویدیوهای کتابخانه'],
+            ['education', 'کتابخانهٔ آموزش‌های مستقل'],
           ],
         ) +
         `<div class="sfe-help">${fa((st.videoUrls || []).length)} ویدیو در فهرست انتخابی</div>` +
@@ -543,7 +554,7 @@
         'number',
         `min="1" max="${s.type === 'categories' ? 8 : s.type === 'videos' ? 12 : 20}" placeholder="طبق قالب"`,
       );
-    return html;
+    return html + (window.StorefrontEditorStudio?.content(s) || '');
   }
   function layout(s) {
     const v = s.settings?.editorOptionsV1?.[E.scope] || {},
@@ -580,7 +591,8 @@
             'min="1" max="6" placeholder="طبق قالب"',
           )
         : '') +
-      btn('reset-scope', 'استفاده از تنظیمات مشترک / قالب')
+      btn('reset-scope', 'استفاده از تنظیمات مشترک / قالب') +
+      (window.StorefrontEditorStudio?.layout(s) || '')
     );
   }
   function visibility(s) {
@@ -757,6 +769,7 @@
   }
   function dialog(name, html, footer = '') {
     E.modalEpoch++;
+    E.modalBack = null;
     E.focus = document.activeElement;
     $('#sfe-dialog-title').textContent = name;
     $('[data-dialog-body]').innerHTML = html;
@@ -765,6 +778,12 @@
     $('[data-overlay]').querySelector('button,input,select,textarea')?.focus();
   }
   function close() {
+    if (E.modalBack) {
+      const back = E.modalBack;
+      E.modalBack = null;
+      back();
+      return;
+    }
     E.modalEpoch++;
     const overlay = E.root?.querySelector('[data-overlay]');
     if (overlay) overlay.hidden = true;
@@ -829,35 +848,92 @@
         endsAt: 'پایان پیشنهاد',
         oldPrice: 'قیمت قبلی',
         discountLabel: 'برچسب تخفیف',
+        educationLibraryV1: 'کتابخانهٔ آموزش',
+        lessonIds: 'انتخاب و ترتیب آموزش‌ها',
+        educationMode: 'روش انتخاب آموزش‌ها',
+        categoryIds: 'انتخاب و ترتیب دسته‌ها',
+        categorySelectionMode: 'منبع دسته‌ها',
+        offerV1: 'پیشنهاد و قیمت واقعی',
+        value: 'مقدار تخفیف',
+        allowCoupons: 'ترکیب با تخفیف دیگر',
+        overrides: 'تخفیف اختصاصی محصولات',
+        elements: 'اجزای بخش دلخواه',
+        sectionTemplatesV1: 'قالب‌های شخصی',
+        editorMenuV1: 'منوی سفارشی',
+        insertAfterId: 'محل نمایش بخش',
+        rankingDays: 'بازهٔ فروش واقعی',
+        fallbackMode: 'تکمیل محصولات',
+        excludedProductIds: 'محصولات کنارگذاشته‌شده',
+        inStockOnly: 'فقط موجود',
+        collectionMode: 'منبع مجموعه',
+        builderV1: 'بخش‌ساز',
+        background: 'زمینهٔ محتوا',
+        align: 'تراز',
+        padding: 'فاصلهٔ درونی',
+        radius: 'گردی گوشه‌ها',
       };
     const label = (path) =>
-      (labels[path.split('.').pop()] || 'تنظیم بخش') +
+      (path.startsWith('educationLibraryV1.')
+        ? 'کتابخانهٔ آموزش'
+        : path.startsWith('editorMenuV1.')
+          ? 'منوی سفارشی'
+          : labels[path.split('.').pop()] || 'تنظیم بخش') +
       (path.includes('.mobile.') ? ' · موبایل' : path.includes('.desktop.') ? ' · دسکتاپ' : '');
     const v = (value, path) =>
-      path?.endsWith('productIds') && Array.isArray(value)
-        ? value.length
+      Array.isArray(value) && ['elements', 'sectionTemplatesV1', 'items'].some((k) => path?.endsWith(k))
+        ? value
+            .map(
+              (r) =>
+                r.title ||
+                r.name ||
+                r.label ||
+                r.text ||
+                {
+                  image: 'عکس',
+                  video: 'ویدیو',
+                  button: 'دکمه',
+                  text: 'متن',
+                  heading: 'عنوان',
+                  faq: 'پرسش و پاسخ',
+                }[r.type] ||
+                'مورد',
+            )
+            .join('، ')
+            .slice(0, 180) || 'خالی'
+        : path?.endsWith('lessonIds') && Array.isArray(value)
           ? value
-              .map((id) => E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول حذف‌شده')
-              .join('، ')
-              .slice(0, 180)
-          : 'بدون محصول منتخب'
-        : value === undefined
-          ? 'طبق قالب'
-          : value === null
-            ? 'خالی'
-            : typeof value === 'object'
-              ? JSON.stringify(value).slice(0, 180)
-              : (
-                  {
-                    auto: 'خودکار',
-                    manual: 'دستی',
-                    current: 'انتخاب فعلی',
-                    products: 'ویدیوهای محصولات',
-                    library: 'کتابخانه',
-                    true: 'فعال',
-                    false: 'غیرفعال',
-                  }[String(value)] || String(value)
-                ).slice(0, 180);
+              .map(
+                (id) => E.theme.educationLibraryV1?.items?.find((r) => r.id === id)?.title || 'آموزش حذف‌شده',
+              )
+              .join('، ') || 'بدون آموزش'
+          : path?.endsWith('categoryIds') && Array.isArray(value)
+            ? value
+                .map((id) => E.categories.find((r) => Number(r.id) === Number(id))?.name || 'دسته حذف‌شده')
+                .join('، ') || 'بدون دسته'
+            : path?.endsWith('productIds') && Array.isArray(value)
+              ? value.length
+                ? value
+                    .map((id) => E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول حذف‌شده')
+                    .join('، ')
+                    .slice(0, 180)
+                : 'بدون محصول منتخب'
+              : value === undefined
+                ? 'طبق قالب'
+                : value === null
+                  ? 'خالی'
+                  : typeof value === 'object'
+                    ? JSON.stringify(value).slice(0, 180)
+                    : (
+                        {
+                          auto: 'خودکار',
+                          manual: 'دستی',
+                          current: 'انتخاب فعلی',
+                          products: 'ویدیوهای محصولات',
+                          library: 'کتابخانه',
+                          true: 'فعال',
+                          false: 'غیرفعال',
+                        }[String(value)] || String(value)
+                      ).slice(0, 180);
     return changes.length
       ? changes
           .map(
@@ -950,7 +1026,7 @@
       });
     }
     if (epoch !== E.modalEpoch || !routeActive()) return;
-    const result = M.preflight(reviewed, { products, assets: E.assets });
+    const result = M.preflight(reviewed, { products, assets: E.assets, published: E.published });
     issues.push(...result.issues);
     const cache = new Map(),
       queue = result.resources.slice();
@@ -1036,7 +1112,12 @@
       try {
         const s = E.previewVersion || snap();
         E.iframe?.contentWindow?.postMessage(
-          { type: 'storefront-preview-config', config: s.config, theme: s.theme },
+          {
+            type: 'storefront-preview-config',
+            config: s.config,
+            theme: s.theme,
+            ...(E.catalogPreview ? { catalog: E.catalogPreview } : {}),
+          },
           location.origin,
         );
       } catch (_) {}
@@ -1232,7 +1313,7 @@
         E.selectedProducts
           .map(
             (id, i) =>
-              `<div class="sfe-selected-row"><span>${esc(E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول ' + id)}</span><button type="button" data-product-move="${i}" data-direction="-1" aria-label="بالاتر">↑</button><button type="button" data-product-move="${i}" data-direction="1" aria-label="پایین‌تر">↓</button><button type="button" data-product-remove="${id}" aria-label="حذف از انتخاب">×</button></div>`,
+              `<div class="sfe-selected-row" draggable="true" data-product-drag="${i}"><span>${esc(E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول ' + id)}</span><label class="sfe-priority"><span class="sfe-sr-only">اولویت</span><input type="number" min="1" max="${E.selectedProducts.length}" data-product-priority="${i}" value="${i + 1}"></label><button type="button" data-product-move="${i}" data-direction="-1" aria-label="بالاتر">↑</button><button type="button" data-product-move="${i}" data-direction="1" aria-label="پایین‌تر">↓</button><button type="button" data-product-remove="${id}" aria-label="حذف از انتخاب">×</button></div>`,
           )
           .join('');
       const list = E.products.filter(
@@ -1245,7 +1326,7 @@
         ? list
             .map(
               (p) =>
-                `<label class="sfe-product-option">${image(p) ? `<img src="${esc(image(p))}" alt="">` : ico('box')}<span><strong>${esc(p.name)}</strong><small>${esc(price(p))} · موجودی ${fa(p.stockQty || 0)}</small></span><input type="checkbox" data-product-id="${p.id}" ${E.selectedProducts.map(Number).includes(Number(p.id)) ? 'checked' : ''}></label>`,
+                `<label class="sfe-product-option">${image(p) ? `<img src="${esc(image(p))}" alt="">` : ico('box')}<span><strong>${esc(p.name)}</strong><small>${esc(price(p))} · موجودی ${fa(p.stockQty || 0)}${p.isPublished === false ? ' · منتشرنشده' : ''}</small></span><input type="checkbox" data-product-id="${p.id}" ${E.selectedProducts.map(Number).includes(Number(p.id)) ? 'checked' : ''}></label>`,
             )
             .join('')
         : '<div class="sfe-help">محصولی با این فیلتر پیدا نشد.</div>';
@@ -1277,6 +1358,38 @@
           }),
       );
     };
+    $('[data-picked]').onchange = (event) => {
+      const index = Number(event.target.dataset.productPriority),
+        to = Number(event.target.value) - 1;
+      if (
+        !event.target.hasAttribute('data-product-priority') ||
+        !Number.isInteger(to) ||
+        to < 0 ||
+        to >= E.selectedProducts.length
+      )
+        return;
+      E.selectedProducts.splice(to, 0, E.selectedProducts.splice(index, 1)[0]);
+      draw();
+    };
+    let dragProduct = null;
+    $('[data-picked]').ondragstart = (event) => {
+      const row = event.target.closest('[data-product-drag]');
+      if (row) dragProduct = Number(row.dataset.productDrag);
+    };
+    $('[data-picked]').ondragover = (event) => event.preventDefault();
+    $('[data-picked]').ondrop = (event) => {
+      event.preventDefault();
+      const row = event.target.closest('[data-product-drag]');
+      if (row && dragProduct !== null) {
+        E.selectedProducts.splice(
+          Number(row.dataset.productDrag),
+          0,
+          E.selectedProducts.splice(dragProduct, 1)[0],
+        );
+        draw();
+      }
+      dragProduct = null;
+    };
     $('[data-product-query]').oninput = draw;
     $('[data-category]').onchange = draw;
     $('[data-stock]').onchange = draw;
@@ -1300,7 +1413,8 @@
   function add() {
     dialog(
       'افزودن بخش',
-      `<div class="sfe-template-grid">${['hero', 'banner', 'product-collection', 'support-banner', 'trust'].map((t) => `<button type="button" data-add="${t}"><span class="sfe-template-preview ${t}"><i></i><b></b><i></i></span><strong>${N[t]}</strong><small>پیش‌نمایش چیدمان</small></button>`).join('')}</div>`,
+      `<div class="sfe-template-grid">${['hero', 'banner', 'product-collection', 'support-banner', 'trust'].map((t) => `<button type="button" data-add="${t}"><span class="sfe-template-preview ${t}"><i></i><b></b><i></i></span><strong>${N[t]}</strong><small>پیش‌نمایش چیدمان</small></button>`).join('')}</div>` +
+        (window.StorefrontEditorStudio?.templatesHtml() || ''),
     );
   }
   function addType(type) {
@@ -1337,26 +1451,31 @@
     return M.references(asset.url, [
       { scope: 'draft', data: snap() },
       { scope: 'live', data: E.published },
-    ]);
+    ]).concat(
+      E.categories
+        .filter((c) => c.imageUrl === asset.url)
+        .map((c) => ({ owner: 'دسته: ' + c.name, scope: 'catalog', path: 'imageUrl' })),
+    );
   }
   async function upload(file) {
     const types = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
     if (!types.includes(file.type)) throw new Error('فرمت فایل پشتیبانی نمی‌شود');
     if (file.size > (file.type.startsWith('video/') ? 25 : 8) * 1024 * 1024)
-      throw new Error('حجم فایل بیشتر از حد مجاز است');
+      throw new Error('حداکثر حجم فیلم ۲۵ و تصویر ۸ مگابایت است');
     const form = new FormData();
     form.append('file', file);
     return sellerApiFetch('/storefront/media/upload', { method: 'POST', body: form });
   }
-  async function media(kind = 'all', chooseMedia = null) {
+  async function media(kind = 'all', chooseMedia = null, onCancel = null) {
     E.mediaKind = kind;
     E.mediaChoose = chooseMedia;
     E.mediaPickKind = chooseMedia && kind !== 'all' ? kind : null;
     E.mediaQuery = '';
     dialog(
       'کتابخانه رسانه',
-      `<div class="sfe-picker-tools"><input type="search" data-media-query placeholder="جستجوی نام یا توضیح"><select data-media-kind><option value="all">همه رسانه‌ها</option><option value="image">تصاویر</option><option value="video">ویدیوها</option></select></div><label class="sfe-upload">انتخاب فایل برای آپلود<input type="file" data-media-file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label><div data-upload-status aria-live="polite"></div><div class="sfe-media-grid" data-media-grid>در حال دریافت رسانه‌ها…</div>`,
+      `<div class="sfe-picker-tools"><input type="search" data-media-query placeholder="جستجوی نام یا توضیح"><select data-media-kind><option value="all">همه رسانه‌ها</option><option value="image">تصاویر</option><option value="video">ویدیوها</option></select></div><label class="sfe-upload">انتخاب فایل برای آپلود<input type="file" data-media-file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label><p class="sfe-help">تصویر JPG/PNG/WebP تا ۸ مگابایت؛ فیلم MP4/WebM/MOV تا ۲۵ مگابایت.</p><div data-upload-status aria-live="polite"></div><div class="sfe-media-grid" data-media-grid>در حال دریافت رسانه‌ها…</div>`,
     );
+    E.modalBack = onCancel;
     const epoch = E.modalEpoch;
     $('[data-media-kind]').value = kind;
     $('[data-media-kind]').onchange = () => {
@@ -1581,6 +1700,7 @@
     if (!routeActive() || !E.root?.querySelector('[data-storefront-workbench]')) return;
     const b = event.target.closest('button');
     if (!b || !E.root.contains(b)) return;
+    if (window.StorefrontEditorStudio?.handle(b)) return;
     if (b.dataset.findSection) {
       close();
       if (b.dataset.findScope) E.scope = b.dataset.findScope;
@@ -1680,7 +1800,10 @@
       'apply-products': () => {
         mutate(() => {
           M.setPath(active(), 'settings.productIds', E.selectedProducts.slice());
-          M.setPath(active(), 'settings.editorOptionsV1.selectionMode', 'manual');
+          if (active().type === 'product-collection')
+            M.setPath(active(), 'settings.collectionMode', 'manual');
+          if (active().settings?.editorOptionsV1?.selectionMode !== 'hybrid')
+            M.setPath(active(), 'settings.editorOptionsV1.selectionMode', 'manual');
         });
         close();
       },
@@ -1953,6 +2076,35 @@
   function routeActive() {
     return location.hash.replace(/^#\/?/, '').split('/')[0] === 'storefront-editor';
   }
+  window.StorefrontEditorStudio?.attach({
+    E,
+    M,
+    active,
+    mutate,
+    dialog,
+    close,
+    media,
+    btn,
+    field,
+    check,
+    select,
+    title,
+    pane,
+    image,
+    tell,
+    matches: matchesQuery,
+    catalogChanged() {
+      const products = E.products.filter((p) => p.isPublished !== false);
+      E.catalogPreview = {
+        products,
+        categories: E.categories.filter((c) =>
+          products.some((p) => Number(p.categoryId || p.category?.id) === Number(c.id)),
+        ),
+      };
+      preview();
+      inspector();
+    },
+  });
   window.StorefrontEditorComplete = { version: 'workbench-1', render, state: E };
   window.renderStorefrontEditor = render;
 })();

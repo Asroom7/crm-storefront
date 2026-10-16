@@ -18,6 +18,9 @@ jobs:
           node --check api.js
           node --check storefront-home.js
           node --check storefront-editor-customizations.js
+          node --check storefront-content-core.js
+          node --check storefront-content-runtime.js
+          node --check education-library.js
           node --check storefront-qa.js
           node --check cinematic-intro.js
       - name: Check all panel JavaScript
@@ -31,7 +34,7 @@ jobs:
       - name: Check storefront architecture
         run: node scripts/check-storefront-architecture.js
       - name: Test draft preservation and recovery
-        run: node --test tests/storefront-editor-model.test.js
+        run: node --test tests/*.test.js
 
   editor-browser:
     if: github.event_name == 'pull_request'
@@ -58,6 +61,7 @@ jobs:
         run: |
           node tests/storefront-editor-browser.cjs
           node tests/storefront-editor-regressions.cjs
+          node tests/storefront-content-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
