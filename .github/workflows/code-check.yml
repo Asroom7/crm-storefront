@@ -63,6 +63,7 @@ jobs:
           node tests/storefront-editor-regressions.cjs
           node tests/storefront-content-browser.cjs
           node tests/storefront-editor-landscape.cjs
+          node tests/storefront-editor-fullscreen.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

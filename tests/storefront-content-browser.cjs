@@ -18,6 +18,19 @@ const settle = (p) =>
   );
 const frame = (p) => p.frames().find((f) => f.parentFrame());
 const close = (p) => p.locator('[data-overlay] [data-action="close"]').first().click();
+async function openDrawerTool(p, action) {
+  const target = p.locator(`.sfe-outline [data-action="${action}"]`).first();
+  if (!(await p.locator('.sfe-outline').isVisible())) await p.locator('[data-pane="sections"]').click();
+  await target.click();
+}
+async function selectSection(p, id) {
+  const target = p.locator(`[data-select="${id}"]`).first();
+  if (!(await p.locator('.sfe-outline').isVisible())) await p.locator('[data-pane="sections"]').click();
+  const hiddenGroup = target.locator('xpath=ancestor::details[1]');
+  if ((await hiddenGroup.count()) && !(await hiddenGroup.evaluate((node) => node.open)))
+    await hiddenGroup.evaluate((node) => (node.open = true));
+  await target.click();
+}
 async function verifyModalSafety(browser, origin) {
   const state = fixture(origin),
     ui = await editor(browser, origin, state),
@@ -26,7 +39,7 @@ async function verifyModalSafety(browser, origin) {
   await p.locator('[data-field="content.title"]').fill('عنوانی که باید حفظ شود');
   await settle(p);
   const writes = state.writes.length;
-  await p.locator('[data-action="studio-library"]').click();
+  await openDrawerTool(p, 'studio-library');
   await p.locator('[data-studio="lesson-new"]').click();
   await p.locator('[data-studio-field="title"]').fill('آموزش ذخیره‌نشده');
   await p.locator('[data-overlay] [data-action="close"]').focus();
@@ -53,8 +66,8 @@ async function verifyModalSafety(browser, origin) {
   assert.equal(await p.evaluate(() => document.activeElement.dataset.studio), 'lesson-back');
   await p.keyboard.press('Escape');
   assert.equal(
-    await p.evaluate(() => document.activeElement.dataset.action),
-    'studio-library',
+    await p.evaluate(() => document.activeElement.dataset.pane),
+    'sections',
     'closing a nested form lost its opener',
   );
   await p.locator('[data-field="content.title"]').fill('پرفروش‌ترین‌ها');
@@ -69,7 +82,7 @@ async function verifyModalSafety(browser, origin) {
     await route.fulfill({ json: state.products });
   };
   await p.route('**/api/products', productsRoute);
-  await p.locator('[data-action="studio-categories"]').click();
+  await openDrawerTool(p, 'studio-categories');
   await p.locator('[data-studio="category-products"]').first().click();
   await productsSeen;
   await close(p);
@@ -84,7 +97,7 @@ async function verifyModalSafety(browser, origin) {
   );
   await p.unroute('**/api/products', productsRoute);
 
-  await p.locator('[data-action="studio-categories"]').click();
+  await openDrawerTool(p, 'studio-categories');
   await p.locator('[data-studio="category-products"]').first().click();
   await p.locator('[data-studio="pick-apply"]').waitFor();
   assert.equal(
@@ -120,7 +133,7 @@ async function verifyModalSafety(browser, origin) {
   await createSeen;
   assert.equal(await p.locator('[data-studio="category-save"]').isDisabled(), true);
   await close(p);
-  await p.locator('[data-action="studio-library"]').click();
+  await openDrawerTool(p, 'studio-library');
   await p.locator('[data-studio="lesson-new"]').click();
   await p.locator('[data-studio-field="title"]').fill('فرم جدید پس از بستن پنجرهٔ قبلی');
   releaseCreate();
@@ -152,7 +165,7 @@ async function verifyModalSafety(browser, origin) {
   );
 }
 async function addLesson(p, title) {
-  await p.locator('[data-action="studio-library"]').click();
+  await openDrawerTool(p, 'studio-library');
   await p.locator('[data-studio="lesson-new"]').click();
   await p.locator('[data-studio-field="title"]').fill(title);
   await p.locator('[data-studio-field="topic"]').fill('روش استفاده');
@@ -205,7 +218,7 @@ async function addLesson(p, title) {
       theme: state.page.theme,
     });
     for (const action of ['studio-library', 'studio-categories', 'studio-menu']) {
-      await p.locator('[data-action="' + action + '"]').click();
+      await openDrawerTool(p, action);
       await close(p);
     }
     assert.equal(state.writes.length, 0);
@@ -231,7 +244,7 @@ async function addLesson(p, title) {
       undefined,
       'saving lessons changed the live library',
     );
-    await p.locator('[data-select="videos"]').click();
+    await selectSection(p, 'videos');
     await p.locator('[data-tab="content"]').click();
     await p.locator('[data-action="studio-choose-lessons"]').click();
     for (const id of ids) await p.locator('[data-studio-pick="' + id + '"]').check();
@@ -283,7 +296,7 @@ async function addLesson(p, title) {
       'PASS read-only management, independent library, media selection, related products, priority, publication and education search',
     );
 
-    await p.locator('[data-action="add"]').click();
+    await openDrawerTool(p, 'add');
     await p.locator('[data-action="studio-new"][data-template="text"]').click();
     const builderId = await p.evaluate(() => StorefrontEditorComplete.state.activeSection);
     await p.waitForFunction((id) => {
@@ -358,7 +371,7 @@ async function addLesson(p, title) {
     await p.locator('[data-action="studio-template-save"]').click();
     await p.locator('[data-studio-field="name"]').fill('قالب من');
     await p.locator('[data-studio="template-save"]').click();
-    await p.locator('[data-action="add"]').click();
+    await openDrawerTool(p, 'add');
     assert.equal(await p.locator('[data-action="studio-use-template"]').count(), 1);
     await close(p);
     assert.ok(
@@ -377,7 +390,7 @@ async function addLesson(p, title) {
       'PASS custom content, escaped formatting, images, fixed section positions, device-scoped design and reusable templates',
     );
 
-    await p.locator('[data-select="campaign"]').click();
+    await selectSection(p, 'campaign');
     await p.locator('[data-tab="content"]').click();
     await p.locator('[data-action="studio-offer"]').click();
     await p.locator('[data-studio-field="enabled"]').check();
@@ -393,11 +406,11 @@ async function addLesson(p, title) {
     );
     console.log('PASS actual-offer preview, per-product overrides and draft/live isolation');
 
-    await p.locator('[data-action="studio-menu"]').click();
+    await openDrawerTool(p, 'studio-menu');
     await p.locator('[data-studio-field="enabled"]').check();
     await p.locator('[data-studio="menu-save"]').click();
     await frame(p).locator('[data-editor-menu] a[href$="education.html"]').waitFor({ state: 'attached' });
-    await p.locator('[data-action="studio-menu"]').click();
+    await openDrawerTool(p, 'studio-menu');
     await p.locator('[data-studio-field="enabled"]').uncheck();
     await p.locator('[data-studio="menu-save"]').click();
     await p.waitForFunction(
@@ -431,7 +444,7 @@ async function addLesson(p, title) {
       Object.assign(c, body);
       return route.fulfill({ json: c });
     });
-    await cp.locator('[data-action="studio-categories"]').click();
+    await openDrawerTool(cp, 'studio-categories');
     await cp.locator('[data-studio="category-new"]').click();
     await cp.locator('[data-studio-field="name"]').fill('دستهٔ تصویری');
     await cp.locator('[data-studio="category-image"]').click();
@@ -441,7 +454,7 @@ async function addLesson(p, title) {
     assert.equal(cats.categories[4].imageUrl, origin + '/fixtures/1.svg');
     assert.equal(cats.categories[4].name, 'دستهٔ تصویری');
     await close(cp);
-    await cp.locator('[data-select="categories"]').click();
+    await selectSection(cp, 'categories');
     await cp.locator('[data-tab="content"]').click();
     await cp.locator('[data-action="studio-choose-categories"]').click();
     await cp.locator('[data-studio-pick="2"]').check();
@@ -467,7 +480,7 @@ async function addLesson(p, title) {
       const mobileState = fixture(origin),
         mu = await editor(browser, origin, mobileState, { width, height: 390 }),
         mp = mu.page;
-      await mp.locator('[data-action="studio-library"]').click();
+      await openDrawerTool(mp, 'studio-library');
       await mp.locator('[data-studio="lesson-new"]').click();
       assert.equal(await mp.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       const overflow = await mp.locator('.sfe-dialog').evaluate((el) => el.scrollWidth > el.clientWidth);

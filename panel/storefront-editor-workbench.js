@@ -43,6 +43,12 @@
     scope: 'shared',
     pane: 'settings',
     outlineOpen: false,
+    searchOpen: false,
+    zoomMode: 'fit',
+    zoom: 1,
+    previewMode: 'edit',
+    previewSource: 'draft',
+    split: 65,
     orientationLocked: false,
     undo: [],
     redo: [],
@@ -82,6 +88,11 @@
     const local = {
       play: '<path d="m8 4 12 8-12 8z"/>',
       menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+      search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+      minus: '<path d="M5 12h14"/>',
+      expand: '<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',
+      close: '<path d="m6 6 12 12M18 6 6 18"/>',
     };
     return local[n]
       ? `<svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round">${local[n]}</svg>`
@@ -219,10 +230,11 @@
     E.previewSections = null;
     E.root = view;
     view.classList.add('sfe-host');
-    view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench>
-    <header class="sfe-topbar"><div class="sfe-heading">${btn('back', ico('chevR'), false, 'aria-label="بازگشت به تنظیمات"')}<div><h2>ویرایش فروشگاه</h2><span>محیط ویرایش افقی</span></div><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-actions">${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'مرور و انتشار', true)}</div></header>
-    <div class="sfe-editor-toolbar"><nav class="sfe-mobile-nav" aria-label="نمای محیط ویرایش">${['sections', 'preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="false" ${k === 'sections' ? 'aria-controls="sfe-outline" aria-expanded="false"' : ''}>${['بخش‌ها', 'پیش‌نمایش', 'ویرایش'][i]}</button>`).join('')}</nav>
-    <section class="sfe-content-tools" aria-label="مدیریت محتوای فروشگاه">${[
+    view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench data-zoom-mode="${E.zoomMode}" data-preview-source="${E.previewSource}" data-preview-mode="${E.previewMode}">
+    <header class="sfe-topbar"><button type="button" class="sfe-menu-button" data-pane="sections" aria-controls="sfe-outline" aria-expanded="false"><span aria-hidden="true">${ico('menu')}</span><span>منو</span></button><div class="sfe-global-search"><button type="button" class="sfe-search-icon" data-action="search-settings" aria-label="جست‌وجوی امکانات" aria-keyshortcuts="Control+K">${ico('search')}</button><input type="search" data-settings-query autocomplete="off" placeholder="جست‌وجوی بخش، تنظیمات، محصول یا ویدیو…" aria-label="جست‌وجوی امکانات ویرایشگر" aria-controls="sfe-global-results" aria-expanded="false"><button type="button" data-action="search-clear" aria-label="پاک‌کردن جست‌وجو" hidden>${ico('close')}</button><div class="sfe-global-results" id="sfe-global-results" data-settings-results role="listbox" hidden></div></div><div class="sfe-page-identity"><strong>ویرایش فروشگاه</strong><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-top-actions">${btn('fullscreen', ico('expand') + '<span>تمام‌صفحه</span>', false, 'aria-label="ورود به حالت تمام‌صفحه"')}${btn('back', ico('chevR') + '<span>بازگشت به پنل</span>')}</div></header>
+    <div class="sfe-editor-toolbar"><div class="sfe-essential-actions">${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'بررسی و انتشار', true)}${btn('undo', '↶', false, 'aria-label="برگشت تغییر" title="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="انجام دوباره" title="انجام دوباره"')}</div><div class="sfe-device-tools" aria-label="اندازه پیش‌نمایش"><span>نمای سایت</span><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><nav class="sfe-mobile-nav" aria-label="نمای محیط ویرایش">${['preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="false">${['گسترش پیش‌نمایش', 'نمایش تنظیمات'][i]}</button>`).join('')}</nav><span class="sfe-toolbar-status" data-toolbar-status aria-live="polite"></span></div>
+    <div class="sfe-notice" data-notice role="alert" hidden></div>
+    <div class="sfe-workspace"><aside class="sfe-outline" id="sfe-outline" aria-label="منوی اصلی ویرایشگر"><div class="sfe-drawer-head"><div><strong>مدیریت فروشگاه</strong><span>ابزارها و بخش‌های صفحه</span></div>${btn('outline-dismiss', ico('close'), false, 'aria-label="بستن منو"')}</div><div class="sfe-drawer-scroll"><section class="sfe-drawer-group"><h3>ساختار صفحه</h3><label class="sfe-outline-search"><span>جست‌وجوی بخش‌ها</span><input type="search" data-section-query placeholder="نام بخش یا نوع آن" aria-label="جست‌وجوی بخش‌ها"></label><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش جدید', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></section><section class="sfe-drawer-group"><h3>محتوا و رسانه</h3><div class="sfe-content-tools" aria-label="مدیریت محتوای فروشگاه">${[
       ['studio-library', 'play', 'ویدیوهای آموزشی', 'فیلم، کاور و موضوع آموزش'],
       ['studio-categories', 'box', 'دسته‌بندی محصولات', 'نام، عکس و محصولات هر دسته'],
       ['studio-menu', 'menu', 'منوی سایت', 'لینک‌های منوی سه‌خط'],
@@ -233,20 +245,20 @@
           `<span class="sfe-tool-icon" aria-hidden="true">${ico(icon)}</span><span><strong>${label}</strong><small>${hint}</small></span>`,
         ),
       )
-      .join('')}</section><div class="sfe-utility-actions" aria-label="ابزارهای ویرایش">${btn('search-settings', 'جستجو', false, 'aria-label="جستجوی تنظیمات" aria-keyshortcuts="Control+K"')}${btn('undo', '↶', false, 'aria-label="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="تکرار تغییر"')}${btn('media', 'رسانه‌ها')}${btn('versions', 'نسخه‌ها')}</div></div>
-    <div class="sfe-notice" data-notice role="alert" hidden></div>
-    <div class="sfe-workspace"><aside class="sfe-outline" id="sfe-outline" aria-label="فهرست بخش‌های فروشگاه"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><aside class="sfe-inspector" aria-label="تنظیمات بخش انتخاب‌شده"><div data-inspector></div></aside><button type="button" class="sfe-outline-scrim" data-action="outline-dismiss" aria-label="بستن فهرست بخش‌ها"></button></div>
+      .join('')}</div>${btn('media', 'کتابخانه رسانه‌ها')}</section><section class="sfe-drawer-group"><h3>مدیریت و نسخه‌ها</h3><div class="sfe-drawer-actions">${btn('versions', 'تاریخچه و نسخه‌های ذخیره‌شده')}${btn('fullscreen', 'تمام‌صفحه')}${btn('back', 'بازگشت به پنل مدیریت')}</div></section></div></aside><button type="button" class="sfe-outline-scrim" data-action="outline-dismiss" aria-label="بستن منوی اصلی"></button><main class="sfe-canvas"><div class="sfe-canvas-bar"><div class="sfe-preview-title"><strong>پیش‌نمایش زنده</strong><span data-preview-label>${E.previewSource === 'live' ? 'نسخه منتشرشده' : 'پیش‌نویس'}</span></div><div class="sfe-preview-modes"><div class="sfe-segment" aria-label="نسخه پیش‌نمایش">${['draft', 'live'].map((source, i) => `<button type="button" data-preview-source="${source}" aria-pressed="${source === E.previewSource}">${['پیش‌نویس', 'نسخه منتشرشده'][i]}</button>`).join('')}</div><div class="sfe-segment" aria-label="حالت تعامل">${['edit', 'view'].map((mode, i) => `<button type="button" data-preview-mode="${mode}" aria-pressed="${mode === E.previewMode}">${['انتخاب برای ویرایش', 'مشاهده'][i]}</button>`).join('')}</div></div><div class="sfe-zoom-tools" aria-label="کنترل بزرگ‌نمایی"><button type="button" data-action="zoom-out" aria-label="کوچک‌نمایی">${ico('minus')}</button><output data-zoom-value aria-live="polite">۱۰۰٪</output><button type="button" data-action="zoom-in" aria-label="بزرگ‌نمایی">${ico('plus')}</button>${['fit', 'width', 'actual'].map((mode, i) => `<button type="button" data-zoom-mode="${mode}" aria-pressed="${mode === E.zoomMode}">${['نمای کلی', 'عرض قاب', '۱۰۰٪'][i]}</button>`).join('')}<button type="button" data-action="focus-section">تمرکز روی بخش</button></div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><div class="sfe-splitter" data-splitter role="separator" aria-label="تغییر اندازه پیش‌نمایش و تنظیمات" aria-orientation="vertical" aria-valuemin="45" aria-valuemax="75" aria-valuenow="${E.split}" tabindex="0"><button type="button" data-action="reset-split" title="بازگشت به اندازه پیش‌فرض" aria-label="بازگشت اندازه ستون‌ها به حالت پیش‌فرض">⋮</button></div><aside class="sfe-inspector" aria-label="تنظیمات بخش انتخاب‌شده"><div data-inspector></div></aside></div>
     <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div>
     <section class="sfe-orientation-gate" data-orientation-gate aria-labelledby="sfe-orientation-title" hidden><div class="sfe-orientation-card"><svg viewBox="0 0 80 80" fill="none" aria-hidden="true"><rect x="17" y="25" width="46" height="29" rx="5" stroke="currentColor" stroke-width="3"/><path d="M24 18a23 23 0 0138 3M62 12v9h-9M56 61a23 23 0 01-38-3M18 67v-9h9" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2 id="sfe-orientation-title" tabindex="-1">برای ویرایش، صفحه را افقی کن</h2><p>گوشی یا تبلت را بچرخان؛ در رایانه، پنجره را عریض‌تر کن.</p><small>فرم باز و تغییراتت حفظ می‌شوند.</small><details><summary>صفحه نمی‌چرخد؟</summary><p>قفل چرخش گوشی را خاموش کن و دوباره دستگاه را بچرخان.</p></details>${btn('back', 'بازگشت به پنل')}</div></section></div>`;
     E.iframe = $('[data-preview-frame]');
-    $('.sfe-outline .sfe-pane-head').insertAdjacentHTML(
-      'afterend',
-      '<label class="sfe-outline-search"><span>جستجوی بخش‌ها</span><input type="search" data-section-query placeholder="نام بخش یا نوع آن" aria-label="جستجوی بخش‌ها"></label>',
-    );
+    $('[data-storefront-workbench]').style.setProperty('--sfe-preview-pct', E.split + '%');
     $('[data-section-query]').value = E.sectionQuery;
     E.iframe.addEventListener('load', bridge);
     view.onclick = click;
     view.oninput = (e) => {
+      if (routeActive() && e.target.matches('[data-settings-query]')) {
+        E.searchOpen = true;
+        renderSearchResults();
+        return;
+      }
       if (routeActive() && e.target.matches('[data-section-query]')) {
         E.sectionQuery = e.target.value;
         outline();
@@ -260,11 +272,13 @@
     view.onfocusout = (e) => {
       if (e.target.matches('[data-field]')) E.group = null;
     };
+    bindSplitter();
     outline();
     inspector();
     status();
     pane(E.pane);
     viewport();
+    updateFullscreenButton();
   }
   function outline() {
     if (!E.root || !$('[data-outline]')) return;
@@ -340,7 +354,7 @@
         .toLowerCase();
     return normalize(text).includes(normalize(query));
   }
-  function searchSettings() {
+  function searchIndex() {
     const index = [];
     const collect = (id, name, tab, html) => {
       const template = document.createElement('template');
@@ -355,7 +369,16 @@
             ? el.dataset.field.replace('.' + E.scope + '.', '.' + scope + '.')
             : el.dataset.field;
           const suffix = { shared: 'مشترک', mobile: 'موبایل', desktop: 'دسکتاپ' }[scope] || '';
-          index.push({ id, name, tab, field, scope, label: label + (suffix ? ' · ' + suffix : '') });
+          index.push({
+            kind: 'تنظیم',
+            id,
+            name,
+            tab,
+            field,
+            scope,
+            label: label + (suffix ? ' · ' + suffix : ''),
+            path: 'صفحه اصلی ← ' + name + ' ← ' + { content: 'محتوا', layout: 'ظاهر', visibility: 'نمایش' }[tab],
+          });
         });
       });
     };
@@ -369,26 +392,98 @@
         collect(s.id, title(s), 'layout', layout(s));
         collect(s.id, title(s), 'visibility', visibility(s));
       });
-    dialog(
-      'جستجوی تنظیمات',
-      '<label class="sfe-field"><span>نام تنظیم یا بخش</span><input type="search" data-settings-query placeholder="مثلاً فاصله کارت‌ها، لوگو یا شماره پشتیبانی"></label><div data-settings-results></div>',
+    structure()
+      .visible.concat(structure().hidden)
+      .forEach((s) =>
+        index.push({
+          kind: 'بخش',
+          id: s.id,
+          name: title(s),
+          tab: 'content',
+          field: '',
+          scope: '',
+          label: title(s),
+          path: 'صفحه اصلی ← بخش‌ها',
+        }),
+      );
+    E.products.forEach((p) =>
+      index.push({
+        kind: 'محصول',
+        label: p.name || 'محصول ' + p.id,
+        path: 'محصولات ← انتخاب و اولویت نمایش',
+        action: 'products',
+        query: p.name || '',
+      }),
     );
-    const draw = () => {
-      const q = $('[data-settings-query]').value,
-        matches = index.filter((item) => matchesQuery(item.name + ' ' + item.label, q));
-      $('[data-settings-results]').innerHTML =
-        `<p class="sfe-search-count" role="status">${fa(matches.length)} نتیجه${matches.length > 40 ? '؛ برای یافتن سریع‌تر، عبارت دقیق‌تری بنویسید' : ''}</p>` +
-        matches
-          .slice(0, 40)
-          .map(
-            (item) =>
-              `<button type="button" class="sfe-search-result" data-find-section="${esc(item.id)}" data-find-tab="${item.tab}" data-find-field="${esc(item.field)}" data-find-scope="${item.scope}"><strong>${esc(item.label)}</strong><small>${esc(item.name)}</small></button>`,
-          )
-          .join('');
-    };
-    $('[data-settings-query]').oninput = draw;
-    draw();
-    $('[data-settings-query]').focus({ preventScroll: true });
+    (E.theme?.educationLibraryV1?.items || []).forEach((lesson) =>
+      index.push({
+        kind: 'ویدیوی آموزشی',
+        label: lesson.title || lesson.name || 'آموزش بدون عنوان',
+        path: 'محتوا ← ویدیوهای آموزشی',
+        action: 'lessons',
+        query: lesson.title || lesson.name || '',
+      }),
+    );
+    E.assets
+      .filter((asset) => asset.kind === 'video')
+      .forEach((asset) =>
+        index.push({
+          kind: 'رسانه',
+          label: asset.originalName || asset.altText || 'ویدیو',
+          path: 'کتابخانه رسانه‌ها ← ویدیوها',
+          action: 'media-video',
+          query: asset.originalName || '',
+        }),
+      );
+    return index;
+  }
+  function closeSearch() {
+    E.searchOpen = false;
+    const input = E.root?.querySelector('[data-settings-query]'),
+      results = E.root?.querySelector('[data-settings-results]');
+    if (input) input.setAttribute('aria-expanded', 'false');
+    if (results) results.hidden = true;
+  }
+  function renderSearchResults() {
+    const input = E.root?.querySelector('[data-settings-query]'),
+      results = E.root?.querySelector('[data-settings-results]'),
+      clearButton = E.root?.querySelector('[data-action="search-clear"]');
+    if (!input || !results) return;
+    const query = input.value;
+    if (clearButton) clearButton.hidden = !query;
+    if (!E.searchOpen) return closeSearch();
+    const quick = [
+      { kind: 'دسترسی سریع', label: 'بخش‌های صفحه و افزودن بخش', path: 'منوی اصلی ← ساختار صفحه', action: 'menu' },
+      { kind: 'دسترسی سریع', label: 'ویدیوهای آموزشی', path: 'محتوا و رسانه', action: 'lessons' },
+      { kind: 'دسترسی سریع', label: 'دسته‌بندی محصولات', path: 'محتوا و رسانه', action: 'categories' },
+      { kind: 'دسترسی سریع', label: 'کتابخانه رسانه‌ها', path: 'محتوا و رسانه', action: 'media' },
+      { kind: 'دسترسی سریع', label: 'تاریخچه نسخه‌ها', path: 'مدیریت و نسخه‌ها', action: 'versions' },
+    ];
+    const all = query
+      ? searchIndex().filter((item) => matchesQuery([item.kind, item.label, item.name, item.path].join(' '), query))
+      : quick;
+    results.innerHTML =
+      `<div class="sfe-search-summary" role="status"><strong>${query ? fa(all.length) + ' نتیجه' : 'دسترسی سریع'}</strong>${all.length > 40 ? '<span>برای نتیجه دقیق‌تر، عبارت بیشتری بنویسید.</span>' : ''}</div>` +
+      (all.length
+        ? all
+            .slice(0, 40)
+            .map((item) => {
+              const attrs = item.id
+                ? `data-find-section="${esc(item.id)}" data-find-tab="${item.tab}" data-find-field="${esc(item.field)}" data-find-scope="${item.scope || ''}"`
+                : `data-search-action="${item.action}" data-search-query="${esc(item.query || '')}"`;
+              return `<button type="button" class="sfe-search-result" role="option" ${attrs}><span class="sfe-result-kind">${esc(item.kind)}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.path)}</small></span></button>`;
+            })
+            .join('')
+        : '<div class="sfe-search-empty"><strong>نتیجه‌ای پیدا نشد</strong><span>نام کوتاه‌تر یا عبارت دیگری را امتحان کن.</span></div>');
+    results.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+  function searchSettings() {
+    const input = $('[data-settings-query]');
+    if (!input) return;
+    E.searchOpen = true;
+    renderSearchResults();
+    input.focus({ preventScroll: true });
   }
   function hiddenLabel(s) {
     return {
@@ -471,22 +566,128 @@
     highlight();
     status();
   }
+  const clampZoom = (value) => Math.min(2, Math.max(0.005, value));
+  function updateZoomControls() {
+    if (!E.root) return;
+    const root = $('[data-storefront-workbench]'),
+      output = $('[data-zoom-value]');
+    if (root) root.dataset.zoomMode = E.zoomMode;
+    if (output) output.textContent = fa(Math.round(E.zoom * 100)) + '٪';
+    $$('button[data-zoom-mode]').forEach((button) =>
+      button.setAttribute('aria-pressed', String(button.dataset.zoomMode === E.zoomMode)),
+    );
+    const out = $('[data-action="zoom-out"]'),
+      inside = $('[data-action="zoom-in"]');
+    if (out) out.disabled = E.zoom <= 0.006;
+    if (inside) inside.disabled = E.zoom >= 1.999;
+  }
   function fit() {
     if (!E.iframe || !E.root) return;
     const stage = $('.sfe-preview-stage');
     if (!stage || stage.clientWidth < 30) return;
     const width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device],
-      scale = Math.min(1, (stage.clientWidth - 24) / width),
       padding = getComputedStyle(stage),
-      available = Math.max(40, stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2),
-      height = available / scale;
+      availableWidth = Math.max(
+        40,
+        stage.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight) - 2,
+      ),
+      availableHeight = Math.max(
+        40,
+        stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2,
+      );
+    let contentHeight = Math.max(600, Number(E.previewContentHeight) || 0);
+    try {
+      const doc = E.iframe.contentDocument,
+        ready = !!E.iframe.contentWindow?.StorefrontHome?.__editorContext;
+      if (ready && (E.zoomMode !== 'fit' || !E.previewContentHeight)) {
+        contentHeight = Math.max(
+          contentHeight,
+          doc?.documentElement?.scrollHeight || 0,
+          doc?.body?.scrollHeight || 0,
+        );
+        E.previewContentHeight = contentHeight;
+      }
+    } catch (_) {}
+    const widthScale = availableWidth / width;
+    if (E.zoomMode === 'fit') E.zoom = clampZoom(Math.min(widthScale, availableHeight / contentHeight));
+    else if (E.zoomMode === 'width') E.zoom = clampZoom(Math.min(1, widthScale));
+    else if (E.zoomMode === 'actual') E.zoom = 1;
+    const scale = clampZoom(E.zoom),
+      fullPage = E.zoomMode === 'fit',
+      height = fullPage ? contentHeight : Math.max(360, availableHeight / scale),
+      wrapHeight = Math.min(fullPage ? height * scale : availableHeight, height * scale);
     const wrap = $('[data-frame-wrap]');
     wrap.style.width = width * scale + 'px';
-    wrap.style.height = available + 2 + 'px';
+    wrap.style.height = wrapHeight + 'px';
     E.iframe.style.width = width + 'px';
     E.iframe.style.height = height + 'px';
     E.iframe.style.transform = 'scale(' + scale + ')';
-    E.iframe.style.transformOrigin = 'top right';
+    E.iframe.style.transformOrigin = 'top left';
+    updateZoomControls();
+  }
+  function setZoom(mode, value) {
+    E.zoomMode = mode;
+    if (value !== undefined) E.zoom = clampZoom(value);
+    fit();
+  }
+  function focusSection() {
+    if (!E.activeSection) return tell('ابتدا یک بخش را انتخاب کنید');
+    const stage = $('.sfe-preview-stage'),
+      width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device];
+    if (!stage) return;
+    E.zoomMode = 'focus';
+    E.zoom = clampZoom(Math.min(1.25, Math.max(0.55, (stage.clientWidth - 28) / width)));
+    E.lastPreviewSection = null;
+    fit();
+    requestAnimationFrame(highlight);
+  }
+  function setSplit(value, persist = true) {
+    E.split = Math.min(75, Math.max(45, Number(value) || 65));
+    const root = E.root?.querySelector('[data-storefront-workbench]'),
+      separator = E.root?.querySelector('[data-splitter]');
+    if (root) root.style.setProperty('--sfe-preview-pct', E.split + '%');
+    if (separator) separator.setAttribute('aria-valuenow', String(Math.round(E.split)));
+    if (persist) {
+      try {
+        localStorage.setItem('storefront-editor-split-v1', String(E.split));
+      } catch (_) {}
+    }
+    requestAnimationFrame(fit);
+  }
+  function bindSplitter() {
+    const separator = $('[data-splitter]');
+    if (!separator) return;
+    if (!E.splitLoaded) {
+      E.splitLoaded = true;
+      try {
+        const stored = Number(localStorage.getItem('storefront-editor-split-v1'));
+        if (stored) E.split = stored;
+      } catch (_) {}
+      setSplit(E.split, false);
+    }
+    separator.onpointerdown = (event) => {
+      if (event.target.closest('button') || matchMedia('(max-width: 900px)').matches) return;
+      const workspace = $('.sfe-workspace');
+      separator.setPointerCapture?.(event.pointerId);
+      separator.classList.add('is-dragging');
+      const move = (next) => {
+        const box = workspace.getBoundingClientRect();
+        setSplit(((next.clientX - box.left) / box.width) * 100);
+      };
+      const stop = () => {
+        separator.classList.remove('is-dragging');
+        separator.onpointermove = separator.onpointerup = separator.onpointercancel = null;
+      };
+      separator.onpointermove = move;
+      separator.onpointerup = stop;
+      separator.onpointercancel = stop;
+      event.preventDefault();
+    };
+    separator.onkeydown = (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home'].includes(event.key)) return;
+      event.preventDefault();
+      setSplit(event.key === 'Home' ? 65 : E.split + (event.key === 'ArrowRight' ? 2 : -2));
+    };
   }
   function pane(value) {
     if (value === 'sections') E.outlineOpen = !E.outlineOpen;
@@ -501,6 +702,7 @@
       b.setAttribute('aria-pressed', String(b.dataset.pane === 'sections' ? E.outlineOpen : b.dataset.pane === E.pane));
       if (b.dataset.pane === 'sections') b.setAttribute('aria-expanded', String(E.outlineOpen));
     });
+    if (E.outlineOpen) closeSearch();
     requestAnimationFrame(fit);
   }
   function viewport() {
@@ -743,10 +945,13 @@
         html += `<details class="sfe-details"><summary>عملیات بخش</summary>${btn('duplicate', 'کپی بخش')}${btn('up', 'بالاتر')}${btn('down', 'پایین‌تر')}${btn('delete', 'حذف بخش')}</details>`;
     } else {
       name = 'انتخاب بخش';
-      html = '<div class="sfe-help">یک بخش را از فهرست یا پیش‌نمایش انتخاب کنید.</div>';
+      html = '<div class="sfe-help">برای شروع، بخشی از پیش‌نمایش یا فهرست بخش‌ها را انتخاب کن.</div>';
     }
+    const isHidden = s ? structure().hidden.some((row) => row.id === s.id) : false,
+      path = E.activeSection === '__theme' ? 'فروشگاه ← هویت بصری' : 'صفحه اصلی ← ' + name,
+      stateLabel = E.activeSection === '__theme' ? 'عمومی' : isHidden ? 'پنهان' : 'نمایش داده می‌شود';
     $('[data-inspector]').innerHTML =
-      `<div class="sfe-pane-head"><strong>${esc(name)}</strong><span>تنظیمات بخش انتخاب‌شده</span></div>${s ? '<div class="sfe-section-notice" data-section-notice role="status" hidden></div>' : ''}${html}`;
+      `<div class="sfe-pane-head"><span class="sfe-breadcrumb">${esc(path)}</span><div><strong>${esc(name)}</strong><span class="sfe-section-state${isHidden ? ' is-hidden' : ''}">${stateLabel}</span></div></div>${s ? '<div class="sfe-section-notice" data-section-notice role="status" hidden></div>' : ''}${html}`;
     sectionNotice();
   }
   function status() {
@@ -767,6 +972,15 @@
     $('[data-publish-status]').textContent = changes.length
       ? fa(changes.length) + ' مورد منتشرنشده'
       : 'هماهنگ با نسخه زنده';
+    const toolbar = $('[data-toolbar-status]');
+    if (toolbar)
+      toolbar.textContent = E.saving
+        ? 'در حال ذخیره…'
+        : E.error
+          ? 'ذخیره ناموفق'
+          : dirty()
+            ? 'تغییر ذخیره‌نشده'
+            : 'ذخیره شد';
     $('[data-action=undo]').disabled = !E.undo.length;
     $('[data-action=redo]').disabled = !E.redo.length;
     ['save', 'review'].forEach(
@@ -835,8 +1049,12 @@
     }
   }
   function dialog(name, html, footer = '') {
+    closeSearch();
     const overlay = $('[data-overlay]');
-    if (overlay.hidden) E.focus = document.activeElement;
+    if (overlay.hidden) {
+      E.focus = E.dialogFocusOverride || document.activeElement;
+      E.dialogFocusOverride = null;
+    }
     const sameDialog = !overlay.hidden && $('#sfe-dialog-title').textContent === name;
     E.modalEpoch++;
     E.modalBack = null;
@@ -867,6 +1085,46 @@
     if (overlay) overlay.hidden = true;
     modalBackground(false);
     if (E.focus?.isConnected) E.focus.focus({ preventScroll: true });
+  }
+  function goBack() {
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    if (/\/storefront-editor\.html$/.test(location.pathname)) location.href = 'index.html#/settings';
+    else location.hash = '#/settings';
+  }
+  function requestExit() {
+    if (!dirty()) return goBack();
+    if (E.orientationLocked) {
+      backup();
+      if (window.confirm('تغییرات ذخیره‌نشده داری. از ویرایشگر خارج می‌شوی؟')) goBack();
+      return;
+    }
+    dialog(
+      'خروج از ویرایشگر',
+      '<p>بخشی از تغییرات هنوز روی سرور ذخیره نشده است. می‌توانی آن‌ها را ذخیره کنی یا به ویرایش ادامه بدهی.</p>',
+      btn('close', 'ادامه ویرایش') +
+        btn('discard-exit', 'خروج بدون ذخیره') +
+        btn('save-exit', 'ذخیره و خروج', true),
+    );
+  }
+  function updateFullscreenButton() {
+    if (!E.root) return;
+    const active = !!document.fullscreenElement;
+    $$('[data-action="fullscreen"]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(active));
+      button.setAttribute('aria-label', active ? 'خروج از حالت تمام‌صفحه' : 'ورود به حالت تمام‌صفحه');
+      const label = button.querySelector('span:last-child');
+      if (label && !label.matches('.sfe-tool-icon')) label.textContent = active ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه';
+      else if (!button.querySelector('svg')) button.textContent = active ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه';
+    });
+  }
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await (E.root?.requestFullscreen?.() || document.documentElement.requestFullscreen?.());
+    } catch (_) {
+      tell('مرورگر اجازهٔ تمام‌صفحه را نداد؛ ویرایشگر همچنان تمام فضای صفحه را در اختیار دارد.');
+    }
+    updateFullscreenButton();
   }
   function differences(changes) {
     const names = {
@@ -1190,7 +1448,8 @@
     requestAnimationFrame(fit);
     E.previewTimer = setTimeout(() => {
       try {
-        const s = E.previewVersion || snap();
+        const s = E.previewVersion || (E.previewSource === 'live' ? E.published : snap());
+        if (!s) return;
         E.iframe?.contentWindow?.postMessage(
           {
             type: 'storefront-preview-config',
@@ -1202,6 +1461,29 @@
         );
       } catch (_) {}
     }, 120);
+  }
+  function setPreviewSource(source) {
+    E.previewSource = source === 'live' ? 'live' : 'draft';
+    E.previewVersion = null;
+    const root = $('[data-storefront-workbench]'),
+      label = $('[data-preview-label]');
+    root.dataset.previewSource = E.previewSource;
+    $$('[data-preview-source]').forEach((button) =>
+      button.setAttribute('aria-pressed', String(button.dataset.previewSource === E.previewSource)),
+    );
+    if (label) label.textContent = E.previewSource === 'live' ? 'نسخه منتشرشده' : 'پیش‌نویس';
+    $('[data-version-bar]').hidden = true;
+    E.previewContentHeight = 0;
+    preview();
+  }
+  function setPreviewMode(mode) {
+    E.previewMode = mode === 'view' ? 'view' : 'edit';
+    const root = $('[data-storefront-workbench]');
+    root.dataset.previewMode = E.previewMode;
+    $$('[data-preview-mode]').forEach((button) =>
+      button.setAttribute('aria-pressed', String(button.dataset.previewMode === E.previewMode)),
+    );
+    highlight();
   }
   function bridge() {
     const frame = E.iframe;
@@ -1220,7 +1502,7 @@
           const style = doc.createElement('style');
           style.id = 'sfe-inspector-style';
           style.textContent =
-            '[data-sfe-section]{scroll-margin-top:80px!important}[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px}';
+            '[data-sfe-section]{scroll-margin-top:80px!important}[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px;position:relative!important}[data-sfe-selected]::before{content:attr(data-sfe-selected-label);position:absolute!important;z-index:2147483646!important;top:4px!important;right:4px!important;background:#7354c9!important;color:#fff!important;border-radius:6px!important;padding:4px 8px!important;font:600 11px/1.5 Tahoma,sans-serif!important;pointer-events:none!important}';
           doc.head.appendChild(style);
         }
         let outlineFrame = 0;
@@ -1233,8 +1515,15 @@
               type: node.dataset.sfeType,
               visible: node.getClientRects().length > 0 && win.getComputedStyle(node).visibility !== 'hidden',
             }));
+            if (E.zoomMode !== 'fit' || !E.previewContentHeight)
+              E.previewContentHeight = Math.max(
+                600,
+                doc.documentElement?.scrollHeight || 0,
+                doc.body?.scrollHeight || 0,
+              );
             outline();
             highlight();
+            fit();
           });
         };
         const bind = () => {
@@ -1273,7 +1562,7 @@
             'click',
             (e) => {
               const node = e.target.closest('[data-sfe-section]');
-              if (node) {
+              if (node && E.previewMode === 'edit') {
                 e.preventDefault();
                 e.stopPropagation();
                 choose(node.dataset.sfeSection);
@@ -1297,10 +1586,14 @@
       if (!doc) return;
       const node = doc.querySelector('[data-sfe-section="' + CSS.escape(E.activeSection || '') + '"]');
       doc.querySelectorAll('[data-sfe-selected]').forEach((n) => {
-        if (n !== node) n.removeAttribute('data-sfe-selected');
+        if (n !== node || E.previewMode !== 'edit') {
+          n.removeAttribute('data-sfe-selected');
+          n.removeAttribute('data-sfe-selected-label');
+        }
       });
-      if (node) {
+      if (node && E.previewMode === 'edit') {
         if (!node.hasAttribute('data-sfe-selected')) node.setAttribute('data-sfe-selected', '');
+        node.setAttribute('data-sfe-selected-label', title(active()) || N[node.dataset.sfeType] || 'بخش انتخاب‌شده');
         if (E.lastPreviewSection !== E.activeSection && E.pendingPreviewFocus !== E.activeSection) {
           const id = E.activeSection,
             frame = E.iframe,
@@ -1389,7 +1682,7 @@
     $('[data-link-search]').oninput = (e) =>
       $$('[data-link]').forEach((b) => (b.hidden = !b.textContent.includes(e.target.value)));
   }
-  function products() {
+  function products(initialQuery = '') {
     const s = active();
     if (!s) return;
     E.selectedProducts = (s.settings?.productIds || []).slice();
@@ -1398,6 +1691,7 @@
       `<div class="sfe-picker-tools"><input type="search" data-product-query placeholder="جستجوی محصول"><select data-category><option value="">همه دسته‌ها</option>${E.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><label class="sfe-check"><input type="checkbox" data-stock>فقط موجود</label></div><div data-picked></div><div data-products></div>`,
       btn('close', 'انصراف') + btn('apply-products', 'اعمال انتخاب', true),
     );
+    $('[data-product-query]').value = initialQuery;
     const draw = () => {
       const q = $('[data-product-query]').value.trim().toLowerCase(),
         cat = $('[data-category]').value,
@@ -1560,17 +1854,18 @@
     form.append('file', file);
     return sellerApiFetch('/storefront/media/upload', { method: 'POST', body: form });
   }
-  async function media(kind = 'all', chooseMedia = null, onCancel = null) {
+  async function media(kind = 'all', chooseMedia = null, onCancel = null, initialQuery = '') {
     E.mediaKind = kind;
     E.mediaChoose = chooseMedia;
     E.mediaPickKind = chooseMedia && kind !== 'all' ? kind : null;
-    E.mediaQuery = '';
+    E.mediaQuery = initialQuery;
     dialog(
       'کتابخانه رسانه',
       `<div class="sfe-picker-tools"><input type="search" data-media-query placeholder="جستجوی نام یا توضیح"><select data-media-kind><option value="all">همه رسانه‌ها</option><option value="image">تصاویر</option><option value="video">ویدیوها</option></select></div><label class="sfe-upload">انتخاب فایل برای آپلود<input type="file" data-media-file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label><p class="sfe-help">تصویر JPG/PNG/WebP تا ۸ مگابایت؛ فیلم MP4/WebM/MOV تا ۲۵ مگابایت.</p><div data-upload-status aria-live="polite"></div><div class="sfe-media-grid" data-media-grid>در حال دریافت رسانه‌ها…</div>`,
     );
     E.modalBack = onCancel;
     const epoch = E.modalEpoch;
+    $('[data-media-query]').value = initialQuery;
     $('[data-media-kind]').value = kind;
     $('[data-media-kind]').onchange = () => {
       E.mediaKind = $('[data-media-kind]').value;
@@ -1792,6 +2087,7 @@
   }
   function click(event) {
     if (!routeActive() || !E.root?.querySelector('[data-storefront-workbench]')) return;
+    if (E.searchOpen && !event.target.closest('.sfe-global-search')) closeSearch();
     const b = event.target.closest('button');
     if (!b || !E.root.contains(b)) return;
     if (E.orientationLocked && !b.closest('[data-orientation-gate]')) return;
@@ -1800,12 +2096,16 @@
       $('[data-pane="sections"]').focus({ preventScroll: true });
       return;
     }
+    if (b.closest('.sfe-outline') && E.outlineOpen && !b.dataset.select) {
+      E.dialogFocusOverride = $('[data-pane="sections"]');
+      pane(E.pane);
+    }
     if (window.StorefrontEditorStudio?.handle(b)) return;
     if (b.dataset.findSection) {
-      close();
+      closeSearch();
       if (b.dataset.findScope) E.scope = b.dataset.findScope;
       choose(b.dataset.findSection);
-      E.tab = b.dataset.findTab;
+      E.tab = b.dataset.findTab || 'content';
       inspector();
       const field = E.root.querySelector('[data-field="' + CSS.escape(b.dataset.findField) + '"]');
       if (field) {
@@ -1815,8 +2115,35 @@
       }
       return;
     }
+    if (b.dataset.searchAction) {
+      const action = b.dataset.searchAction,
+        query = b.dataset.searchQuery || '';
+      closeSearch();
+      if (action === 'menu') return pane('sections');
+      if (action === 'products') {
+        const section = rows().find((s) => s.type === 'best-sellers') || rows().find((s) => s.type === 'campaign');
+        if (section) choose(section.id);
+        products(query);
+        return;
+      }
+      if (action === 'lessons' || action === 'categories') {
+        const target = E.root.querySelector(
+          `[data-action="${action === 'lessons' ? 'studio-library' : 'studio-categories'}"]`,
+        );
+        target?.click();
+        return;
+      }
+      if (action === 'media-video') {
+        return media('video', null, null, query);
+      }
+      if (action === 'media') return media();
+      if (action === 'versions') return versions();
+    }
     if (b.dataset.select) return choose(b.dataset.select);
     if (b.dataset.pane) return pane(b.dataset.pane);
+    if (b.dataset.zoomMode) return setZoom(b.dataset.zoomMode);
+    if (b.dataset.previewSource) return setPreviewSource(b.dataset.previewSource);
+    if (b.dataset.previewMode) return setPreviewMode(b.dataset.previewMode);
     if (b.dataset.tab) {
       E.tab = b.dataset.tab;
       return inspector();
@@ -1827,6 +2154,7 @@
     }
     if (b.dataset.device) {
       E.device = b.dataset.device;
+      E.previewContentHeight = 0;
       $('[data-frame-wrap]').dataset.device = E.device;
       $$('[data-device]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       fit();
@@ -1840,9 +2168,20 @@
     }
     const a = E.assets.find((a) => Number(a.id) === Number(b.dataset.id));
     const actions = {
-      back: () => {
-        location.hash = '#/settings';
+      back: requestExit,
+      fullscreen: toggleFullscreen,
+      'search-settings': searchSettings,
+      'search-clear': () => {
+        const input = $('[data-settings-query]');
+        input.value = '';
+        E.searchOpen = true;
+        renderSearchResults();
+        input.focus({ preventScroll: true });
       },
+      'zoom-in': () => setZoom('manual', E.zoom + 0.1),
+      'zoom-out': () => setZoom('manual', E.zoom - 0.1),
+      'focus-section': focusSection,
+      'reset-split': () => setSplit(65),
       undo: () => undo(),
       redo: () => undo(true),
       save: () => save(),
@@ -1861,7 +2200,18 @@
       media: () => media(),
       videos,
       links,
-      'search-settings': searchSettings,
+      'save-exit': async () => {
+        if (await save(true)) goBack();
+      },
+      'discard-exit': () => {
+        clearTimeout(E.timer);
+        E.config = M.clone(E.server.config);
+        E.theme = M.clone(E.server.theme);
+        E.undo = [];
+        E.redo = [];
+        localStorage.removeItem(storageKey());
+        goBack();
+      },
       'preflight-section': () => {
         close();
         choose(b.dataset.sectionId);
@@ -2070,10 +2420,11 @@
     view.innerHTML = '<div class="sfe-loading" role="status">در حال آماده‌سازی ویرایشگر…</div>';
     E.promise = (async () => {
       try {
-        const [page, products, categories] = await Promise.all([
+        const [page, products, categories, assets] = await Promise.all([
           sellerApiFetch(endpoint),
           sellerApiFetch('/products'),
           sellerApiFetch('/categories'),
+          sellerApiFetch('/storefront/media').catch(() => []),
         ]);
         E.page = page;
         E.config = M.clone(page.config);
@@ -2081,6 +2432,7 @@
         E.server = snap();
         E.products = products || [];
         E.categories = categories || [];
+        E.assets = assets || [];
         if (page.publishedConfig)
           E.published = M.snapshot(page.publishedConfig, page.publishedTheme || page.theme);
         else {
@@ -2120,8 +2472,15 @@
   screen.orientation?.addEventListener('change', viewport);
   window.visualViewport?.addEventListener('resize', viewport);
   window.visualViewport?.addEventListener('scroll', viewport);
+  document.addEventListener('fullscreenchange', () => {
+    updateFullscreenButton();
+    requestAnimationFrame(fit);
+  });
   window.addEventListener('hashchange', () => {
-    if (!routeActive() && E.root) E.root.classList.remove('sfe-host');
+    if (!routeActive() && E.root) {
+      E.root.classList.remove('sfe-host');
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    }
   });
   window.addEventListener('beforeunload', (event) => {
     if (E.config && dirty()) {
@@ -2157,6 +2516,29 @@
         }
       }
       return;
+    }
+    if (E.searchOpen) {
+      const results = $$('[data-settings-results] .sfe-search-result'),
+        current = results.indexOf(document.activeElement);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSearch();
+        $('[data-settings-query]')?.focus({ preventScroll: true });
+        return;
+      }
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const next = event.key === 'ArrowDown'
+          ? Math.min(results.length - 1, current + 1)
+          : Math.max(0, current < 0 ? results.length - 1 : current - 1);
+        results[next]?.focus({ preventScroll: true });
+        return;
+      }
+      if (event.key === 'Enter' && event.target.matches('[data-settings-query]') && results[0]) {
+        event.preventDefault();
+        results[0].click();
+        return;
+      }
     }
     if (event.key === 'Escape' && E.outlineOpen && $('[data-overlay]').hidden) {
       event.preventDefault();

@@ -83,7 +83,7 @@
       }) || groups[groups.length - 1];
       if (!target) return;
       const link = document.createElement('a');
-      link.href = '#/storefront-editor';
+      link.href = 'storefront-editor.html#/storefront-editor';
       link.className = 'settings-row';
       link.dataset.storefrontEditorLink = '1';
       link.style.cssText = 'text-decoration:none;color:inherit;';

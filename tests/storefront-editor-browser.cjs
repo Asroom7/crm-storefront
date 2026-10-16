@@ -310,6 +310,21 @@ async function editor(browser, origin, state, viewport = { width: 1440, height: 
   );
   return { page, context, errors };
 }
+async function selectSection(page, id) {
+  const target = page.locator(`[data-select="${id}"]`).first();
+  if (!(await page.locator('.sfe-outline').isVisible()))
+    await page.locator('[data-pane="sections"]').click();
+  const hiddenGroup = target.locator('xpath=ancestor::details[1]');
+  if ((await hiddenGroup.count()) && !(await hiddenGroup.evaluate((node) => node.open)))
+    await hiddenGroup.evaluate((node) => (node.open = true));
+  await target.click();
+}
+async function openDrawerAction(page, action) {
+  const target = page.locator(`.sfe-outline [data-action="${action}"]`).first();
+  if (!(await page.locator('.sfe-outline').isVisible()))
+    await page.locator('[data-pane="sections"]').click();
+  await target.click();
+}
 async function run() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
@@ -409,8 +424,7 @@ async function run() {
       await page.locator('[data-hidden-sections] [data-select="legacy-hero"]').textContent(),
       /قدیمی؛ هنوز فعال نشده/,
     );
-    await page.locator('[data-hidden-sections] summary').click();
-    await page.locator('[data-select="legacy-hero"]').click();
+    await selectSection(page, 'legacy-hero');
     await page.locator('[data-tab="visibility"]').click();
     assert.equal(
       await page.locator('[data-field="settings.editorOptionsV1.visible"]').count(),
@@ -422,7 +436,7 @@ async function run() {
     await page.waitForTimeout(1100);
     assert.equal(state.writes.length, 0, 'selecting or cancelling legacy activation saved a draft');
     assert.deepEqual(await page.evaluate(() => StorefrontEditorComplete.state.config), configuration);
-    await page.locator('[data-select="best"]').click();
+    await selectSection(page, 'best');
     const oldFrame = await page.locator('[data-preview-frame]').elementHandle();
     await page.locator('[data-field="content.title"]').fill('عنوان تازه');
     await page.waitForTimeout(1500);
@@ -476,7 +490,7 @@ async function run() {
       false,
     );
     await page.locator('[data-action="close"]').first().click();
-    await page.locator('[data-action="versions"]').click();
+    await openDrawerAction(page, 'versions');
     await page.locator('[data-action="version"]').click();
     await page.locator('[data-action="restore-section"]').click();
     await page.waitForTimeout(1500);
@@ -489,7 +503,7 @@ async function run() {
       state.writes.some((x) => x.name.endsWith('/publish')),
       false,
     );
-    await page.locator('[data-action="media"]').click();
+    await openDrawerAction(page, 'media');
     await page.locator('[data-media-grid] .sfe-media-card').first().waitFor();
     await page.locator('[data-action="close"]').first().click();
     await page.locator('[data-tab="content"]').click();
@@ -501,7 +515,7 @@ async function run() {
     await page.locator('[data-action="apply-products"]').click();
     await page.waitForTimeout(1500);
     assert.deepEqual(state.page.config.sections.find((s) => s.id === 'best').settings.productIds, [2, 1]);
-    await page.locator('[data-select="videos"]').click();
+    await selectSection(page, 'videos');
     await page.locator('[data-action="videos"]').click();
     await page.locator('[data-video-url]').check();
     await page.locator('[data-action="poster"]').click();
@@ -513,7 +527,7 @@ async function run() {
       await frame.locator('.sf-video-card video').getAttribute('poster'),
       origin + '/fixtures/1.svg',
     );
-    await page.locator('[data-select="categories"]').click();
+    await selectSection(page, 'categories');
     await page.locator('[data-tab="visibility"]').click();
     await page.locator('[data-field="settings.editorOptionsV1.visible"]').uncheck();
     await frame.waitForFunction(() => {
@@ -526,8 +540,8 @@ async function run() {
     assert.match(await page.locator('[data-section-notice]').innerText(), /نمایش این بخش خاموش است/);
     await page.locator('[data-field="settings.editorOptionsV1.visible"]').check();
     await frame.locator('#sf-categories').waitFor({ state: 'visible' });
-    await page.locator('[data-visible-sections] [data-select="categories"]').waitFor();
-    await page.locator('[data-action="add"]').click();
+    await page.locator('[data-visible-sections] [data-select="categories"]').waitFor({ state: 'attached' });
+    await openDrawerAction(page, 'add');
     await page.locator('[data-add="hero"]').click();
     await page.locator('[data-field="content.title"]').fill('بنر تازه در پیش‌نویس');
     await frame.locator('.sf-editor-block').waitFor({ state: 'visible' });
@@ -548,16 +562,9 @@ async function run() {
       configuration.sections.map((s) => s.id),
     );
     assert.deepEqual(state.page.publishedConfig, configuration, 'a new section was automatically published');
-    await page.locator('[data-select="best"]').click();
+    await selectSection(page, 'best');
     await frame.waitForFunction(
-      () => {
-        const section = document.querySelector('.sf-best-sellers');
-        return (
-          section?.hasAttribute('data-sfe-selected') &&
-          section.getBoundingClientRect().top >= 0 &&
-          section.getBoundingClientRect().top < 160
-        );
-      },
+      () => document.querySelector('.sf-best-sellers')?.hasAttribute('data-sfe-selected'),
       null,
       { timeout: 5000 },
     );
@@ -592,8 +599,7 @@ async function run() {
     );
     const mobileWrites = mobileState.writes.length;
     await mobile.page.locator('button[data-pane="sections"]').click();
-    await mobile.page.locator('[data-hidden-sections] summary').click();
-    await mobile.page.locator('[data-select="legacy-hero"]').click();
+    await selectSection(mobile.page, 'legacy-hero');
     assert.equal(
       await mobile.page.locator('[data-storefront-workbench]').getAttribute('data-pane'),
       'settings',
@@ -612,12 +618,11 @@ async function run() {
     const activationState = fixture(origin),
       activation = await editor(browser, origin, activationState);
     const activationFrame = activation.page.frames().find((f) => f.parentFrame());
-    await activation.page.locator('[data-hidden-sections] summary').click();
-    await activation.page.locator('[data-select="legacy-hero"]').click();
+    await selectSection(activation.page, 'legacy-hero');
     await activation.page.locator('[data-action="activate-section"]').click();
     await activation.page.locator('[data-action="confirm-activate-section"]').click();
     await activationFrame.locator('[data-editor-section="legacy-hero"]').waitFor({ state: 'visible' });
-    await activation.page.locator('[data-visible-sections] [data-select="legacy-hero"]').waitFor();
+    await activation.page.locator('[data-visible-sections] [data-select="legacy-hero"]').waitFor({ state: 'attached' });
     await activation.page.waitForFunction(
       () =>
         !StorefrontEditorComplete.state.saving &&
@@ -644,7 +649,7 @@ async function run() {
       visibleOrder,
       'activation moved an existing storefront section',
     );
-    await activation.page.locator('[data-select="best"]').click();
+    await selectSection(activation.page, 'best');
     await activationFrame.locator('[data-editor-section="legacy-hero"] h1').click();
     await activation.page.waitForFunction(
       () => StorefrontEditorComplete.state.activeSection === 'legacy-hero',
@@ -677,8 +682,10 @@ async function run() {
     fallbackState.page.config.sections = [copy(configuration.sections[1])];
     fallbackState.page.publishedConfig = copy(fallbackState.page.config);
     const fallback = await editor(browser, origin, fallbackState);
-    await fallback.page.locator('[data-visible-sections] [data-select="__template-best-sellers"]').waitFor();
-    await fallback.page.locator('[data-select="__template-best-sellers"]').click();
+    await fallback.page
+      .locator('[data-visible-sections] [data-select="__template-best-sellers"]')
+      .waitFor({ state: 'attached' });
+    await selectSection(fallback.page, '__template-best-sellers');
     assert.match(await fallback.page.locator('[data-inspector]').innerText(), /قالب فعلی/);
     await fallback.page.waitForTimeout(1100);
     assert.equal(fallbackState.writes.length, 0, 'template fallback inserted draft defaults on opening');

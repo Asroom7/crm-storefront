@@ -27,7 +27,7 @@ async function checkSplit(p) {
   await p.waitForFunction(() => {
     const canvas = document.querySelector('.sfe-canvas').getBoundingClientRect(),
       settings = document.querySelector('.sfe-inspector').getBoundingClientRect();
-    return settings.width > 0 && settings.right <= canvas.left + 1 && Math.abs(settings.top - canvas.top) < 2;
+    return settings.width > 0 && canvas.right <= settings.left + 1 && Math.abs(settings.top - canvas.top) < 2;
   });
   assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   assert.equal(
@@ -41,6 +41,10 @@ async function checkSplit(p) {
       frame = document.querySelector('[data-frame-wrap]').getBoundingClientRect();
     return frame.bottom <= stage.bottom + 1 && stage.bottom <= canvas.bottom + 1;
   });
+}
+async function openDrawerTool(p, action) {
+  await p.locator('[data-pane="sections"]').click();
+  await p.locator(`.sfe-outline [data-action="${action}"]`).click();
 }
 (async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -80,7 +84,7 @@ async function checkSplit(p) {
     await settle(p);
     const draft = await snapshot(p),
       writes = state.writes.length;
-    await p.locator('.sfe-content-tools [data-action="studio-library"]').click();
+    await openDrawerTool(p, 'studio-library');
     await p.locator('[data-studio="lesson-new"]').click();
     await p.locator('[data-studio-field="title"]').fill('فرم ذخیره‌نشده هنگام چرخش');
     await p.setViewportSize({ width: 390, height: 844 });
@@ -165,7 +169,7 @@ async function checkSplit(p) {
     });
     await tp.setViewportSize({ width: 844, height: 390 });
     await tp.locator('[data-orientation-gate]').waitFor({ state: 'hidden' });
-    await tp.locator('.sfe-content-tools [data-action="studio-library"]').click();
+    await openDrawerTool(tp, 'studio-library');
     await tp.locator('[data-studio="lesson-new"]').click();
     await tp.locator('[data-studio-field="title"]').fill('حفظ فرم با بازشدن صفحه‌کلید');
     await tp.evaluate(() => {
