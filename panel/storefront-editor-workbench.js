@@ -505,6 +505,8 @@
   }
   function viewport() {
     if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
+    E.root.style.setProperty('--sfe-usable-height', (window.visualViewport?.height || innerHeight) + 'px');
+    E.root.style.setProperty('--sfe-viewport-top', (window.visualViewport?.offsetTop || 0) + 'px');
     const touch = navigator.maxTouchPoints > 0;
     const type = screen.orientation?.type;
     const physicalPortrait = touch && type
@@ -2116,6 +2118,8 @@
   });
   window.addEventListener('orientationchange', viewport);
   screen.orientation?.addEventListener('change', viewport);
+  window.visualViewport?.addEventListener('resize', viewport);
+  window.visualViewport?.addEventListener('scroll', viewport);
   window.addEventListener('hashchange', () => {
     if (!routeActive() && E.root) E.root.classList.remove('sfe-host');
   });

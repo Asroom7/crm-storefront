@@ -168,7 +168,11 @@ async function checkSplit(p) {
     await tp.locator('.sfe-content-tools [data-action="studio-library"]').click();
     await tp.locator('[data-studio="lesson-new"]').click();
     await tp.locator('[data-studio-field="title"]').fill('حفظ فرم با بازشدن صفحه‌کلید');
-    await tp.setViewportSize({ width: 844, height: 220 });
+    await tp.evaluate(() => {
+      Object.defineProperty(visualViewport, 'height', { configurable: true, get: () => 220 });
+      visualViewport.dispatchEvent(new Event('resize'));
+    });
+    assert.equal(await tp.evaluate(() => innerHeight), 390, 'keyboard test resized the layout viewport');
     assert.equal(await tp.locator('[data-orientation-gate]').isVisible(), false);
     const footer = await tp.locator('.sfe-dialog > footer').boundingBox();
     assert.ok(footer.y + footer.height <= 220);

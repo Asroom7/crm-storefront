@@ -10,7 +10,9 @@ body:has(.view.sfe-host) #bottomNav {
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
-  height: 100dvh !important;
+  top: var(--sfe-viewport-top, 0px) !important;
+  bottom: auto !important;
+  height: var(--sfe-usable-height, 100dvh) !important;
   max-width: none !important;
   margin: 0 !important;
   padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
@@ -600,6 +602,9 @@ html[data-theme='dark'] .sfe-workbench {
 .sfe-dialog-overlay {
   position: fixed;
   inset: 0;
+  top: var(--sfe-viewport-top, 0px);
+  bottom: auto;
+  height: var(--sfe-usable-height, 100dvh);
   z-index: 2000;
   background: rgba(24, 20, 35, 0.44);
   display: flex;
@@ -610,7 +615,7 @@ html[data-theme='dark'] .sfe-workbench {
 }
 .sfe-dialog {
   width: min(100%, 760px);
-  max-height: 88dvh;
+  max-height: min(88dvh, calc(var(--sfe-usable-height, 100dvh) - 40px));
   background: var(--sfe-paper);
   color: var(--sfe-ink);
   border: 1px solid var(--sfe-line);
@@ -1215,6 +1220,9 @@ body:has(.sfe-host [data-overlay]:not([hidden])) {
 .sfe-orientation-gate {
   position: fixed;
   inset: 0;
+  top: var(--sfe-viewport-top, 0px);
+  bottom: auto;
+  height: var(--sfe-usable-height, 100dvh);
   z-index: 5000;
   padding: 24px;
   overflow: auto;
@@ -1305,7 +1313,7 @@ body:has(.sfe-host [data-overlay]:not([hidden])) {
     padding: 8px;
   }
   .sfe-dialog {
-    max-height: calc(100dvh - 16px);
+    max-height: calc(var(--sfe-usable-height, 100dvh) - 16px);
   }
   .sfe-dialog > header,
   .sfe-dialog > footer {
