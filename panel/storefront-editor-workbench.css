@@ -1209,3 +1209,154 @@ html[data-theme='dark'] .sfe-workbench {
     overflow: hidden;
   }
 }
+
+/* Distinct content tools and compact publishing controls, confined to this route. */
+.sfe-workbench .sfe-content-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--sfe-bg);
+  border-bottom: 1px solid var(--sfe-line);
+}
+.sfe-workbench .sfe-content-tools > .sfe-button {
+  justify-content: flex-start;
+  text-align: right;
+  min-width: 0;
+  min-height: 62px;
+  gap: 10px;
+}
+.sfe-content-tools .sfe-tool-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--sfe-tint);
+  color: var(--sfe-accent);
+}
+.sfe-content-tools strong,
+.sfe-content-tools small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.sfe-workbench .sfe-content-tools small {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.sfe-workbench .sfe-button:hover:not(:disabled) {
+  border-color: var(--sfe-accent);
+}
+.sfe-workbench .sfe-outline-row[data-section-type='campaign'] .sfe-section-mark {
+  color: light-dark(#b83d68, #ffa4c5);
+  background: light-dark(#fff0f5, #422735);
+}
+.sfe-workbench .sfe-outline-row[data-section-type='videos'] .sfe-section-mark {
+  color: var(--sfe-accent);
+  background: var(--sfe-tint);
+}
+.sfe-workbench .sfe-section-mark {
+  width: 30px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.sfe-workbench .sfe-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.sfe-workbench .sfe-studio-card .sfe-card-actions > .sfe-button {
+  margin-top: 5px;
+}
+.sfe-workbench
+  :is(
+    [data-studio='lesson-delete'],
+    [data-studio='category-delete'],
+    [data-studio='menu-delete'],
+    [data-action='delete']
+  ) {
+  color: light-dark(#a32d3f, #ffb0be);
+}
+.sfe-workbench .sfe-dialog > header,
+.sfe-workbench .sfe-dialog > footer {
+  flex-shrink: 0;
+}
+.sfe-workbench .sfe-dialog h3,
+.sfe-workbench .sfe-selected-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sfe-workbench .sfe-dialog [data-dialog-body] {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding: 14px;
+}
+body:has(.sfe-host [data-overlay]:not([hidden])) {
+  overflow: hidden;
+}
+@media (min-width: 851px) {
+  .sfe-workbench .sfe-workspace {
+    height: calc(100dvh - 386px);
+  }
+  .sfe-workbench .sfe-canvas {
+    display: flex;
+    flex-direction: column;
+  }
+  .sfe-workbench .sfe-canvas-bar,
+  .sfe-workbench .sfe-version-preview {
+    flex-shrink: 0;
+  }
+  .sfe-workbench .sfe-preview-stage {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+@media (max-width: 850px) {
+  .sfe-workbench .sfe-topbar .sfe-actions {
+    display: grid;
+    grid-template-columns: minmax(52px, 1fr) 44px 44px minmax(58px, 1fr) minmax(48px, 1fr);
+    gap: 6px;
+    align-items: stretch;
+  }
+  .sfe-workbench .sfe-actions > .sfe-button {
+    min-width: 0;
+    width: auto;
+    margin: 0 !important;
+    padding-inline: 4px;
+  }
+  .sfe-workbench .sfe-actions [data-action='save'] {
+    grid-column: 1 / 4;
+  }
+  .sfe-workbench .sfe-actions [data-action='review'] {
+    grid-column: 4 / -1;
+  }
+  .sfe-workbench .sfe-content-tools {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+}
+@media (max-width: 600px) {
+  .sfe-workbench .sfe-content-tools > .sfe-button {
+    justify-content: center;
+    text-align: center;
+    min-height: 50px;
+    padding: 7px 5px;
+    font-size: 11px;
+  }
+  .sfe-workbench .sfe-content-tools .sfe-tool-icon,
+  .sfe-workbench .sfe-content-tools small {
+    display: none;
+  }
+  .sfe-workbench .sfe-studio-card > div > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .sfe-workbench .sfe-priority input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

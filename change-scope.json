@@ -1,11 +1,8 @@
 {
-  "task": "storefront-content-studio",
+  "task": "storefront-editor-usability",
   "allowed_locked_paths": [
-    "panel/index.html",
-    "index.html",
-    "storefront-primary-flow.js",
-    "api.js"
+    "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly requested implementing the detailed content/editor expansion while preserving current public appearance and native section positions. Changes add independent educational content, category management, real server-authoritative offers and custom content blocks. Shared shell edits only load scoped modules and bump cache versions. Primary flow respects explicitly inserted managed blocks without reordering native sections. Existing configs are not migrated or saved on opening; no production content/settings/data writes are made during implementation or tests. Stable and backup branches remain untouched. api.js adds opt-in content navigation for customer pages with an existing side menu; home continues to use its scoped runtime. No navigation changes are applied to legacy configuration."
+  "note": "User explicitly requested another system/visual audit and clearer editor controls while preserving public storefront appearance and existing section positions. Changes are confined to the editor: distinct content tools, recognizable section labels, responsive toolbar, modal keyboard/focus safety and stale category-response guards. panel/index.html only updates the three edited editor asset cache versions. Public storefront renderers, global panel styles, backend, stable/backup branches and production content/data remain untouched. All write tests use intercepted APIs and dummy seller sessions."
 }
