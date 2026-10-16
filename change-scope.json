@@ -1,8 +1,9 @@
 {
-  "task": "storefront-editor-preview-outline-and-hidden-section-guidance",
+  "task": "storefront-editor-audit-fixes-preflight-and-search",
   "allowed_locked_paths": [
-    "panel/index.html"
+    "panel/index.html",
+    "index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User authorized continued improvements to the storefront editor with all current storefront appearance and section positions preserved. This phase changes only the scoped editor controller/styles, browser coverage and documentation. panel/index.html changes only the workbench JS/CSS asset versions so existing users receive the upgrade. The outline reads preview DOM order without sorting saved configuration. Legacy hidden blocks stay inactive until explicit confirmation in the draft. Public storefront code/styles, shared panel runtime and all backend files remain unchanged. No real settings, products or live content are saved or published by this code release."
+  "note": "User explicitly authorized applying the audited bugs and proposed editor improvements while preserving current storefront appearance and positions. Scoped changes fix publish/edit races, preview scrolling, media type selection, visibility overrides, managed block fields and opt-in scheduling, and add pre-publication checks and section/settings search. panel/index.html only removes the reported stray literal newline and bumps scoped editor asset versions. index.html only bumps the existing customization script version. The customization helper honors explicit editor controls; legacy schedules require scheduleEnabled and opening the editor never migrates settings. Approved storefront CSS, native section renderers, primary flow, shared panel runtime, backend code and stable/backup branches remain untouched. No production configuration or content is saved or published by this code release."
 }

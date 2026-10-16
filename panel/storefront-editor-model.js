@@ -167,6 +167,76 @@
     if (/^(?:https?:\/\/|tel:|mailto:)/i.test(raw)) return true;
     return !/^[a-z]+:|^\/\/|\\|[<>]/i.test(raw);
   }
+  function preflight(data, context = {}) {
+    const issues = validate(data).map((message) => ({ level: 'error', message }));
+    const resources = [],
+      seen = new Set();
+    const products = new Set((context.products || []).map((p) => Number(p.id)));
+    const assets = new Map((context.assets || []).map((a) => [a.url, a.kind]));
+    function addResource(row, url, kind, label) {
+      if (!url) return;
+      url = String(url);
+      let parsed;
+      try {
+        parsed = new URL(url, 'https://editor.invalid/');
+      } catch (_) {}
+      const allowed = kind === 'image' ? ['http:', 'https:'] : ['http:', 'https:', 'mailto:', 'tel:'];
+      const wrongImage =
+        kind === 'image' &&
+        (assets.get(url) === 'video' || /\.(mp4|webm|mov)(?:$|\/)/i.test(parsed?.pathname || ''));
+      if (!safeUrl(url) || !parsed || !allowed.includes(parsed.protocol) || wrongImage) {
+        issues.push({
+          level: 'error',
+          sectionId: row.id,
+          message: label + (wrongImage ? ' باید فایل تصویر باشد' : ' نشانی معتبری ندارد'),
+        });
+        return;
+      }
+      if (kind === 'link' && !/^[a-z]+:/i.test(url) && parsed.pathname.endsWith('/product-detail.html')) {
+        const id = Number(parsed.searchParams.get('id'));
+        if (!products.has(id))
+          issues.push({
+            level: 'warning',
+            sectionId: row.id,
+            message: 'محصول مقصد دکمه در فهرست فعلی موجود نیست',
+          });
+      }
+      const key = row.id + ':' + kind + ':' + url;
+      if (!seen.has(key)) {
+        seen.add(key);
+        resources.push({ sectionId: row.id, url, kind, label });
+      }
+    }
+    const native = ['search', 'videos', 'best-sellers', 'campaign', 'categories', 'footer'];
+    (Array.isArray(data?.config?.sections) ? data.config.sections : []).forEach((row) => {
+      if (!row) return;
+      const st = row.settings || {},
+        c = row.content || {},
+        options = st.editorOptionsV1 || {};
+      if (options.visible === false || (options.visible === undefined && row.enabled === false)) return;
+      if (!native.includes(row.type) && st.editorManagedV1 !== true) return;
+      const missing = (
+        Array.isArray(st.productIds) && options.selectionMode !== 'auto' ? st.productIds : []
+      ).filter((id) => !products.has(Number(id)));
+      if (missing.length)
+        issues.push({
+          level: 'warning',
+          sectionId: row.id,
+          message: missing.length.toLocaleString('fa-IR') + ' محصول انتخاب‌شده در فهرست فعلی موجود نیست',
+        });
+      if (['hero', 'banner'].includes(row.type)) {
+        const desktop = c.imageDesktopUrl || c.imageUrl;
+        addResource(row, desktop, 'image', 'تصویر دسکتاپ');
+        addResource(row, c.imageMobileUrl || desktop, 'image', 'تصویر موبایل');
+      }
+      if (c.ctaText) addResource(row, c.ctaUrl || 'products.html', 'link', 'مقصد دکمه');
+      if (row.type === 'videos' && options.videoSource === 'library')
+        (Array.isArray(st.videoUrls) ? st.videoUrls : []).forEach((url) =>
+          addResource(row, st.videoPosters?.[url], 'image', 'تصویر شروع ویدیو'),
+        );
+    });
+    return { issues, resources };
+  }
   function backupKey(sellerId) {
     return 'crm-storefront-draft:v1:' + String(sellerId);
   }
@@ -204,6 +274,7 @@
     replaceMedia,
     validate,
     safeUrl,
+    preflight,
     backupKey,
     readBackup,
   };

@@ -25,8 +25,31 @@
     Number.isFinite(Number(value)) ? Math.min(max, Math.max(min, Number(value))) : null;
   const mode = () => (matchMedia('(max-width:700px)').matches ? 'mobile' : 'desktop');
   const originalRender = home.renderLayout;
+  const hiddenDisplay = new WeakMap();
+  function setHidden(node, hidden) {
+    if (!node) return;
+    if (hidden) {
+      if (!hiddenDisplay.has(node))
+        hiddenDisplay.set(node, {
+          value: node.style.getPropertyValue('display'),
+          priority: node.style.getPropertyPriority('display'),
+        });
+      if (
+        node.style.getPropertyValue('display') !== 'none' ||
+        node.style.getPropertyPriority('display') !== 'important'
+      )
+        node.style.setProperty('display', 'none', 'important');
+    } else if (hiddenDisplay.has(node)) {
+      const previous = hiddenDisplay.get(node);
+      if (previous.value) node.style.setProperty('display', previous.value, previous.priority);
+      else node.style.removeProperty('display');
+      hiddenDisplay.delete(node);
+    }
+    if (node.hidden !== hidden) node.hidden = hidden;
+  }
   function blockHtml(block, ctx) {
     const c = block.content || {};
+    const subtitle = c.subtitle ? '<p data-editor-subtitle>' + safe(c.subtitle) + '</p>' : '';
     const image = url(
       mode() === 'mobile'
         ? c.imageMobileUrl || c.imageDesktopUrl || c.imageUrl || ''
@@ -54,6 +77,12 @@
         safe(c.subtitle || '') +
         '</p></div></div><div class="sf-product-scroll">' +
         products
+          .slice(
+            0,
+            block.settings?.limit == null
+              ? products.length
+              : (number(block.settings.limit, 1, 24) ?? products.length),
+          )
           .map(
             (p) =>
               '<a class="sf-product-card" href="product-detail.html?id=' +
@@ -78,7 +107,9 @@
         safe(block.id) +
         '"><div class="sf-trust-item"><div><strong>' +
         safe(c.title || 'مزایای فروشگاه') +
-        '</strong><p>' +
+        '</strong>' +
+        subtitle +
+        '<p>' +
         safe(c.text || '') +
         '</p></div></div></section>'
       );
@@ -88,7 +119,9 @@
         safe(block.id) +
         '"><div class="sf-support-banner"><div></div><div><h2>' +
         safe(c.title || '') +
-        '</h2><p>' +
+        '</h2>' +
+        subtitle +
+        '<p>' +
         safe(c.text || '') +
         '</p></div>' +
         button +
@@ -101,7 +134,9 @@
       safe(c.eyebrow || '') +
       '</span><h1>' +
       safe(c.title || '') +
-      '</h1><p>' +
+      '</h1>' +
+      subtitle +
+      '<p>' +
       safe(c.text || '') +
       '</p><div class="sf-hero-actions">' +
       button +
@@ -251,8 +286,11 @@
         card.style.setProperty('border-radius', number(values.cardRadius, 0, 80) + 'px', 'important');
       });
   }
+  let scheduleTimer = 0;
   function apply() {
     if (!current) return;
+    clearTimeout(scheduleTimer);
+    let nextStart = Infinity;
     applyChrome();
     const rows = (current.sections || []).filter((s) => s && home.registry[s.type]);
     const primarySeen = new Set();
@@ -265,28 +303,39 @@
       if (!node || primarySeen.has(node)) return;
       primarySeen.add(node);
       if (!options) return;
-      if (typeof options.visible === 'boolean') {
-        node.hidden = !options.visible;
-        if (!options.visible) node.style.setProperty('display', 'none', 'important');
-      }
+      const start =
+        block.type === 'campaign' && options.scheduleEnabled === true && st.startsAt
+          ? new Date(st.startsAt).getTime()
+          : NaN;
+      const now = Date.now() + (current.ctx?.clockSkewMs || 0);
+      const waiting = Number.isFinite(start) && start > now;
+      if (waiting && options.visible !== false) nextStart = Math.min(nextStart, start - now);
+      if (typeof options.visible === 'boolean' || options.scheduleEnabled === true)
+        setHidden(
+          node,
+          options.visible === false || (options.visible === undefined && block.enabled === false) || waiting,
+        );
       const values = Object.assign({}, options.shared || {}, options[mode()] || {});
       applyStyles(node, values);
       if (typeof options.showSubtitle === 'boolean')
-        node.querySelectorAll('.sf-section-head>div>p').forEach((p) => (p.hidden = !options.showSubtitle));
+        node
+          .querySelectorAll('.sf-section-head>div>p,[data-editor-subtitle]')
+          .forEach((p) => setHidden(p, !options.showSubtitle));
       if (typeof options.showPrice === 'boolean')
         node
           .querySelectorAll('.sf-product-price,.sf-pink-old-price,.sf-bestseller-old-price')
-          .forEach((p) => (p.hidden = !options.showPrice));
+          .forEach((p) => setHidden(p, !options.showPrice));
       if (typeof options.showAll === 'boolean')
         node
           .querySelectorAll('.sf-section-head>a,.sf-category-showcase-head>a')
-          .forEach((a) => (a.hidden = !options.showAll));
+          .forEach((a) => setHidden(a, !options.showAll));
       if (block.type === 'campaign' && typeof options.showTimer === 'boolean') {
         node.querySelectorAll('.sf-countdown').forEach((timer) => {
-          if (options.showTimer === false) timer.hidden = true;
+          setHidden(timer, !options.showTimer);
         });
       }
     });
+    if (Number.isFinite(nextStart)) scheduleTimer = setTimeout(apply, Math.min(nextStart + 25, 2147483647));
     const videoBlock = rows.find(
       (s) =>
         s.type === 'videos' &&
@@ -347,8 +396,8 @@
       logo.textContent = h.logoText || originalHeader.logo;
       const menu = header.querySelector('.menu-toggle'),
         cart = header.querySelector('a[href="cart.html"]');
-      if (menu) menu.hidden = h.showMenu === undefined ? originalHeader.menu : !h.showMenu;
-      if (cart) cart.hidden = h.showCart === undefined ? originalHeader.cart : !h.showCart;
+      setHidden(menu, h.showMenu === undefined ? originalHeader.menu : !h.showMenu);
+      setHidden(cart, h.showCart === undefined ? originalHeader.cart : !h.showCart);
       let announcement = header.querySelector('[data-editor-announcement]');
       if (h.announcement) {
         if (!announcement) {
@@ -363,8 +412,8 @@
       logo.textContent = originalHeader.logo;
       const menu = header.querySelector('.menu-toggle'),
         cart = header.querySelector('a[href="cart.html"]');
-      if (menu) menu.hidden = originalHeader.menu;
-      if (cart) cart.hidden = originalHeader.cart;
+      setHidden(menu, originalHeader.menu);
+      setHidden(cart, originalHeader.cart);
       header.querySelector('[data-editor-announcement]')?.remove();
     }
     if (h && header) header.dataset.editorChromeApplied = '1';
@@ -384,7 +433,7 @@
         if (item) {
           item.href = 'tel:' + f.phone;
           item.querySelector('b').textContent = f.phone;
-          item.hidden = !f.phone;
+          setHidden(item, !f.phone);
         }
       }
       if (contacts && f.email !== undefined) {
@@ -397,7 +446,7 @@
         if (item) {
           item.href = 'mailto:' + f.email;
           item.querySelector('b').textContent = f.email;
-          item.hidden = !f.email;
+          setHidden(item, !f.email);
         }
       }
     }

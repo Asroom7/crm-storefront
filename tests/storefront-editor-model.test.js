@@ -24,6 +24,72 @@ const data = () => ({
   },
   theme: { primaryColor: '#cf4772', unknownToken: { keep: true } },
 });
+test('preflight finds missing selections and image/video mistakes without changing the draft', () => {
+  const raw = data();
+  raw.config.sections.push({
+    id: 'hero',
+    type: 'hero',
+    enabled: true,
+    content: { imageDesktopUrl: 'https://media.test/bad.mp4' },
+    settings: { editorManagedV1: true },
+  });
+  const before = M.clone(raw);
+  const check = M.preflight(raw, { products: [{ id: 1 }] });
+  assert.equal(
+    check.issues.some((issue) => issue.level === 'error' && issue.sectionId === 'hero'),
+    true,
+  );
+  assert.equal(
+    check.issues.some((issue) => issue.level === 'warning' && issue.sectionId === 'best'),
+    true,
+  );
+  assert.deepEqual(raw, before);
+});
+test('preflight leaves dormant legacy content alone and ignores stale automatic product selections', () => {
+  const raw = data();
+  raw.config.sections.push({
+    id: 'legacy',
+    type: 'hero',
+    enabled: true,
+    content: { imageUrl: 'https://media.test/bad.mp4' },
+    settings: {},
+  });
+  raw.config.sections[1].settings.editorOptionsV1 = { selectionMode: 'auto' };
+  const check = M.preflight(raw, { products: [] });
+  assert.deepEqual(check.issues, []);
+  assert.deepEqual(check.resources, []);
+});
+test('preflight validates links and includes both device images and selected video posters', () => {
+  const raw = data();
+  raw.config.sections[1].settings.productIds = [];
+  raw.config.sections[0].settings.editorOptionsV1 = { videoSource: 'library' };
+  raw.config.sections[0].settings.videoPosters = {
+    'https://media.test/original.mp4': 'https://media.test/poster.webp',
+  };
+  raw.config.sections.push({
+    id: 'hero',
+    type: 'hero',
+    enabled: true,
+    content: {
+      imageDesktopUrl: 'https://media.test/desktop.webp',
+      imageMobileUrl: 'https://media.test/mobile.webp',
+      ctaText: 'برو',
+      ctaUrl: 'https://',
+    },
+    settings: { editorManagedV1: true },
+  });
+  const check = M.preflight(raw, { products: [] });
+  assert.equal(
+    check.issues.some((issue) => issue.level === 'error' && issue.sectionId === 'hero'),
+    true,
+  );
+  assert.equal(check.resources.filter((resource) => resource.kind === 'image').length, 3);
+  raw.config.sections.at(-1).content.ctaUrl = 'product-detail.html?id=99';
+  assert.equal(
+    M.preflight(raw).issues.some((issue) => issue.level === 'warning' && issue.sectionId === 'hero'),
+    true,
+  );
+});
 test('opening/snapshot preserves order, missing fields and opaque metadata exactly', () => {
   const raw = data(),
     copy = M.snapshot(raw.config, raw.theme);
