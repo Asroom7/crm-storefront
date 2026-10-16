@@ -69,7 +69,9 @@
       (el) =>
         (el.onclick = (e) => {
           e.stopPropagation();
-          Promise.resolve(fn(el, e)).catch((error) => K.tell(error.message || 'عملیات انجام نشد'));
+          Promise.resolve()
+            .then(() => fn(el, e))
+            .catch((error) => K.tell(error.message || 'عملیات انجام نشد'));
         }),
     );
   }
@@ -116,6 +118,11 @@
     } else K.tell(message);
   }
   const errorBox = '<p class="sfe-studio-error" data-studio-error role="alert" hidden></p>';
+  function currentDialog() {
+    const epoch = K.E.modalEpoch,
+      root = K.E.root;
+    return () => K.E.modalEpoch === epoch && K.E.root === root && root.isConnected && K.routeActive();
+  }
   function pick({
     title,
     records,
@@ -125,6 +132,8 @@
     allowEmpty = true,
     cancel = null,
     single = false,
+    ordered = true,
+    applyText = 'اعمال انتخاب',
   }) {
     selected = selected.slice();
     K.dialog(
@@ -132,7 +141,7 @@
       help(footer) +
         '<label class="sfe-field"><span>جستجو</span><input type="search" data-studio-query></label><div data-studio-picked></div><div data-studio-list></div>' +
         errorBox,
-      b('pick-cancel', 'انصراف') + b('pick-apply', 'اعمال انتخاب', true),
+      b('pick-cancel', 'انصراف') + b('pick-apply', applyText, true),
     );
     const move = (from, to) => {
       if (to < 0 || to >= selected.length) return;
@@ -142,26 +151,44 @@
     function draw() {
       const query = q('[data-studio-query]').value.trim();
       q('[data-studio-picked]').innerHTML =
-        '<div class="sfe-label-row"><strong>اولویت نمایش</strong><span>' +
+        '<div class="sfe-label-row"><strong>' +
+        (ordered ? 'اولویت نمایش' : 'موارد انتخاب‌شده') +
+        '</strong><span>' +
         selected.length.toLocaleString('fa-IR') +
         ' مورد</span></div>' +
         selected
           .map((id, i) => {
             const r = records.find((r) => String(r.id) === String(id));
             return (
-              '<div class="sfe-selected-row" draggable="true" data-studio-drag="' +
-              i +
-              '"><span>' +
+              '<div class="sfe-selected-row"' +
+              (ordered ? ' draggable="true" data-studio-drag="' + i + '"' : '') +
+              '><span>' +
               esc(r?.name || 'مورد در دسترس نیست') +
-              '</span><label class="sfe-priority"><span class="sfe-sr-only">اولویت</span><input type="number" min="1" max="' +
-              selected.length +
-              '" data-studio-priority="' +
-              i +
-              '" value="' +
-              (i + 1) +
-              '"></label>' +
-              b('pick-up', '↑', false, 'data-index="' + i + '" aria-label="بالاتر"') +
-              b('pick-down', '↓', false, 'data-index="' + i + '" aria-label="پایین‌تر"') +
+              '</span>' +
+              (ordered
+                ? '<label class="sfe-priority"><span class="sfe-sr-only">اولویت</span><input type="number" min="1" max="' +
+                  selected.length +
+                  '" data-studio-priority="' +
+                  i +
+                  '" value="' +
+                  (i + 1) +
+                  '"></label>' +
+                  b(
+                    'pick-up',
+                    '↑',
+                    false,
+                    'data-index="' + i + '" aria-label="بالاتر"' + (i === 0 ? ' disabled' : ''),
+                  ) +
+                  b(
+                    'pick-down',
+                    '↓',
+                    false,
+                    'data-index="' +
+                      i +
+                      '" aria-label="پایین‌تر"' +
+                      (i === selected.length - 1 ? ' disabled' : ''),
+                  )
+                : '') +
               b('pick-remove', '×', false, 'data-index="' + i + '" aria-label="حذف از انتخاب"') +
               '</div>'
             );
@@ -222,10 +249,12 @@
       if (el.disabled) return;
       if (!allowEmpty && !selected.length) return error('حداقل یک مورد انتخاب کنید');
       el.disabled = true;
+      const current = currentDialog();
       try {
         await apply(selected.slice());
       } catch (e) {
-        error(e.message);
+        if (current()) error(e.message);
+        else K.tell(e.message);
       } finally {
         if (el.isConnected) el.disabled = false;
       }
@@ -254,7 +283,11 @@
     );
     q('[data-studio-field="enabled"]').onchange = (e) =>
       K.mutate(() => {
-        K.E.theme.educationLibraryV1 = { ...lib, ...K.E.theme.educationLibraryV1, enabled: e.target.checked };
+        K.E.theme.educationLibraryV1 = {
+          ...lib,
+          ...K.E.theme.educationLibraryV1,
+          enabled: e.target.checked,
+        };
       });
     function draw() {
       const query = q('[data-lesson-query]').value;
@@ -276,17 +309,31 @@
               ' · ' +
               ({
                 draft: 'پیش‌نویس',
-                published: r.publishAt && Date.parse(r.publishAt) > Date.now() ? 'زمان‌بندی‌شده' : 'منتشرشده',
+                published:
+                  r.publishAt && Date.parse(r.publishAt) > Date.now() ? 'زمان‌بندی‌شده' : 'قابل انتشار',
                 archived: 'بایگانی',
               }[r.status] || '') +
-              '</small><div>' +
+              '</small><div class="sfe-card-actions">' +
               b('lesson-edit', 'ویرایش', false, 'data-id="' + r.id + '"') +
-              b('lesson-up', '↑', false, 'data-index="' + i + '" aria-label="بالاتر"') +
-              b('lesson-down', '↓', false, 'data-index="' + i + '" aria-label="پایین‌تر"') +
+              b(
+                'lesson-up',
+                '↑',
+                false,
+                'data-index="' + i + '" aria-label="بالاتر"' + (i === 0 ? ' disabled' : ''),
+              ) +
+              b(
+                'lesson-down',
+                '↓',
+                false,
+                'data-index="' + i + '" aria-label="پایین‌تر"' + (i === items.length - 1 ? ' disabled' : ''),
+              ) +
               b('lesson-delete', 'حذف', false, 'data-id="' + r.id + '"') +
               '</div></div></article>',
           )
-          .join('') || help('برای شروع یک آموزش اضافه کن.');
+          .join('') ||
+        help(
+          query.trim() ? 'آموزشی با این عنوان یا موضوع پیدا نشد.' : 'برای شروع، دکمهٔ «آموزش جدید» را بزن.',
+        );
       bind('lesson-edit', (el) => lessonEditor(items.find((r) => r.id === el.dataset.id)));
       const move = (i, to) => {
         if (to < 0 || to >= items.length) return;
@@ -458,33 +505,43 @@
         b('category-new', 'دستهٔ جدید', true) +
         '<div data-category-list></div>',
     );
-    q('[data-category-list]').innerHTML = K.E.categories
-      .map(
-        (c) =>
-          '<article class="sfe-studio-card">' +
-          (c.imageUrl
-            ? '<img src="' + esc(c.imageUrl) + '" alt="">'
-            : '<span class="sfe-studio-placeholder">▦</span>') +
-          '<div><strong>' +
-          esc(c.name) +
-          '</strong><small>' +
-          K.E.products
-            .filter((p) => Number(p.categoryId || p.category?.id) === Number(c.id))
-            .length.toLocaleString('fa-IR') +
-          ' محصول</small><div>' +
-          b('category-edit', 'نام و عکس', false, 'data-id="' + c.id + '"') +
-          b('category-products', 'محصولات دسته', false, 'data-id="' + c.id + '"') +
-          b('category-delete', 'حذف دسته', false, 'data-id="' + c.id + '"') +
-          '</div></div></article>',
-      )
-      .join('');
+    q('[data-category-list]').innerHTML =
+      K.E.categories
+        .map(
+          (c) =>
+            '<article class="sfe-studio-card">' +
+            (c.imageUrl
+              ? '<img src="' + esc(c.imageUrl) + '" alt="">'
+              : '<span class="sfe-studio-placeholder">▦</span>') +
+            '<div><strong>' +
+            esc(c.name) +
+            '</strong><small>' +
+            K.E.products
+              .filter((p) => Number(p.categoryId || p.category?.id) === Number(c.id))
+              .length.toLocaleString('fa-IR') +
+            ' محصول</small><div>' +
+            b('category-edit', 'نام و عکس', false, 'data-id="' + c.id + '"') +
+            b('category-products', 'محصولات دسته', false, 'data-id="' + c.id + '"') +
+            b('category-delete', 'حذف دسته', false, 'data-id="' + c.id + '"') +
+            '</div></div></article>',
+        )
+        .join('') || help('هنوز دسته‌ای ساخته نشده است. با «دستهٔ جدید» شروع کن.');
     bind('category-new', () => categoryEditor());
     bind('category-edit', (el) =>
       categoryEditor(K.E.categories.find((c) => Number(c.id) === Number(el.dataset.id))),
     );
     bind('category-products', async (el) => {
       const id = Number(el.dataset.id);
-      K.E.products = await sellerApiFetch('/products');
+      const current = currentDialog();
+      if (el.disabled) return;
+      el.disabled = true;
+      try {
+        const products = await sellerApiFetch('/products');
+        if (!current()) return;
+        K.E.products = products;
+      } finally {
+        if (el.isConnected) el.disabled = false;
+      }
       const selected = K.E.products
         .filter((p) => Number(p.categoryId || p.category?.id) === id)
         .map((p) => p.id);
@@ -492,15 +549,22 @@
         title: 'محصولات دستهٔ ' + K.E.categories.find((c) => c.id === id)?.name,
         records: productRecords(),
         selected,
+        ordered: false,
+        applyText: 'ذخیره در کل فروشگاه',
+        cancel: categories,
         footer:
           'ذخیره، عضویت محصولات را در کل فروشگاه تغییر می‌دهد. محصول انتخابی از دستهٔ قبلی منتقل می‌شود و موارد برداشته‌شده بدون دسته می‌شوند.',
         apply: async (ids) => {
+          const current = currentDialog();
           await sellerApiFetch('/categories/' + id + '/products', {
             method: 'PUT',
-            body: JSON.stringify({ productIds: ids, expectedProductIds: selected }),
+            body: JSON.stringify({
+              productIds: ids,
+              expectedProductIds: selected,
+            }),
           });
           await refreshCatalog();
-          categories();
+          if (current()) categories();
         },
       });
     });
@@ -514,18 +578,28 @@
         b('category-back', 'انصراف') + b('category-confirm-delete', 'حذف دسته', true),
       );
       bind('category-back', categories);
-      bind('category-confirm-delete', async () => {
-        await sellerApiFetch('/categories/' + id, { method: 'DELETE' });
-        await refreshCatalog();
-        categories();
+      bind('category-confirm-delete', async (el) => {
+        if (el.disabled) return;
+        el.disabled = true;
+        const current = currentDialog();
+        try {
+          await sellerApiFetch('/categories/' + id, { method: 'DELETE' });
+          await refreshCatalog();
+          if (current()) categories();
+        } finally {
+          if (el.isConnected) el.disabled = false;
+        }
       });
     });
   }
   async function refreshCatalog() {
+    const root = K.E.root,
+      pageId = K.E.page?.id;
     const [products, categories] = await Promise.all([
       sellerApiFetch('/products'),
       sellerApiFetch('/categories'),
     ]);
+    if (K.E.root !== root || K.E.page?.id !== pageId || !root.isConnected || !K.routeActive()) return;
     K.E.products = products;
     K.E.categories = categories;
     K.catalogChanged();
@@ -575,12 +649,14 @@
         draw();
       });
       bind('category-save', async (el) => {
+        if (el.disabled) return;
         if (
           !q('[data-studio-field="name"]').reportValidity() ||
           !q('[data-studio-field="sortOrder"]').reportValidity()
         )
           return;
         el.disabled = true;
+        const current = currentDialog();
         try {
           await sellerApiFetch('/categories' + (source ? '/' + source.id : ''), {
             method: source ? 'PATCH' : 'POST',
@@ -591,10 +667,12 @@
             }),
           });
           await refreshCatalog();
-          categories();
+          if (current()) categories();
         } catch (e) {
-          el.disabled = false;
-          error(e.message);
+          if (current()) error(e.message);
+          else K.tell(e.message);
+        } finally {
+          if (el.isConnected) el.disabled = false;
         }
       });
     }
@@ -623,6 +701,7 @@
       title: 'محصولات کنارگذاشته‌شده از این بخش',
       records: productRecords(),
       selected: s.settings?.excludedProductIds || [],
+      ordered: false,
       apply: (ids) => {
         K.mutate(() => K.M.setPath(s, 'settings.excludedProductIds', ids));
         K.close();
@@ -928,13 +1007,20 @@
         const records = [
           { id: 'products.html', name: 'همه محصولات' },
           { id: 'education.html', name: 'ویدیوهای آموزشی' },
-          ...K.E.products.map((p) => ({ id: 'product-detail.html?id=' + p.id, name: p.name })),
-          ...K.E.categories.map((c) => ({ id: 'products.html?category=' + c.id, name: 'دسته: ' + c.name })),
+          ...K.E.products.map((p) => ({
+            id: 'product-detail.html?id=' + p.id,
+            name: p.name,
+          })),
+          ...K.E.categories.map((c) => ({
+            id: 'products.html?category=' + c.id,
+            name: 'دسته: ' + c.name,
+          })),
         ];
         pick({
           title: 'مقصد دکمه',
           cancel: draw,
           single: true,
+          ordered: false,
           records,
           selected: [],
           allowEmpty: false,
@@ -1226,5 +1312,11 @@
     if (map[action]) Promise.resolve(map[action]()).catch((e) => K.tell(e.message));
     return true;
   }
-  window.StorefrontEditorStudio = { attach: (kit) => (K = kit), content, layout, templatesHtml, handle };
+  window.StorefrontEditorStudio = {
+    attach: (kit) => (K = kit),
+    content,
+    layout,
+    templatesHtml,
+    handle,
+  };
 })();

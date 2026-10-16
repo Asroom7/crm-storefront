@@ -18,6 +18,139 @@ const settle = (p) =>
   );
 const frame = (p) => p.frames().find((f) => f.parentFrame());
 const close = (p) => p.locator('[data-overlay] [data-action="close"]').first().click();
+async function verifyModalSafety(browser, origin) {
+  const state = fixture(origin),
+    ui = await editor(browser, origin, state),
+    p = ui.page;
+  state.categories = state.categories.slice();
+  await p.locator('[data-field="content.title"]').fill('عنوانی که باید حفظ شود');
+  await settle(p);
+  const writes = state.writes.length;
+  await p.locator('[data-action="studio-library"]').click();
+  await p.locator('[data-studio="lesson-new"]').click();
+  await p.locator('[data-studio-field="title"]').fill('آموزش ذخیره‌نشده');
+  await p.locator('[data-overlay] [data-action="close"]').focus();
+  for (const shortcut of ['Control+z', 'Control+k', 'Control+s']) await p.keyboard.press(shortcut);
+  assert.equal(await p.locator('#sfe-dialog-title').innerText(), 'آموزش جدید');
+  assert.equal(await p.locator('[data-studio-field="title"]').inputValue(), 'آموزش ذخیره‌نشده');
+  assert.equal(
+    await p.evaluate(
+      () => StorefrontEditorComplete.state.config.sections.find((s) => s.id === 'best').content.title,
+    ),
+    'عنوانی که باید حفظ شود',
+  );
+  assert.equal(state.writes.length, writes, 'a modal shortcut saved the underlying page');
+  const input = p.locator('[data-studio-field="title"]');
+  await input.fill('');
+  await input.pressSequentially('native undo');
+  await input.press('Control+z');
+  assert.notEqual(await input.inputValue(), 'native undo', 'native text undo was blocked');
+  await p.locator('[data-studio="lesson-save"]').evaluate((el) => (el.disabled = true));
+  await p.locator('[data-studio="lesson-back"]').focus();
+  await p.keyboard.press('Tab');
+  assert.equal(await p.evaluate(() => document.activeElement.dataset.action), 'close');
+  await p.keyboard.press('Shift+Tab');
+  assert.equal(await p.evaluate(() => document.activeElement.dataset.studio), 'lesson-back');
+  await p.keyboard.press('Escape');
+  assert.equal(
+    await p.evaluate(() => document.activeElement.dataset.action),
+    'studio-library',
+    'closing a nested form lost its opener',
+  );
+  await p.locator('[data-field="content.title"]').fill('پرفروش‌ترین‌ها');
+  await settle(p);
+
+  let releaseProducts, markProducts;
+  const productsGate = new Promise((resolve) => (releaseProducts = resolve)),
+    productsSeen = new Promise((resolve) => (markProducts = resolve));
+  const productsRoute = async (route) => {
+    markProducts();
+    await productsGate;
+    await route.fulfill({ json: state.products });
+  };
+  await p.route('**/api/products', productsRoute);
+  await p.locator('[data-action="studio-categories"]').click();
+  await p.locator('[data-studio="category-products"]').first().click();
+  await productsSeen;
+  await close(p);
+  const productsDone = p.waitForResponse((r) => new URL(r.url()).pathname === '/api/products');
+  releaseProducts();
+  await (await productsDone).finished();
+  await p.waitForTimeout(200);
+  assert.equal(
+    await p.locator('[data-overlay]').isVisible(),
+    false,
+    'a delayed product response reopened a closed dialog',
+  );
+  await p.unroute('**/api/products', productsRoute);
+
+  await p.locator('[data-action="studio-categories"]').click();
+  await p.locator('[data-studio="category-products"]').first().click();
+  await p.locator('[data-studio="pick-apply"]').waitFor();
+  assert.equal(
+    await p.locator('[data-studio-priority]').count(),
+    0,
+    'category membership promised an unsupported display order',
+  );
+  assert.equal(await p.locator('[data-studio="pick-apply"]').innerText(), 'ذخیره در کل فروشگاه');
+  await p.locator('[data-studio="pick-cancel"]').click();
+  assert.equal(await p.locator('#sfe-dialog-title').innerText(), 'مدیریت دسته‌بندی‌ها');
+
+  let releaseCreate,
+    markCreate,
+    posts = 0;
+  const createGate = new Promise((resolve) => (releaseCreate = resolve)),
+    createSeen = new Promise((resolve) => (markCreate = resolve));
+  await p.route('**/api/categories', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    posts++;
+    markCreate();
+    await createGate;
+    const category = {
+      ...route.request().postDataJSON(),
+      id: 80,
+      updatedAt: new Date().toISOString(),
+    };
+    state.categories = state.categories.concat(category);
+    await route.fulfill({ status: 201, json: category });
+  });
+  await p.locator('[data-studio="category-new"]').click();
+  await p.locator('[data-studio-field="name"]').fill('دستهٔ آزمایشی بدون دادهٔ واقعی');
+  await p.locator('[data-studio="category-save"]').click();
+  await createSeen;
+  assert.equal(await p.locator('[data-studio="category-save"]').isDisabled(), true);
+  await close(p);
+  await p.locator('[data-action="studio-library"]').click();
+  await p.locator('[data-studio="lesson-new"]').click();
+  await p.locator('[data-studio-field="title"]').fill('فرم جدید پس از بستن پنجرهٔ قبلی');
+  releaseCreate();
+  await p.waitForFunction(() => StorefrontEditorComplete.state.categories.some((c) => c.id === 80));
+  assert.equal(
+    await p.locator('#sfe-dialog-title').innerText(),
+    'آموزش جدید',
+    'an older save replaced the new form',
+  );
+  assert.equal(
+    await p.locator('[data-studio-field="title"]').inputValue(),
+    'فرم جدید پس از بستن پنجرهٔ قبلی',
+  );
+  assert.equal(posts, 1);
+  await close(p);
+  for (const width of [899, 1024, 1440]) {
+    await p.setViewportSize({ width, height: 1000 });
+    await p.waitForFunction(() => {
+      const canvas = document.querySelector('.sfe-canvas').getBoundingClientRect(),
+        stage = document.querySelector('.sfe-preview-stage').getBoundingClientRect(),
+        frame = document.querySelector('[data-frame-wrap]').getBoundingClientRect();
+      return frame.bottom <= stage.bottom + 1 && stage.bottom <= canvas.bottom + 1;
+    });
+  }
+  assert.deepEqual(ui.errors, []);
+  await ui.context.close();
+  console.log(
+    'PASS modal shortcuts, native text undo, disabled focus targets, nested opener and late category responses',
+  );
+}
 async function addLesson(p, title) {
   await p.locator('[data-action="studio-library"]').click();
   await p.locator('[data-studio="lesson-new"]').click();
@@ -63,10 +196,14 @@ async function addLesson(p, title) {
     ],
   });
   try {
+    await verifyModalSafety(browser, origin);
     const state = fixture(origin),
       ui = await editor(browser, origin, state),
       p = ui.page;
-    const original = JSON.stringify({ config: state.page.config, theme: state.page.theme });
+    const original = JSON.stringify({
+      config: state.page.config,
+      theme: state.page.theme,
+    });
     for (const action of ['studio-library', 'studio-categories', 'studio-menu']) {
       await p.locator('[data-action="' + action + '"]').click();
       await close(p);
@@ -228,7 +365,10 @@ async function addLesson(p, title) {
       await p.locator('.sfe-topbar').evaluate((el) => el.getBoundingClientRect().top >= 70),
       'editor toolbar was hidden behind the app header',
     );
-    await p.screenshot({ path: path.join(output, 'content-studio-desktop.png'), animations: 'disabled' });
+    await p.screenshot({
+      path: path.join(output, 'content-studio-desktop.png'),
+      animations: 'disabled',
+    });
     console.log(
       'PASS custom content, escaped formatting, images, fixed section positions, device-scoped design and reusable templates',
     );

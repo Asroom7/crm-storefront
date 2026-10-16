@@ -76,7 +76,17 @@
     endpoint = '/storefront/editor/home';
   const btn = (a, t, p = false, attr = '') =>
     `<button type="button" class="sfe-button${p ? ' sfe-primary' : ''}" data-action="${a}" ${attr}>${t}</button>`;
-  const ico = (n) => (typeof ic === 'function' ? ic(n) : '');
+  const ico = (n) => {
+    const local = {
+      play: '<path d="m8 4 12 8-12 8z"/>',
+      menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    };
+    return local[n]
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round">${local[n]}</svg>`
+      : typeof ic === 'function'
+        ? ic(n)
+        : '';
+  };
   const tell = (t) => {
     if (typeof toast === 'function') toast(t);
   };
@@ -209,6 +219,18 @@
     view.classList.add('sfe-host');
     view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench>
     <header class="sfe-topbar"><div class="sfe-heading">${btn('back', ico('chevR'), false, 'aria-label="بازگشت به تنظیمات"')}<div><h2>ویرایش فروشگاه</h2><span>صفحه اصلی</span></div><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-actions">${btn('undo', '↶', false, 'aria-label="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="تکرار تغییر"')}${btn('media', 'رسانه‌ها')}${btn('versions', 'نسخه‌ها')}${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'مرور و انتشار', true)}</div></header>
+    <section class="sfe-content-tools" aria-label="مدیریت محتوای فروشگاه">${[
+      ['studio-library', 'play', 'ویدیوهای آموزشی', 'فیلم، کاور و موضوع آموزش'],
+      ['studio-categories', 'box', 'دسته‌بندی محصولات', 'نام، عکس و محصولات هر دسته'],
+      ['studio-menu', 'menu', 'منوی سایت', 'لینک‌های منوی سه‌خط'],
+    ]
+      .map(([action, icon, label, hint]) =>
+        btn(
+          action,
+          `<span class="sfe-tool-icon" aria-hidden="true">${ico(icon)}</span><span><strong>${label}</strong><small>${hint}</small></span>`,
+        ),
+      )
+      .join('')}</section>
     <div class="sfe-notice" data-notice role="alert" hidden></div><nav class="sfe-mobile-nav" aria-label="قسمت‌های ویرایشگر">${['sections', 'preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="${k === E.pane}">${['بخش‌ها', 'پیش‌نمایش', 'تنظیمات بخش'][i]}</button>`).join('')}</nav>
     <div class="sfe-workspace"><aside class="sfe-outline"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><aside class="sfe-inspector"><div class="sfe-sheet-handle" aria-hidden="true"></div><div data-inspector></div></aside></div>
     <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div></div>`;
@@ -221,10 +243,6 @@
     $('.sfe-actions').insertAdjacentHTML(
       'afterbegin',
       btn('search-settings', 'جستجو', false, 'aria-label="جستجوی تنظیمات" aria-keyshortcuts="Control+K"'),
-    );
-    $('.sfe-actions').insertAdjacentHTML(
-      'afterbegin',
-      btn('studio-library', 'آموزش‌ها') + btn('studio-categories', 'دسته‌ها') + btn('studio-menu', 'منو'),
     );
     E.iframe.addEventListener('load', bridge);
     view.onclick = click;
@@ -254,8 +272,24 @@
       matchesQuery(title(s) + ' ' + (N[s.type] || '') + ' ' + reason, E.sectionQuery);
     const visible = current.visible.filter((s) => match(s)),
       hidden = current.hidden.filter((s) => match(s, hiddenLabel(s)));
-    const row = (s, reason = '') =>
-      `<button type="button" class="sfe-outline-row ${E.activeSection === s.id ? 'is-selected' : ''}" data-select="${esc(s.id)}" aria-pressed="${E.activeSection === s.id}"><span class="sfe-section-mark">${ico(s.type === 'videos' ? 'play' : s.type === 'best-sellers' ? 'star' : 'box')}</span><span><strong>${esc(title(s))}</strong><small>${esc(reason || (s.template ? 'نمایش توسط قالب' : FIXED.includes(s.type) || s.type === 'header' ? 'جایگاه ثابت' : N[s.type] || s.type))}</small></span></button>`;
+    const row = (s, reason = '') => {
+      const fixed = FIXED.includes(s.type) || s.type === 'header';
+      const name = fixed ? N[s.type] : title(s);
+      const hint = [
+        fixed && title(s) !== name ? title(s) : '',
+        reason ||
+          (s.template
+            ? 'نمایش توسط قالب'
+            : fixed
+              ? 'جایگاه ثابت'
+              : s.settings?.builderV1
+                ? 'بخش دلخواه'
+                : N[s.type] || s.type),
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      return `<button type="button" class="sfe-outline-row ${E.activeSection === s.id ? 'is-selected' : ''}" data-select="${esc(s.id)}" data-section-type="${esc(s.type)}" aria-pressed="${E.activeSection === s.id}"><span class="sfe-section-mark">${ico(s.type === 'videos' ? 'play' : s.type === 'best-sellers' ? 'star' : 'box')}</span><span><strong>${esc(name)}</strong><small>${esc(hint)}</small></span></button>`;
+    };
     const html =
       `<div class="sfe-outline-label"><span>در پیش‌نمایش ${E.device === 'mobile' ? 'موبایل' : E.device === 'tablet' ? 'تبلت' : 'دسکتاپ'}</span><span>${fa(visible.length)}</span></div><div data-visible-sections>${visible.map((s) => row(s)).join('')}</div>` +
       (hidden.length
@@ -442,11 +476,16 @@
     if (!stage || stage.clientWidth < 30) return;
     const width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device],
       scale = Math.min(1, (stage.clientWidth - 24) / width),
-      small = matchMedia('(max-width:850px)').matches && E.pane === 'settings',
-      height = (small ? 220 : 590) / scale;
+      compact = matchMedia('(max-width:850px)').matches,
+      small = compact && E.pane === 'settings',
+      padding = getComputedStyle(stage),
+      available = compact
+        ? small ? 220 : 590
+        : Math.max(200, stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2),
+      height = available / scale;
     const wrap = $('[data-frame-wrap]');
     wrap.style.width = width * scale + 'px';
-    wrap.style.height = height * scale + 'px';
+    wrap.style.height = available + 2 + 'px';
     E.iframe.style.width = width + 'px';
     E.iframe.style.height = height + 'px';
     E.iframe.style.transform = 'scale(' + scale + ')';
@@ -768,14 +807,21 @@
     }
   }
   function dialog(name, html, footer = '') {
+    const overlay = $('[data-overlay]');
+    if (overlay.hidden) E.focus = document.activeElement;
+    const sameDialog = !overlay.hidden && $('#sfe-dialog-title').textContent === name;
     E.modalEpoch++;
     E.modalBack = null;
-    E.focus = document.activeElement;
     $('#sfe-dialog-title').textContent = name;
     $('[data-dialog-body]').innerHTML = html;
+    if (!sameDialog) $('[data-dialog-body]').scrollTop = 0;
     $('[data-dialog-footer]').innerHTML = footer || btn('close', 'بستن');
-    $('[data-overlay]').hidden = false;
-    $('[data-overlay]').querySelector('button,input,select,textarea')?.focus();
+    overlay.hidden = false;
+    modalBackground(true);
+    overlay.querySelector('button,input,select,textarea')?.focus({ preventScroll: true });
+  }
+  function modalBackground(inert) {
+    $$('.sfe-workbench > :not([data-overlay])').forEach((node) => (node.inert = inert));
   }
   function close() {
     if (E.modalBack) {
@@ -787,6 +833,7 @@
     E.modalEpoch++;
     const overlay = E.root?.querySelector('[data-overlay]');
     if (overlay) overlay.hidden = true;
+    modalBackground(false);
     if (E.focus?.isConnected) E.focus.focus({ preventScroll: true });
   }
   function differences(changes) {
@@ -1108,6 +1155,7 @@
   }
   function preview() {
     clearTimeout(E.previewTimer);
+    requestAnimationFrame(fit);
     E.previewTimer = setTimeout(() => {
       try {
         const s = E.previewVersion || snap();
@@ -2055,7 +2103,39 @@
   });
   document.addEventListener('keydown', (event) => {
     if (!E.config || !routeActive() || !$('[data-overlay]')) return;
-    if (event.key === 'Escape' && !$('[data-overlay]').hidden) return close();
+    if (!$('[data-overlay]').hidden) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+      } else if ((event.ctrlKey || event.metaKey) && ['k', 's'].includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        if (event.key.toLowerCase() === 's') tell('تغییرات این پنجره را با دکمهٔ ذخیره یا اعمال تأیید کنید.');
+      } else if (
+        (event.ctrlKey || event.metaKey) &&
+        ['z', 'y'].includes(event.key.toLowerCase()) &&
+        !event.target.matches(
+          'textarea,input:not([type="checkbox"]):not([type="radio"]),[contenteditable="true"]',
+        )
+      ) {
+        event.preventDefault();
+      } else if (event.key === 'Tab') {
+        const list = $$(
+          '[data-overlay] button,[data-overlay] input,[data-overlay] select,[data-overlay] textarea,[data-overlay] a[href],[data-overlay] [tabindex]',
+        ).filter(
+          (el) => !el.matches(':disabled,[type="hidden"],[tabindex="-1"]') && el.getClientRects().length,
+        );
+        const first = list[0],
+          last = list[list.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       return searchSettings();
@@ -2071,20 +2151,6 @@
     ) {
       event.preventDefault();
       undo(event.shiftKey);
-    }
-    if (event.key === 'Tab' && !$('[data-overlay]').hidden) {
-      const list = $$(
-          '[data-overlay] button:not([disabled]),[data-overlay] input,[data-overlay] select,[data-overlay] textarea',
-        ).filter((el) => el.offsetParent !== null),
-        first = list[0],
-        last = list[list.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
     }
   });
   function routeActive() {
@@ -2106,6 +2172,7 @@
     pane,
     image,
     tell,
+    routeActive,
     matches: matchesQuery,
     catalogChanged() {
       const products = E.products.filter((p) => p.isPublished !== false);
@@ -2119,6 +2186,10 @@
       inspector();
     },
   });
-  window.StorefrontEditorComplete = { version: 'workbench-1', render, state: E };
+  window.StorefrontEditorComplete = {
+    version: 'workbench-1',
+    render,
+    state: E,
+  };
   window.renderStorefrontEditor = render;
 })();
