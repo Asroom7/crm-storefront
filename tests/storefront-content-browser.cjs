@@ -141,6 +141,7 @@ async function addLesson(p, title) {
     assert.equal(await education.locator('[data-lesson-id]').count(), 1);
     assert.equal(await education.locator('[data-lesson-id]').getAttribute('data-lesson-id'), ids[1]);
     await education.close();
+    await p.bringToFront();
     console.log(
       'PASS read-only management, independent library, media selection, related products, priority, publication and education search',
     );
@@ -179,18 +180,34 @@ async function addLesson(p, title) {
       return doc.querySelector('.sf-video-section')?.nextElementSibling?.dataset.editorSection === id;
     }, builderId);
     await settle(p);
-    await p.waitForTimeout(350);
-    await p.evaluate(() => {
-      window.studioMutations = 0;
-      new MutationObserver((rows) => (window.studioMutations += rows.length)).observe(
-        StorefrontEditorComplete.state.iframe.contentDocument.getElementById('storefront-home-root'),
-        { childList: true },
-      );
-    });
-    await p.waitForTimeout(900);
-    assert.ok(
-      (await p.evaluate(() => studioMutations)) < 5,
-      'custom insertion created a primary-flow mutation loop',
+    const stability = await p.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const root =
+            StorefrontEditorComplete.state.iframe.contentDocument.getElementById('storefront-home-root');
+          const started = performance.now();
+          let lastMutation = started,
+            mutations = 0;
+          const observer = new MutationObserver((rows) => {
+            mutations += rows.length;
+            lastMutation = performance.now();
+          });
+          observer.observe(root, { childList: true });
+          const timer = setInterval(() => {
+            const quiet = performance.now() - lastMutation >= 1000;
+            if (!quiet && performance.now() - started < 8000) return;
+            clearInterval(timer);
+            observer.disconnect();
+            resolve({ stable: quiet, mutations });
+          }, 100);
+        }),
+    );
+    assert.equal(stability.stable, true, 'custom insertion never settled: ' + JSON.stringify(stability));
+    assert.equal(
+      await frame(p)
+        .locator('.sf-video-section')
+        .evaluate((el) => el.nextElementSibling?.dataset.editorSection),
+      builderId,
     );
     await p.locator('[data-tab="layout"]').click();
     await p.locator('[data-scope="mobile"]').click();
