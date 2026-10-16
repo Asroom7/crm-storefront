@@ -362,8 +362,12 @@ async function addLesson(p, title) {
     assert.equal(await p.locator('[data-action="studio-use-template"]').count(), 1);
     await close(p);
     assert.ok(
-      await p.locator('.sfe-topbar').evaluate((el) => el.getBoundingClientRect().top >= 70),
-      'editor toolbar was hidden behind the app header',
+      await p.locator('.sfe-topbar').evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return rect.top >= 0 && rect.bottom <= innerHeight && !!hit?.closest('.sfe-topbar');
+      }),
+      'fullscreen editor toolbar is outside the viewport or covered',
     );
     await p.screenshot({
       path: path.join(output, 'content-studio-desktop.png'),
