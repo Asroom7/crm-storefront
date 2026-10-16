@@ -1,8 +1,8 @@
 {
-  "task": "storefront-editor-usability",
+  "task": "storefront-editor-landscape-foundation",
   "allowed_locked_paths": [
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly requested another system/visual audit and clearer editor controls while preserving public storefront appearance and existing section positions. Changes are confined to the editor: distinct content tools, recognizable section labels, responsive toolbar, modal keyboard/focus safety and stale category-response guards. panel/index.html only updates the three edited editor asset cache versions. Public storefront renderers, global panel styles, backend, stable/backup branches and production content/data remain untouched. All write tests use intercepted APIs and dummy seller sessions."
+  "note": "User explicitly requested a landscape-only editor foundation as stage 1, with mandatory device rotation before editing. Rebuild the editor shell and base layout as a viewport-filling horizontal workspace, add a portrait gate, and preserve drafts, open forms and the selected section when rotating. Existing workflow tests move their editing scenarios to landscape; new tests exercise portrait blocking, keyboard-safe orientation detection and rotation preservation. panel/index.html only bumps the two edited editor asset versions. Public storefront source, backend, stable/backup branches and production content/data remain untouched; all writes in tests are mocked."
 }

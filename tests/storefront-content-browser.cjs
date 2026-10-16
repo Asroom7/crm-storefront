@@ -137,7 +137,7 @@ async function verifyModalSafety(browser, origin) {
   assert.equal(posts, 1);
   await close(p);
   for (const width of [899, 1024, 1440]) {
-    await p.setViewportSize({ width, height: 1000 });
+    await p.setViewportSize({ width, height: width < 1200 ? 600 : 900 });
     await p.waitForFunction(() => {
       const canvas = document.querySelector('.sfe-canvas').getBoundingClientRect(),
         stage = document.querySelector('.sfe-preview-stage').getBoundingClientRect(),
@@ -459,9 +459,9 @@ async function addLesson(p, title) {
     await cu.context.close();
     console.log('PASS category creation with photo, global-save labelling and homepage-only selection order');
 
-    for (const width of [390, 899]) {
+    for (const width of [844, 1024]) {
       const mobileState = fixture(origin),
-        mu = await editor(browser, origin, mobileState, { width, height: 900 }),
+        mu = await editor(browser, origin, mobileState, { width, height: 390 }),
         mp = mu.page;
       await mp.locator('[data-action="studio-library"]').click();
       await mp.locator('[data-studio="lesson-new"]').click();
