@@ -148,6 +148,14 @@ async function addLesson(p, title) {
     await p.locator('[data-action="add"]').click();
     await p.locator('[data-action="studio-new"][data-template="text"]').click();
     const builderId = await p.evaluate(() => StorefrontEditorComplete.state.activeSection);
+    await p.waitForFunction((id) => {
+      const s = StorefrontEditorComplete.state,
+        rect = s.iframe.contentDocument
+          .querySelector('[data-editor-section=\"' + id + '\"]')
+          ?.getBoundingClientRect();
+      return rect && rect.top >= 0 && rect.top < s.iframe.contentWindow.innerHeight;
+    }, builderId);
+
     await p.locator('[data-field="content.title"]').fill('بخش اختصاصی');
     await p.locator('[data-action="studio-element"][data-index="1"]').click();
     await p.locator('[data-studio-field="text"]').fill('متن **برجسته**\nخط دوم');

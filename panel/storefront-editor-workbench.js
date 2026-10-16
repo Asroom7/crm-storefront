@@ -668,7 +668,7 @@
         '<div class="sfe-help">این بخش از قالب فعلی استفاده می‌کند. تنظیمات اختصاصی آن در این پیش‌نویس در دسترس نیست. برای تنظیم ظاهر کلی، هویت بصری فروشگاه را باز کنید.</div>' +
         btn('theme', 'هویت بصری فروشگاه');
     } else if (s) {
-      name = N[s.type] || s.type;
+      name = s.settings?.builderV1 ? 'بخش دلخواه' : N[s.type] || s.type;
       html =
         `<div class="sfe-property-tabs" role="tablist" aria-label="گروه تنظیمات">${['content', 'layout', 'visibility'].map((k, i) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${E.tab === k}">${['محتوا', 'چیدمان', 'نمایش'][i]}</button>`).join('')}</div>` +
         (E.tab === 'content' ? content(s) : E.tab === 'layout' ? layout(s) : visibility(s));
@@ -1221,12 +1221,26 @@
       });
       if (node) {
         if (!node.hasAttribute('data-sfe-selected')) node.setAttribute('data-sfe-selected', '');
-        if (E.lastPreviewSection !== E.activeSection) {
-          const win = E.iframe.contentWindow;
-          const top = node.getBoundingClientRect().top + win.scrollY - 80;
-          // Scrolling an iframe child with scrollIntoView also scrolls the panel.
-          win.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
-          E.lastPreviewSection = E.activeSection;
+        if (E.lastPreviewSection !== E.activeSection && E.pendingPreviewFocus !== E.activeSection) {
+          const id = E.activeSection,
+            frame = E.iframe,
+            win = frame.contentWindow;
+          E.pendingPreviewFocus = id;
+          // Wait for native order and the explicit insertion point to settle.
+          win.requestAnimationFrame(() =>
+            win.requestAnimationFrame(() => {
+              if (frame !== E.iframe || id !== E.activeSection || E.pendingPreviewFocus !== id) return;
+              const selected = frame.contentDocument.querySelector(
+                '[data-sfe-section="' + CSS.escape(id) + '"]',
+              );
+              if (selected) {
+                const top = selected.getBoundingClientRect().top + win.scrollY - 80;
+                win.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+                E.lastPreviewSection = id;
+              }
+              E.pendingPreviewFocus = null;
+            }),
+          );
         }
       }
     } catch (_) {}
