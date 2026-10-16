@@ -505,13 +505,13 @@
   }
   function viewport() {
     if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
-    const touch = matchMedia('(pointer:coarse)').matches && navigator.maxTouchPoints > 0;
+    const touch = navigator.maxTouchPoints > 0;
     const type = screen.orientation?.type;
     const physicalPortrait = touch && type
       ? type.startsWith('portrait')
       : touch && typeof window.orientation === 'number'
         ? Math.abs(window.orientation) % 180 === 0
-        : false;
+        : touch && screen.width <= screen.height;
     const locked = physicalPortrait || innerWidth <= innerHeight;
     const wasLocked = E.orientationLocked;
     if (locked && !wasLocked) E.orientationFocus = document.activeElement;

@@ -138,6 +138,12 @@ async function checkSplit(p) {
       tp = await context.newPage();
     await setup(tp, touchState);
     await tp.addInitScript(() => {
+      const query = window.matchMedia.bind(window);
+      window.matchMedia = (value) => {
+        const result = query(value);
+        if (value === '(pointer:coarse)') Object.defineProperty(result, 'matches', { value: false });
+        return result;
+      };
       window.__physicalOrientation = 'portrait-primary';
       Object.defineProperty(screen.orientation, 'type', {
         configurable: true,
@@ -146,6 +152,7 @@ async function checkSplit(p) {
     });
     await tp.goto(origin + '/new/panel/index.html#/storefront-editor');
     await tp.locator('[data-orientation-gate]').waitFor();
+    assert.equal(await tp.evaluate(() => matchMedia('(pointer:coarse)').matches), false);
     await tp.setViewportSize({ width: 390, height: 250 });
     assert.equal(
       await tp.locator('[data-orientation-gate]').isVisible(),
