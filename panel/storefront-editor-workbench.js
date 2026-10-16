@@ -1440,6 +1440,8 @@
       a.kind === 'video' ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp';
     input.onchange = async () => {
       if (!input.files?.[0]) return;
+      if (!input.files[0].type.startsWith(a.kind + '/'))
+        return tell('نوع رسانه جایگزین باید با فایل قبلی یکسان باشد');
       try {
         const next = await upload(input.files[0]);
         mutate(() => {

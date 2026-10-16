@@ -183,6 +183,13 @@ async function run() {
     await p.locator('[data-action="use-media"][data-id="1"]').click();
     await frame.locator('.sf-hero-art img').waitFor();
     assert.equal(await frame.locator('.sf-hero-art img').getAttribute('src'), origin + '/fixtures/1.svg');
+    await p.locator('[data-action="media"]').click();
+    const beforeUploads = state.writes.filter(write => write.name === '/storefront/media/upload').length;
+    const chooser = p.waitForEvent('filechooser');
+    await p.locator('[data-action="replace-media"][data-id="1"]').click();
+    await (await chooser).setFiles({ name: 'wrong-type.mp4', mimeType: 'video/mp4', buffer: Buffer.from('fixture') });
+    await p.waitForTimeout(150);
+    assert.equal(state.writes.filter(write => write.name === '/storefront/media/upload').length, beforeUploads, 'replacing an image accepted a video upload');
     assert.deepEqual(ui.errors, []);
     await ui.context.close();
     console.log(
