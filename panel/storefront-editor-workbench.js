@@ -41,7 +41,9 @@
     tab: 'content',
     device: 'desktop',
     scope: 'shared',
-    pane: 'preview',
+    pane: 'settings',
+    outlineOpen: false,
+    orientationLocked: false,
     undo: [],
     redo: [],
     group: null,
@@ -218,7 +220,8 @@
     E.root = view;
     view.classList.add('sfe-host');
     view.innerHTML = `<div class="sfe-workbench" data-storefront-workbench>
-    <header class="sfe-topbar"><div class="sfe-heading">${btn('back', ico('chevR'), false, 'aria-label="بازگشت به تنظیمات"')}<div><h2>ویرایش فروشگاه</h2><span>صفحه اصلی</span></div><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-actions">${btn('undo', '↶', false, 'aria-label="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="تکرار تغییر"')}${btn('media', 'رسانه‌ها')}${btn('versions', 'نسخه‌ها')}${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'مرور و انتشار', true)}</div></header>
+    <header class="sfe-topbar"><div class="sfe-heading">${btn('back', ico('chevR'), false, 'aria-label="بازگشت به تنظیمات"')}<div><h2>ویرایش فروشگاه</h2><span>محیط ویرایش افقی</span></div><span class="sfe-badge">پیش‌نویس</span></div><div class="sfe-actions">${btn('save', 'ذخیره پیش‌نویس')}${btn('review', 'مرور و انتشار', true)}</div></header>
+    <div class="sfe-editor-toolbar"><nav class="sfe-mobile-nav" aria-label="نمای محیط ویرایش">${['sections', 'preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="false" ${k === 'sections' ? 'aria-controls="sfe-outline" aria-expanded="false"' : ''}>${['بخش‌ها', 'پیش‌نمایش', 'ویرایش'][i]}</button>`).join('')}</nav>
     <section class="sfe-content-tools" aria-label="مدیریت محتوای فروشگاه">${[
       ['studio-library', 'play', 'ویدیوهای آموزشی', 'فیلم، کاور و موضوع آموزش'],
       ['studio-categories', 'box', 'دسته‌بندی محصولات', 'نام، عکس و محصولات هر دسته'],
@@ -230,20 +233,17 @@
           `<span class="sfe-tool-icon" aria-hidden="true">${ico(icon)}</span><span><strong>${label}</strong><small>${hint}</small></span>`,
         ),
       )
-      .join('')}</section>
-    <div class="sfe-notice" data-notice role="alert" hidden></div><nav class="sfe-mobile-nav" aria-label="قسمت‌های ویرایشگر">${['sections', 'preview', 'settings'].map((k, i) => `<button type="button" data-pane="${k}" aria-pressed="${k === E.pane}">${['بخش‌ها', 'پیش‌نمایش', 'تنظیمات بخش'][i]}</button>`).join('')}</nav>
-    <div class="sfe-workspace"><aside class="sfe-outline"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><aside class="sfe-inspector"><div class="sfe-sheet-handle" aria-hidden="true"></div><div data-inspector></div></aside></div>
-    <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div></div>`;
+      .join('')}</section><div class="sfe-utility-actions" aria-label="ابزارهای ویرایش">${btn('search-settings', 'جستجو', false, 'aria-label="جستجوی تنظیمات" aria-keyshortcuts="Control+K"')}${btn('undo', '↶', false, 'aria-label="برگشت تغییر"')}${btn('redo', '↷', false, 'aria-label="تکرار تغییر"')}${btn('media', 'رسانه‌ها')}${btn('versions', 'نسخه‌ها')}</div></div>
+    <div class="sfe-notice" data-notice role="alert" hidden></div>
+    <div class="sfe-workspace"><aside class="sfe-outline" id="sfe-outline" aria-label="فهرست بخش‌های فروشگاه"><div class="sfe-pane-head"><strong>ساختار صفحه</strong><span>ترتیب فعلی فروشگاه</span></div><div data-outline></div><div class="sfe-outline-foot">${btn('add', 'افزودن بخش', true)}${btn('theme', 'هویت بصری فروشگاه')}</div></aside><main class="sfe-canvas"><div class="sfe-canvas-bar"><strong>پیش‌نمایش زنده</strong><div class="sfe-devices">${['desktop', 'tablet', 'mobile'].map((k, i) => `<button type="button" data-device="${k}" aria-pressed="${k === E.device}">${['دسکتاپ', 'تبلت', 'موبایل'][i]}</button>`).join('')}</div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><aside class="sfe-inspector" aria-label="تنظیمات بخش انتخاب‌شده"><div data-inspector></div></aside><button type="button" class="sfe-outline-scrim" data-action="outline-dismiss" aria-label="بستن فهرست بخش‌ها"></button></div>
+    <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div>
+    <section class="sfe-orientation-gate" data-orientation-gate aria-labelledby="sfe-orientation-title" hidden><div class="sfe-orientation-card"><svg viewBox="0 0 80 80" fill="none" aria-hidden="true"><rect x="17" y="25" width="46" height="29" rx="5" stroke="currentColor" stroke-width="3"/><path d="M24 18a23 23 0 0138 3M62 12v9h-9M56 61a23 23 0 01-38-3M18 67v-9h9" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2 id="sfe-orientation-title" tabindex="-1">برای ویرایش، صفحه را افقی کن</h2><p>گوشی یا تبلت را بچرخان؛ در رایانه، پنجره را عریض‌تر کن.</p><small>فرم باز و تغییراتت حفظ می‌شوند.</small><details><summary>صفحه نمی‌چرخد؟</summary><p>قفل چرخش گوشی را خاموش کن و دوباره دستگاه را بچرخان.</p></details>${btn('back', 'بازگشت به پنل')}</div></section></div>`;
     E.iframe = $('[data-preview-frame]');
     $('.sfe-outline .sfe-pane-head').insertAdjacentHTML(
       'afterend',
       '<label class="sfe-outline-search"><span>جستجوی بخش‌ها</span><input type="search" data-section-query placeholder="نام بخش یا نوع آن" aria-label="جستجوی بخش‌ها"></label>',
     );
     $('[data-section-query]').value = E.sectionQuery;
-    $('.sfe-actions').insertAdjacentHTML(
-      'afterbegin',
-      btn('search-settings', 'جستجو', false, 'aria-label="جستجوی تنظیمات" aria-keyshortcuts="Control+K"'),
-    );
     E.iframe.addEventListener('load', bridge);
     view.onclick = click;
     view.oninput = (e) => {
@@ -264,6 +264,7 @@
     inspector();
     status();
     pane(E.pane);
+    viewport();
   }
   function outline() {
     if (!E.root || !$('[data-outline]')) return;
@@ -476,12 +477,8 @@
     if (!stage || stage.clientWidth < 30) return;
     const width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device],
       scale = Math.min(1, (stage.clientWidth - 24) / width),
-      compact = matchMedia('(max-width:850px)').matches,
-      small = compact && E.pane === 'settings',
       padding = getComputedStyle(stage),
-      available = compact
-        ? small ? 220 : 590
-        : Math.max(200, stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2),
+      available = Math.max(40, stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2),
       height = available / scale;
     const wrap = $('[data-frame-wrap]');
     wrap.style.width = width * scale + 'px';
@@ -492,10 +489,41 @@
     E.iframe.style.transformOrigin = 'top right';
   }
   function pane(value) {
-    E.pane = value;
+    if (value === 'sections') E.outlineOpen = !E.outlineOpen;
+    else {
+      E.pane = value;
+      E.outlineOpen = false;
+    }
     if (!E.root) return;
-    $('[data-storefront-workbench]').dataset.pane = value;
-    $$('[data-pane]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pane === value)));
+    $('[data-storefront-workbench]').dataset.pane = E.pane;
+    $('[data-storefront-workbench]').dataset.outlineOpen = String(E.outlineOpen);
+    $$('button[data-pane]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.pane === 'sections' ? E.outlineOpen : b.dataset.pane === E.pane));
+      if (b.dataset.pane === 'sections') b.setAttribute('aria-expanded', String(E.outlineOpen));
+    });
+    requestAnimationFrame(fit);
+  }
+  function viewport() {
+    if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
+    E.root.style.setProperty('--sfe-usable-height', (window.visualViewport?.height || innerHeight) + 'px');
+    E.root.style.setProperty('--sfe-viewport-top', (window.visualViewport?.offsetTop || 0) + 'px');
+    const touch = navigator.maxTouchPoints > 0;
+    const type = screen.orientation?.type;
+    const physicalPortrait = touch && type
+      ? type.startsWith('portrait')
+      : touch && typeof window.orientation === 'number'
+        ? Math.abs(window.orientation) % 180 === 0
+        : touch && screen.width <= screen.height;
+    const locked = physicalPortrait || innerWidth <= innerHeight;
+    const wasLocked = E.orientationLocked;
+    if (locked && !wasLocked) E.orientationFocus = document.activeElement;
+    E.orientationLocked = locked;
+    const root = $('[data-storefront-workbench]');
+    root.dataset.orientationLocked = String(locked);
+    $('[data-orientation-gate]').hidden = !locked;
+    modalBackground(!$('[data-overlay]').hidden);
+    if (locked && !wasLocked) $('#sfe-orientation-title').focus({ preventScroll: true });
+    else if (!locked && wasLocked && E.orientationFocus?.isConnected) E.orientationFocus.focus({ preventScroll: true });
     requestAnimationFrame(fit);
   }
   function chrome(kind) {
@@ -821,7 +849,11 @@
     overlay.querySelector('button,input,select,textarea')?.focus({ preventScroll: true });
   }
   function modalBackground(inert) {
-    $$('.sfe-workbench > :not([data-overlay])').forEach((node) => (node.inert = inert));
+    $$('.sfe-workbench > *').forEach((node) => {
+      node.inert = node.matches('[data-orientation-gate]')
+        ? !E.orientationLocked
+        : node.matches('[data-overlay]') ? E.orientationLocked : inert || E.orientationLocked;
+    });
   }
   function close() {
     if (E.modalBack) {
@@ -1762,6 +1794,12 @@
     if (!routeActive() || !E.root?.querySelector('[data-storefront-workbench]')) return;
     const b = event.target.closest('button');
     if (!b || !E.root.contains(b)) return;
+    if (E.orientationLocked && !b.closest('[data-orientation-gate]')) return;
+    if (b.dataset.action === 'outline-dismiss') {
+      pane(E.pane);
+      $('[data-pane="sections"]').focus({ preventScroll: true });
+      return;
+    }
     if (window.StorefrontEditorStudio?.handle(b)) return;
     if (b.dataset.findSection) {
       close();
@@ -2076,8 +2114,12 @@
     return E.promise;
   }
   window.addEventListener('resize', () => {
-    if (E.config && routeActive()) fit();
+    if (E.config && routeActive()) viewport();
   });
+  window.addEventListener('orientationchange', viewport);
+  screen.orientation?.addEventListener('change', viewport);
+  window.visualViewport?.addEventListener('resize', viewport);
+  window.visualViewport?.addEventListener('scroll', viewport);
   window.addEventListener('hashchange', () => {
     if (!routeActive() && E.root) E.root.classList.remove('sfe-host');
   });
@@ -2103,6 +2145,25 @@
   });
   document.addEventListener('keydown', (event) => {
     if (!E.config || !routeActive() || !$('[data-overlay]')) return;
+    if (E.orientationLocked) {
+      if ((event.ctrlKey || event.metaKey) && ['k', 's', 'z', 'y'].includes(event.key.toLowerCase())) event.preventDefault();
+      if (event.key === 'Tab') {
+        const list = $$('[data-orientation-gate] button,[data-orientation-gate] summary');
+        const first = list[0], last = list[list.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement.id === 'sfe-orientation-title')) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first?.focus();
+        }
+      }
+      return;
+    }
+    if (event.key === 'Escape' && E.outlineOpen && $('[data-overlay]').hidden) {
+      event.preventDefault();
+      pane(E.pane);
+      $('[data-pane="sections"]').focus({ preventScroll: true });
+      return;
+    }
     if (!$('[data-overlay]').hidden) {
       if (event.key === 'Escape') {
         event.preventDefault();

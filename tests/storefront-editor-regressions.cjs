@@ -260,15 +260,15 @@ async function run() {
     await legacy.context.close();
     console.log('PASS saved legacy dates stay inactive until scheduling is explicitly enabled');
 
-    for (const width of [390, 899, 1440]) {
+    for (const width of [844, 1024, 1440]) {
       const searchState = fixture(origin),
-        search = await editor(browser, origin, searchState, { width, height: width > 850 ? 1000 : 844 }),
+        search = await editor(browser, origin, searchState, { width, height: width >= 1200 ? 900 : 390 }),
         qp = search.page;
       await qp.waitForTimeout(300);
       assert.equal(await qp.evaluate(() => scrollY), 0, 'opening the preview scrolled the outer panel');
       assert.equal(await qp.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await qp.evaluate(() => document.body.textContent.includes('\\n')), false);
-      if (width <= 850) await qp.locator('[data-pane="sections"]').click();
+      if (width < 1200) await qp.locator('button[data-pane="sections"]').click();
       await qp.locator('[data-section-query]').fill('بخش قديمي');
       assert.equal(await qp.locator('[data-outline] [data-select]').count(), 1);
       assert.equal(await qp.locator('[data-outline] [data-select="legacy-hero"]').isVisible(), true);
@@ -284,7 +284,7 @@ async function run() {
         0,
         'settings search offered card controls on sections without cards',
       );
-      if (width === 390)
+      if (width === 844)
         await qp.screenshot({
           path: path.join(output, 'settings-search-mobile.png'),
           animations: 'disabled',

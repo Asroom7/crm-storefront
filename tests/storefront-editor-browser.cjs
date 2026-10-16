@@ -579,10 +579,10 @@ async function run() {
     await ui.context.close();
     const mobileState = fixture(origin),
       mobile = await editor(browser, origin, mobileState, {
-        width: 390,
-        height: 844,
+        width: 844,
+        height: 390,
       });
-    await mobile.page.locator('[data-pane="settings"]').click();
+    await mobile.page.locator('button[data-pane="settings"]').click();
     await mobile.page.locator('[data-field="content.title"]').fill('ویرایش موبایل');
     await mobile.page.waitForTimeout(1500);
     assert.equal(
@@ -591,7 +591,7 @@ async function run() {
       'mobile horizontal overflow',
     );
     const mobileWrites = mobileState.writes.length;
-    await mobile.page.locator('[data-pane="sections"]').click();
+    await mobile.page.locator('button[data-pane="sections"]').click();
     await mobile.page.locator('[data-hidden-sections] summary').click();
     await mobile.page.locator('[data-select="legacy-hero"]').click();
     assert.equal(
