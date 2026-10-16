@@ -1,10 +1,14 @@
 /* Pure draft operations. No defaults, migration, ordering or network side effects. */
 (function (root, factory) {
   'use strict';
-  const model = factory();
+  const model = factory(
+    typeof module === 'object' && module.exports
+      ? require('../storefront-content-core.js')
+      : root.StorefrontContentCore,
+  );
   if (typeof module === 'object' && module.exports) module.exports = model;
   else root.StorefrontEditorModel = model;
-})(typeof window === 'undefined' ? globalThis : window, function () {
+})(typeof window === 'undefined' ? globalThis : window, function (StorefrontContentCore) {
   'use strict';
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const object = (value) => value && typeof value === 'object' && !Array.isArray(value);
@@ -159,6 +163,8 @@
       if (s.startsAt && s.endsAt && new Date(s.startsAt) >= new Date(s.endsAt))
         errors.push('زمان پایان پیشنهاد باید بعد از زمان شروع باشد');
     });
+    if (typeof StorefrontContentCore !== 'undefined')
+      errors.push(...StorefrontContentCore.validateContent(data.config, data.theme));
     return [...new Set(errors)];
   }
   function safeUrl(value) {
@@ -168,7 +174,14 @@
     return !/^[a-z]+:|^\/\/|\\|[<>]/i.test(raw);
   }
   function preflight(data, context = {}) {
-    const issues = validate(data).map((message) => ({ level: 'error', message }));
+    const issues = [
+      ...new Set([
+        ...validate(data),
+        ...(StorefrontContentCore
+          ? StorefrontContentCore.validateContent(data.config, data.theme, true)
+          : []),
+      ]),
+    ].map((message) => ({ level: 'error', message }));
     const resources = [],
       seen = new Set();
     const products = new Set((context.products || []).map((p) => Number(p.id)));
@@ -235,6 +248,74 @@
           addResource(row, st.videoPosters?.[url], 'image', 'تصویر شروع ویدیو'),
         );
     });
+    const lessons = data.theme?.educationLibraryV1?.items || [];
+    lessons
+      .filter((r) => r.status === 'published')
+      .forEach((r) => {
+        addResource({ id: '__theme' }, r.poster, 'image', 'کاور آموزش ' + r.title);
+        if (!safeUrl(r.url)) issues.push({ level: 'error', message: 'نشانی آموزش معتبر نیست' });
+        if ((r.productIds || []).some((id) => !products.has(Number(id))))
+          issues.push({ level: 'warning', message: 'محصول مرتبط با آموزش موجود نیست' });
+      });
+    (data.config.sections || []).forEach((row) => {
+      if (row.settings?.builderV1)
+        (row.content.elements || []).forEach((e) => {
+          if (e.type === 'image') addResource(row, e.url, 'image', 'تصویر بخش جدید');
+          if (e.type === 'video') addResource(row, e.poster, 'image', 'کاور ویدیو');
+          if (e.type === 'button') addResource(row, e.url, 'link', 'مقصد دکمه');
+          if (e.link) addResource(row, e.link, 'link', 'لینک تصویر');
+        });
+      if (row.settings?.offerV1?.enabled && context.products) {
+        (row.settings.productIds || []).forEach((id) => {
+          const p = context.products.find((p) => Number(p.id) === Number(id));
+          const rule = row.settings.offerV1.overrides?.[id] || row.settings.offerV1;
+          if (
+            !p ||
+            p.isPublished === false ||
+            StorefrontContentCore.discounted(StorefrontContentCore.basePrice(p), rule) >=
+              StorefrontContentCore.basePrice(p)
+          )
+            issues.push({
+              level: 'error',
+              sectionId: row.id,
+              message: 'محصول یا قیمت پیشنهاد ویژه معتبر نیست',
+            });
+        });
+      }
+      if (row.settings?.editorOptionsV1?.videoSource === 'education') {
+        if (!data.theme?.educationLibraryV1?.enabled)
+          issues.push({ level: 'warning', sectionId: row.id, message: 'کتابخانهٔ آموزش غیرفعال است' });
+        const selected = (row.settings.lessonIds || []).filter(
+          (id) => !lessons.some((r) => r.id === id && r.status === 'published'),
+        );
+        if (selected.length)
+          issues.push({
+            level: 'warning',
+            sectionId: row.id,
+            message: 'یک آموزش انتخابی حذف، بایگانی یا پیش‌نویس شده است',
+          });
+      }
+    });
+    if (context.published) {
+      const finance = (config) =>
+        (config.sections || [])
+          .filter((s) => s.settings?.offerV1?.enabled)
+          .map((s) => ({
+            id: s.id,
+            productIds: s.settings.productIds,
+            offer: s.settings.offerV1,
+            startsAt: s.settings.startsAt,
+            endsAt: s.settings.endsAt,
+            enabled: s.enabled,
+            visible: s.settings.editorOptionsV1?.visible,
+          }));
+      if (!equal(finance(context.published.config), finance(data.config)))
+        issues.push({
+          level: 'warning',
+          message:
+            'این انتشار پیشنهاد یا قیمت واقعی محصولات را در کل فروشگاه و سفارش‌ها تغییر می‌دهد؛ مبلغ نهایی و زمان‌ها را بررسی کنید.',
+        });
+    }
     return { issues, resources };
   }
   function backupKey(sellerId) {

@@ -9,7 +9,9 @@
 
   function placeAfter(node, anchor) {
     if (!node || !anchor || node === anchor) return;
-    if (anchor.nextElementSibling === node) return;
+    let next = anchor.nextElementSibling;
+    while (next && next.hasAttribute('data-editor-anchor')) next = next.nextElementSibling;
+    if (next === node) return;
     root.insertBefore(node, anchor.nextElementSibling);
   }
 

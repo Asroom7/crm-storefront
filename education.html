@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ویدیوهای آموزشی، نکات استفاده از محصولات آرایشی و مراقبتی و معرفی محصولات.">\n  <meta name="robots" content="index,follow,max-image-preview:large">\n  <meta property="og:type" content="website"><meta property="og:locale" content="fa_IR"><meta property="og:title" content="آموزش‌ها | Lumière"><meta property="og:description" content="ویدیوهای آموزشی، نکات استفاده از محصولات آرایشی و مراقبتی و معرفی محصولات.">\n  <link rel="canonical" href="https://asroom7.github.io/crm-storefront/education.html">
+  <meta name="description" content="ویدیوهای آموزشی، نکات استفاده از محصولات آرایشی و مراقبتی و معرفی محصولات.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta property="og:type" content="website"><meta property="og:locale" content="fa_IR"><meta property="og:title" content="آموزش‌ها | Lumière"><meta property="og:description" content="ویدیوهای آموزشی، نکات استفاده از محصولات آرایشی و مراقبتی و معرفی محصولات.">
+  <link rel="canonical" href="https://asroom7.github.io/crm-storefront/education.html">
   <meta name="theme-color" content="#fffdfc">
   <title>آموزش‌ها | Lumière</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="storefront-home.css?v=20260930-v2">
   <link rel="stylesheet" href="storefront-education.css?v=20260930-v2">
-  <script src="api.js"></script>\n  <script src="storefront-seo-analytics.js?v=20261009-v1" defer></script>
+  <script src="api.js"></script>
+  <script src="storefront-seo-analytics.js?v=20261009-v1" defer></script>
   <style>
     body{margin:0;background:var(--sf-bg,#fffdfc);color:var(--sf-ink,#211b1e)}
     .edu-page{min-height:100vh;padding-bottom:64px}
@@ -39,6 +43,7 @@
     @media(min-width:1120px){.edu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.edu-card{grid-template-columns:minmax(118px,40%) minmax(0,1fr)}}
     @media(prefers-reduced-motion:reduce){.edu-skeleton{animation:none}}
   </style>
+<style>.edu-library-controls{width:min(calc(100% - 32px),1180px);margin:16px auto;display:flex;flex-wrap:wrap;gap:12px}.edu-library-controls label{display:grid;gap:6px;flex:1;min-width:160px;font-size:12px}.edu-library-controls input,.edu-library-controls select{font:inherit;padding:12px;border:1px solid #e6dce1;border-radius:12px;background:white;width:100%}.edu-library-more{display:block;margin:24px auto}.edu-grid>.edu-empty{grid-column:1/-1}</style>
 </head>
 <body>
   <main class="edu-page">
@@ -63,94 +68,8 @@
     </div>
   </main>
 
-  <script>
-    (function(){
-      'use strict';
-      const root=document.getElementById('education-list');
-      const toArray=v=>Array.isArray(v)?v:[];
-      const mediaUrl=value=>{
-        if(!value)return'';
-        try{
-          const u=new URL(String(value),location.href);
-          return (u.protocol==='http:'||u.protocol==='https:')?u.href:'';
-        }catch(e){return'';}
-      };
-
-      function buildCard(row,index){
-        const card=document.createElement('article');
-        card.className='edu-card';
-
-        const media=document.createElement('div');
-        media.className='edu-media';
-        const video=document.createElement('video');
-        video.controls=true;
-        video.muted=true;
-        video.playsInline=true;
-        video.preload='metadata';
-        video.setAttribute('aria-label','ویدیوی آموزشی '+(index+1));
-        const source=document.createElement('source');
-        source.src=row.url;
-        video.appendChild(source);
-        media.appendChild(video);
-
-        const copy=document.createElement('div');
-        copy.className='edu-copy';
-        const badge=document.createElement('span');
-        badge.className='edu-badge';
-        badge.textContent='محتوای آموزشی';
-        const title=document.createElement('h2');
-        title.textContent=row.product.name||'آموزش محصول';
-        const description=document.createElement('p');
-        description.textContent='نکات و روش استفاده از محصول';
-        const link=document.createElement('a');
-        link.className='edu-product-link';
-        link.href='product-detail.html?id='+encodeURIComponent(row.product.id);
-        link.textContent='مشاهده محصول مرتبط ‹';
-        copy.append(badge,title,description,link);
-        card.append(media,copy);
-        return {card,video};
-      }
-
-      async function load(){
-        try{
-          if(typeof apiFetch!=='function'||typeof SELLER_ID==='undefined')throw new Error('Store API is unavailable');
-          const products=await apiFetch('/products/public/'+SELLER_ID);
-          const rows=[];
-          toArray(products).forEach(product=>{
-            toArray(product&&product.media).forEach(media=>{
-              const url=media&&media.kind==='video'?mediaUrl(media.url):'';
-              if(url)rows.push({product,url});
-            });
-          });
-
-          if(!rows.length){
-            root.className='edu-empty';
-            root.textContent='هنوز ویدیوی آموزشی برای نمایش ثبت نشده است.';
-            return;
-          }
-
-          const grid=document.createElement('section');
-          grid.className='edu-grid';
-          grid.setAttribute('aria-label','همه ویدیوهای آموزشی');
-          const videos=[];
-          rows.forEach((row,index)=>{
-            const built=buildCard(row,index);
-            videos.push(built.video);
-            grid.appendChild(built.card);
-          });
-          videos.forEach(video=>video.addEventListener('play',()=>{
-            videos.forEach(other=>{if(other!==video&&!other.paused)other.pause();});
-          }));
-          root.replaceWith(grid);
-        }catch(error){
-          console.error(error);
-          root.className='edu-error';
-          root.textContent='در دریافت ویدیوهای آموزشی مشکلی پیش آمد. لطفاً صفحه را دوباره بارگذاری کنید.';
-        }
-      }
-
-      load();
-    })();
-  </script>
+  <script src="storefront-content-core.js?v=20261016-studio"></script>
+  <script src="storefront-content-runtime.js?v=20261016-studio"></script>
+  <script src="education-library.js?v=20261016-studio"></script>
 </body>
 </html>

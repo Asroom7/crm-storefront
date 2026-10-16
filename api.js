@@ -346,7 +346,31 @@ function hydrateSideMenuCategories(categories) {
   });
 }
 
+// Opt-in navigation for customer pages outside the home editor runtime.
+function applyContentNavigation() {
+  if (!document.querySelector('.side-menu') || document.getElementById('storefront-home-root')) return;
+  apiFetch('/storefront/public/' + SELLER_ID + '/home').then(function (page) {
+    if (!page.theme || (!page.theme.educationLibraryV1?.enabled && !page.theme.editorMenuV1?.enabled)) return;
+    function script(source, ready) {
+      if (ready()) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var node = document.createElement('script');
+        node.src = source; node.onload = resolve; node.onerror = reject; document.head.appendChild(node);
+      });
+    }
+    return script('storefront-content-core.js?v=20261016-studio', function () { return !!window.StorefrontContentCore; })
+      .then(function () { return script('storefront-content-runtime.js?v=20261016-studio', function () { return !!window.StorefrontContentRuntime; }); })
+      .then(function () {
+        if (!document.querySelector('[data-content-styles]')) {
+          var style = document.createElement('link'); style.rel = 'stylesheet'; style.href = 'storefront-content.css?v=20261016-studio'; style.dataset.contentStyles = '1'; document.head.appendChild(style);
+        }
+        window.StorefrontContentRuntime.menu(page.theme);
+      });
+  }).catch(function () { /* Keep the existing navigation if content settings are unavailable. */ });
+}
+
 function applyStoreChrome() {
+  applyContentNavigation();
   updateCartBadges();
   applyCustomerNavigation();
   fetchStoreConfig().then(applyStoreBrand).catch(function () { /* صفحه بدون تنظیمات هم قابل استفاده بماند */ });
