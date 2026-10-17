@@ -1,6 +1,6 @@
 {
-  "task": "storefront-editor-stability-pack-6",
+  "task": "storefront-editor-picker-media-pack-4-finalize",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "User explicitly requested Package 6 only: stability coverage for the storefront editor, including Playwright browser checks, responsive portrait regression coverage, zoom/performance guards and visual regression against the previous/base revision. Changes are test/CI-only in tests/*.cjs and .github/workflows/code-check.yml. No production editor/runtime CSS/JS/HTML, live storefront, backend, panel core, data, products, orders, customers, media or other approved sections may change."
+  "note": "User requested continuing Package 4 only. This finalization is editor-local and uses already-existing lightweight/paginated backend feeds. Scope: remove the remaining heavy initial product preload, lazily hydrate only referenced products, keep global product search server-backed, and paginate the video media picker. No backend/shared/core files, live storefront runtime/layout/content, panel app core, products/orders/customers data, or unrelated approved sections may change."
 }
