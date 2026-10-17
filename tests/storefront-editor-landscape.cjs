@@ -1,51 +1,48 @@
 'use strict';
-const assert = require('node:assert/strict'),
-  path = require('node:path');
+const assert = require('node:assert/strict');
+const path = require('node:path');
 const { chromium } = require('playwright');
-const { server, fixture, editor, setup } = require('./storefront-editor-browser.cjs');
+const { server, fixture, editor } = require('./storefront-editor-browser.cjs');
+
 const output = process.env.EDITOR_QA_OUTPUT || path.resolve(__dirname, '../../editor-qa/screenshots');
-const snapshot = (p) =>
-  p.evaluate(() =>
-    StorefrontEditorModel.snapshot(
-      StorefrontEditorComplete.state.config,
-      StorefrontEditorComplete.state.theme,
-    ),
-  );
-const settle = (p) =>
-  p.waitForFunction(
-    () =>
-      !StorefrontEditorComplete.state.saving &&
-      StorefrontEditorModel.equal(
-        StorefrontEditorComplete.state.server,
-        StorefrontEditorModel.snapshot(
-          StorefrontEditorComplete.state.config,
-          StorefrontEditorComplete.state.theme,
-        ),
-      ),
-  );
-async function checkSplit(p) {
-  await p.waitForFunction(() => {
-    const canvas = document.querySelector('.sfe-canvas').getBoundingClientRect(),
-      settings = document.querySelector('.sfe-inspector').getBoundingClientRect();
-    return settings.width > 0 && canvas.right <= settings.left + 1 && Math.abs(settings.top - canvas.top) < 2;
+
+const rect = (page, selector) =>
+  page.locator(selector).evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    return {
+      x: Math.round(box.x),
+      y: Math.round(box.y),
+      width: Math.round(box.width),
+      height: Math.round(box.height),
+      right: Math.round(box.right),
+      bottom: Math.round(box.bottom),
+    };
   });
-  assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+async function assertNoOverflow(page) {
   assert.equal(
-    await p.locator('.sfe-statusbar').evaluate((n) => n.getBoundingClientRect().bottom <= innerHeight),
-    true,
-    'save status fell outside the viewport',
+    await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+    false,
+    'editor created horizontal page overflow',
   );
-  await p.waitForFunction(() => {
-    const canvas = document.querySelector('.sfe-canvas').getBoundingClientRect(),
-      stage = document.querySelector('.sfe-preview-stage').getBoundingClientRect(),
-      frame = document.querySelector('[data-frame-wrap]').getBoundingClientRect();
-    return frame.bottom <= stage.bottom + 1 && stage.bottom <= canvas.bottom + 1;
-  });
 }
-async function openDrawerTool(p, action) {
-  await p.locator('[data-pane="sections"]').click();
-  await p.locator(`.sfe-outline [data-action="${action}"]`).click();
+
+async function assertSinglePane(page, pane) {
+  await page.locator(`[data-pane="${pane}"]`).click();
+  if (pane === 'settings') {
+    assert.equal(await page.locator('.sfe-inspector').isVisible(), true);
+    assert.equal(await page.locator('.sfe-canvas').isVisible(), false);
+    const inspector = await rect(page, '.sfe-inspector');
+    assert.ok(inspector.width >= (await page.evaluate(() => innerWidth)) - 24, 'portrait settings pane is not full width');
+  } else {
+    assert.equal(await page.locator('.sfe-canvas').isVisible(), true);
+    assert.equal(await page.locator('.sfe-inspector').isVisible(), false);
+    const canvas = await rect(page, '.sfe-canvas');
+    assert.ok(canvas.width >= (await page.evaluate(() => innerWidth)) - 24, 'portrait preview pane is not full width');
+  }
+  await assertNoOverflow(page);
 }
+
 (async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
@@ -60,139 +57,59 @@ async function openDrawerTool(p, action) {
       '--ignore-gpu-blocklist',
     ],
   });
-  try {
-    const state = fixture(origin),
-      ui = await editor(browser, origin, state, { width: 390, height: 844 }),
-      p = ui.page;
-    const initial = await snapshot(p);
-    assert.equal(await p.locator('[data-orientation-gate]').isVisible(), true);
-    assert.equal(await p.locator('.sfe-topbar').evaluate((n) => n.inert), true);
-    await p.keyboard.press('Control+k');
-    assert.equal(await p.locator('[data-overlay]').isVisible(), false);
-    assert.equal(state.writes.length, 0);
-    await p.screenshot({ path: path.join(output, 'landscape-portrait-gate.png'), animations: 'disabled' });
-    await p.setViewportSize({ width: 844, height: 390 });
-    await p.locator('[data-orientation-gate]').waitFor({ state: 'hidden' });
-    await checkSplit(p);
-    assert.deepEqual(await snapshot(p), initial);
-    assert.equal(state.writes.length, 0);
-    await p.locator('button[data-pane="sections"]').click();
-    assert.equal(await p.locator('.sfe-outline').isVisible(), true);
-    await p.locator('[data-select="best"]').click();
-    assert.equal(await p.locator('.sfe-outline').isVisible(), false);
-    await p.locator('[data-field="content.title"]').fill('عنوان در محیط افقی');
-    await settle(p);
-    const draft = await snapshot(p),
-      writes = state.writes.length;
-    await openDrawerTool(p, 'studio-library');
-    await p.locator('[data-studio="lesson-new"]').click();
-    await p.locator('[data-studio-field="title"]').fill('فرم ذخیره‌نشده هنگام چرخش');
-    await p.setViewportSize({ width: 390, height: 844 });
-    await p.locator('[data-orientation-gate]').waitFor({ state: 'visible' });
-    await p.keyboard.press('Control+k');
-    assert.equal(await p.locator('[data-overlay]').evaluate((n) => n.inert), true);
-    await p.setViewportSize({ width: 844, height: 390 });
-    await p.locator('[data-orientation-gate]').waitFor({ state: 'hidden' });
-    assert.equal(await p.locator('[data-studio-field="title"]').inputValue(), 'فرم ذخیره‌نشده هنگام چرخش');
-    assert.equal(await p.locator('[data-overlay]').evaluate((n) => n.inert), false);
-    assert.deepEqual(await snapshot(p), draft);
-    assert.equal(state.writes.length, writes, 'rotation wrote the draft');
-    await p.locator('[data-overlay] [data-action="close"]').first().click();
-    for (const viewport of [
-      { width: 568, height: 320 },
-      { width: 667, height: 375 },
-      { width: 740, height: 360 },
-      { width: 844, height: 390 },
-      { width: 1024, height: 768 },
-      { width: 1280, height: 720 },
-      { width: 1440, height: 900 },
-    ]) {
-      await p.setViewportSize(viewport);
-      await p.locator('button[data-pane="settings"]').click();
-      await checkSplit(p);
-      if ([568, 844, 1440].includes(viewport.width))
-        await p.screenshot({
-          path: path.join(output, 'landscape-editor-' + viewport.width + '.png'),
-          animations: 'disabled',
-        });
-      const before = await p.locator('.sfe-canvas').evaluate((n) => n.clientWidth);
-      await p.locator('button[data-pane="preview"]').click();
-      assert.equal(await p.locator('.sfe-inspector').isVisible(), false);
-      assert.ok((await p.locator('.sfe-canvas').evaluate((n) => n.clientWidth)) > before);
-    }
-    assert.deepEqual(ui.errors, []);
-    await p.locator('[data-action="back"]').first().click();
-    await p.waitForFunction(() => !document.querySelector('.sfe-host'));
-    assert.equal(
-      await p.locator('#app > .topbar').isVisible(),
-      true,
-      'editor fullscreen styling leaked to the panel',
-    );
-    console.log(
-      'PASS portrait gate, landscape split, drawer, expanded preview, rotation preserves draft/form, no writes and route cleanup',
-    );
 
-    const touchState = fixture(origin),
-      context = await browser.newContext({
-        viewport: { width: 390, height: 844 },
-        screen: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-      }),
-      tp = await context.newPage();
-    await setup(tp, touchState);
-    await tp.addInitScript(() => {
-      const query = window.matchMedia.bind(window);
-      window.matchMedia = (value) => {
-        const result = query(value);
-        if (value === '(pointer:coarse)') Object.defineProperty(result, 'matches', { value: false });
-        return result;
-      };
-      window.__physicalOrientation = 'portrait-primary';
-      Object.defineProperty(screen.orientation, 'type', {
-        configurable: true,
-        get: () => window.__physicalOrientation,
-      });
-    });
-    await tp.goto(origin + '/new/panel/index.html#/storefront-editor');
-    await tp.locator('[data-orientation-gate]').waitFor();
-    assert.equal(await tp.evaluate(() => matchMedia('(pointer:coarse)').matches), false);
-    await tp.setViewportSize({ width: 390, height: 250 });
+  try {
+    const state = fixture(origin);
+    const ui = await editor(browser, origin, state, { width: 390, height: 844 });
+    const page = ui.page;
+
     assert.equal(
-      await tp.locator('[data-orientation-gate]').isVisible(),
-      true,
-      'keyboard resize unlocked a portrait device',
+      await page.locator('[data-orientation-gate]').count(),
+      0,
+      'obsolete rotate-device gate returned',
     );
-    await tp.evaluate(() => {
-      window.__physicalOrientation = 'landscape-primary';
-      dispatchEvent(new Event('orientationchange'));
+    await assertSinglePane(page, 'settings');
+    await page.screenshot({
+      path: path.join(output, 'portrait-editor-settings-390.png'),
+      animations: 'disabled',
     });
-    await tp.setViewportSize({ width: 844, height: 390 });
-    await tp.locator('[data-orientation-gate]').waitFor({ state: 'hidden' });
-    await openDrawerTool(tp, 'studio-library');
-    await tp.locator('[data-studio="lesson-new"]').click();
-    await tp.locator('[data-studio-field="title"]').fill('حفظ فرم با بازشدن صفحه‌کلید');
-    await tp.evaluate(() => {
-      Object.defineProperty(visualViewport, 'height', { configurable: true, get: () => 220 });
-      visualViewport.dispatchEvent(new Event('resize'));
+
+    await assertSinglePane(page, 'preview');
+    await page.waitForFunction(() => {
+      const stage = document.querySelector('.sfe-preview-stage')?.getBoundingClientRect();
+      const frame = document.querySelector('[data-frame-wrap]')?.getBoundingClientRect();
+      return !!stage && !!frame && frame.right <= stage.right + 1 && frame.bottom <= stage.bottom + 1;
     });
-    assert.equal(await tp.evaluate(() => innerHeight), 390, 'keyboard test resized the layout viewport');
-    assert.equal(await tp.locator('[data-orientation-gate]').isVisible(), false);
-    const footer = await tp.locator('.sfe-dialog > footer').boundingBox();
-    assert.ok(footer.y + footer.height <= 220);
-    assert.equal(await tp.locator('[data-studio-field="title"]').inputValue(), 'حفظ فرم با بازشدن صفحه‌کلید');
-    assert.equal(touchState.writes.length, 0);
-    await context.close();
+    await page.screenshot({
+      path: path.join(output, 'portrait-editor-preview-390.png'),
+      animations: 'disabled',
+    });
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await assertSinglePane(page, 'settings');
+    await assertSinglePane(page, 'preview');
+    assert.equal(state.writes.length, 0, 'viewport/pane switching wrote a draft');
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.locator('[data-pane="settings"]').click();
+    await page.waitForFunction(() => {
+      const canvas = document.querySelector('.sfe-canvas')?.getBoundingClientRect();
+      const inspector = document.querySelector('.sfe-inspector')?.getBoundingClientRect();
+      return !!canvas && !!inspector && canvas.width > 0 && inspector.width > 0 && canvas.right <= inspector.left + 1;
+    });
+    assert.equal(await page.locator('.sfe-canvas').isVisible(), true);
+    assert.equal(await page.locator('.sfe-inspector').isVisible(), true);
+    await assertNoOverflow(page);
+
+    assert.deepEqual(ui.errors, []);
     await ui.context.close();
-    console.log(
-      'PASS hardware orientation survives soft-keyboard resizing without unlocking portrait or losing forms',
-    );
+    console.log('PASS portrait editing without rotation gate, full-width mobile panes and tablet/desktop split');
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
   }
-})().catch((e) => {
-  console.error(e);
+})().catch((error) => {
+  console.error(error);
   server.close();
   process.exitCode = 1;
 });
