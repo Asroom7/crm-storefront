@@ -712,12 +712,30 @@
     if (!rows().some((s) => s.type === 'footer')) all.push({ id: '__footer', type: 'footer' });
     const lookup = new Map(all.map((s) => [s.id, s]));
     // DOM order is a view of the draft. Never sort or normalize the stored rows.
-    const order = E.previewSections || [
-      { id: '__header' },
-      ...FIXED.filter((type) => type !== 'footer').flatMap((type) => rows().filter((s) => s.type === type)),
-      ...rows().filter((s) => EXTRA.includes(s.type) && s.settings?.editorManagedV1 === true),
-      all.find((s) => s.type === 'footer'),
-    ];
+    const order = (
+      E.previewSections || [
+        { id: '__header' },
+        ...FIXED.filter((type) => type !== 'footer').flatMap((type) => rows().filter((s) => s.type === type)),
+        ...rows().filter((s) => EXTRA.includes(s.type) && s.settings?.editorManagedV1 === true),
+        all.find((s) => s.type === 'footer'),
+      ]
+    ).slice();
+    const missingTemplateTypes = FIXED.filter(
+      (type) =>
+        type !== 'footer' &&
+        !rows().some((s) => s.type === type) &&
+        !order.some((entry) => entry?.type === type || lookup.get(entry?.id)?.type === type),
+    );
+    if (missingTemplateTypes.length) {
+      const footerIndex = order.findIndex(
+        (entry) => entry?.type === 'footer' || lookup.get(entry?.id)?.type === 'footer',
+      );
+      order.splice(
+        footerIndex < 0 ? order.length : footerIndex,
+        0,
+        ...missingTemplateTypes.map((type) => ({ id: '__template-' + type, type, visible: true })),
+      );
+    }
     const visible = order
       .filter(Boolean)
       .filter((entry) => entry.visible !== false)
