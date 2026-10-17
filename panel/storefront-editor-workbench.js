@@ -144,13 +144,15 @@
     E.redo = [];
     E.group = group ? { key: group, at: Date.now() } : null;
   }
-  function changed() {
+  function changed(options = {}) {
+    clearTimeout(E.outlineTimer);
     E.previewVersion = null;
     if ($('[data-version-bar]')) $('[data-version-bar]').hidden = true;
     E.error = '';
     backup();
     status();
-    outline();
+    if (options.deferOutline) E.outlineTimer = setTimeout(outline, 120);
+    else outline();
     preview();
     clearTimeout(E.timer);
     if (!E.conflict) E.timer = setTimeout(() => save(false), 1000);
@@ -226,7 +228,7 @@
       M.setPath(E.theme, 'editorThemeV1.' + el.dataset.field, value);
     const output = el.parentElement.querySelector('output');
     if (output) output.textContent = fa(value);
-    changed();
+    changed({ deferOutline: true });
   }
   function mount(view) {
     E.previewObserver?.disconnect();
