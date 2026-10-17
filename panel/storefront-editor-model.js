@@ -10,7 +10,8 @@
   else root.StorefrontEditorModel = model;
 })(typeof window === 'undefined' ? globalThis : window, function (StorefrontContentCore) {
   'use strict';
-  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const clone = (value) =>
+    typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value));
   const object = (value) => value && typeof value === 'object' && !Array.isArray(value);
   function canonical(value) {
     if (Array.isArray(value)) return value.map(canonical);
