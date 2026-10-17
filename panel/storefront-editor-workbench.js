@@ -637,7 +637,10 @@
       clearButton = E.root?.querySelector('[data-action="search-clear"]');
     if (!input || !results) return;
     const query = input.value;
-    if (query) ensureMediaSearchIndex();
+    if (query) {
+      ensureProductSearch(query);
+      ensureMediaSearch(query);
+    }
     if (clearButton) clearButton.hidden = !query;
     if (!E.searchOpen) return closeSearch();
     const quick = [
@@ -2842,11 +2845,8 @@
     view.innerHTML = '<div class="sfe-loading" role="status">در حال آماده‌سازی ویرایشگر…</div>';
     E.promise = (async () => {
       try {
-        const [page, productFeed, categories] = await Promise.all([
+        const [page, categories] = await Promise.all([
           sellerApiFetch(endpoint),
-          sellerApiFetch('/products/picker?limit=1000').catch(() =>
-            sellerApiFetch('/products').then((items) => ({ items })),
-          ),
           sellerApiFetch('/categories'),
         ]);
         E.page = page;
@@ -2857,10 +2857,21 @@
         E.backupError = false;
         E.unpublishedCache = null;
         E.validationCache = null;
-        E.products = Array.isArray(productFeed?.items) ? productFeed.items : [];
+        E.products = [];
         E.categories = categories || [];
         E.assets = [];
         E.mediaIndexLoaded = false;
+        const referencedProductIds = collectReferencedProductIds({
+          config: E.config,
+          theme: E.theme,
+          publishedConfig: page.publishedConfig,
+          publishedTheme: page.publishedTheme,
+        });
+        if (referencedProductIds.length) {
+          try {
+            await fetchProductsByIds(referencedProductIds);
+          } catch (_) {}
+        }
         if (page.publishedConfig)
           E.published = M.snapshot(page.publishedConfig, page.publishedTheme || page.theme);
         else {
