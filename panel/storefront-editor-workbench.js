@@ -996,18 +996,25 @@
   }
   function status() {
     if (!E.root || !$('[data-save-status]')) return;
-    const errors = M.validate(snap());
+    const errors = M.validate(snap()),
+      localBackupWarning = E.backupError && dirty();
     $('[data-save-status]').textContent = E.saving
       ? 'در حال ذخیره پیش‌نویس…'
       : E.conflict
-        ? 'نسخه سرور تغییر کرده؛ کار شما محفوظ است'
+        ? 'نسخه سرور تغییر کرده؛ کار فعلی هنوز در این صفحه است'
         : E.error
-          ? 'ذخیره انجام نشد؛ نسخه محلی محفوظ است'
+          ? localBackupWarning
+            ? 'ذخیره سرور و پشتیبان محلی هر دو ناموفق‌اند'
+            : 'ذخیره انجام نشد؛ نسخه محلی محفوظ است'
           : !navigator.onLine && dirty()
-            ? 'آفلاین؛ تغییرات در این دستگاه محفوظ است'
-            : dirty()
-              ? 'تغییرات هنوز روی سرور ذخیره نشده‌اند'
-              : 'پیش‌نویس ذخیره شده';
+            ? localBackupWarning
+              ? 'آفلاین؛ ذخیره محلی مرورگر در دسترس نیست'
+              : 'آفلاین؛ تغییرات در این دستگاه محفوظ است'
+            : localBackupWarning
+              ? 'تغییرات ذخیره‌نشده‌اند؛ پشتیبان محلی در دسترس نیست'
+              : dirty()
+                ? 'تغییرات هنوز روی سرور ذخیره نشده‌اند'
+                : 'پیش‌نویس ذخیره شده';
     const changes = unpublished();
     $('[data-publish-status]').textContent = changes.length
       ? fa(changes.length) + ' مورد منتشرنشده'
@@ -1018,9 +1025,11 @@
         ? 'در حال ذخیره…'
         : E.error
           ? 'ذخیره ناموفق'
-          : dirty()
-            ? 'تغییر ذخیره‌نشده'
-            : 'ذخیره شد';
+          : localBackupWarning
+            ? 'پشتیبان محلی ناموفق'
+            : dirty()
+              ? 'تغییر ذخیره‌نشده'
+              : 'ذخیره شد';
     $('[data-action=undo]').disabled = !E.undo.length;
     $('[data-action=redo]').disabled = !E.redo.length;
     ['save', 'review'].forEach(
@@ -1028,10 +1037,14 @@
         ($('[data-action=' + a + ']').disabled = E.saving || E.publishing || E.conflict || !!errors.length),
     );
     const notice = $('[data-notice]');
-    notice.hidden = !(E.error || E.conflict || errors.length);
+    notice.hidden = !(E.error || E.conflict || errors.length || localBackupWarning);
     notice.innerHTML = E.conflict
       ? 'این پیش‌نویس در جای دیگری تغییر کرده است. ' + btn('conflict', 'بررسی نسخه سرور')
-      : esc(E.error || errors.join(' · ')) + (E.error ? btn('retry', 'تلاش دوباره') : '');
+      : E.error
+        ? esc(E.error) + btn('retry', 'تلاش دوباره')
+        : localBackupWarning
+          ? 'مرورگر نتوانست پشتیبان محلی این پیش‌نویس را ذخیره کند؛ تا ذخیره روی سرور صفحه را نبندید.'
+          : esc(errors.join(' · '));
     if ($('[data-action=publish]')) reviewButton();
   }
   async function save(manual = true) {
@@ -1070,17 +1083,22 @@
       E.page = p;
       E.server = M.snapshot(p.config, p.theme);
       E.error = '';
-      if (M.equal(sent, snap())) {
+      const unchangedSinceSend = M.equal(sent, snap());
+      if (unchangedSinceSend) {
         E.config = M.clone(p.config);
         E.theme = M.clone(p.theme);
+        E.dirtyState = false;
+      } else {
+        E.dirtyState = true;
       }
-      backup();
+      E.unpublishedCache = null;
+      backup(true);
       if (manual) tell('پیش‌نویس ذخیره شد');
       return true;
     } catch (error) {
       if (error.status === 409) E.conflict = true;
       else E.error = error.message || 'ذخیره ناموفق بود';
-      backup();
+      backup(true);
       return false;
     } finally {
       E.saving = false;
