@@ -1585,7 +1585,14 @@
             },
             true,
           );
-          E.previewObserver = new MutationObserver(bind);
+          let bindFrame = 0;
+          E.previewObserver = new MutationObserver(() => {
+            if (bindFrame) return;
+            bindFrame = win.requestAnimationFrame(() => {
+              bindFrame = 0;
+              if (frame === E.iframe && frame.isConnected) bind();
+            });
+          });
           win.addEventListener('storefront:home-ready', bind);
           win.addEventListener('resize', sync);
         }
