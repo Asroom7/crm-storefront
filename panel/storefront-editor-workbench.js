@@ -584,7 +584,7 @@
       output = $('[data-zoom-value]');
     if (root) root.dataset.zoomMode = E.zoomMode;
     if (output) output.textContent = fa(Math.round(E.zoom * 100)) + '٪';
-    $('button[data-zoom-mode]').forEach((button) =>
+    $$('button[data-zoom-mode]').forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.zoomMode === E.zoomMode)),
     );
     const out = $('[data-action="zoom-out"]'),
