@@ -61,6 +61,8 @@
     iframe: null,
     timer: 0,
     previewTimer: 0,
+    fitFrame: 0,
+    viewportFrame: 0,
     previewVersion: null,
     mediaQuery: '',
     mediaKind: 'all',
@@ -568,26 +570,41 @@
     highlight();
     status();
   }
-  const clampZoom = (value) => Math.min(2, Math.max(0.005, value));
+  const MIN_ZOOM = 0.2;
+  const MAX_ZOOM = 2;
+  const DEVICE_VIEWPORTS = {
+    desktop: { width: 1180, height: 760 },
+    tablet: { width: 768, height: 1024 },
+    mobile: { width: 390, height: 844 },
+  };
+  const clampZoom = (value) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
   function updateZoomControls() {
     if (!E.root) return;
     const root = $('[data-storefront-workbench]'),
       output = $('[data-zoom-value]');
     if (root) root.dataset.zoomMode = E.zoomMode;
     if (output) output.textContent = fa(Math.round(E.zoom * 100)) + '٪';
-    $$('button[data-zoom-mode]').forEach((button) =>
+    $('button[data-zoom-mode]').forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.zoomMode === E.zoomMode)),
     );
     const out = $('[data-action="zoom-out"]'),
       inside = $('[data-action="zoom-in"]');
-    if (out) out.disabled = E.zoom <= 0.006;
-    if (inside) inside.disabled = E.zoom >= 1.999;
+    if (out) out.disabled = E.zoom <= MIN_ZOOM + 0.001;
+    if (inside) inside.disabled = E.zoom >= MAX_ZOOM - 0.001;
+  }
+  function scheduleFit() {
+    cancelAnimationFrame(E.fitFrame);
+    E.fitFrame = requestAnimationFrame(() => {
+      E.fitFrame = 0;
+      fit();
+    });
   }
   function fit() {
     if (!E.iframe || !E.root) return;
-    const stage = $('.sfe-preview-stage');
-    if (!stage || stage.clientWidth < 30) return;
-    const width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device],
+    const stage = $('.sfe-preview-stage'),
+      wrap = $('[data-frame-wrap]');
+    if (!stage || !wrap || stage.clientWidth < 30 || stage.clientHeight < 30) return;
+    const viewport = DEVICE_VIEWPORTS[E.device] || DEVICE_VIEWPORTS.desktop,
       padding = getComputedStyle(stage),
       availableWidth = Math.max(
         40,
@@ -596,46 +613,30 @@
       availableHeight = Math.max(
         40,
         stage.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom) - 2,
-      );
-    let contentHeight = Math.max(600, Number(E.previewContentHeight) || 0);
-    try {
-      const doc = E.iframe.contentDocument,
-        ready = !!E.iframe.contentWindow?.StorefrontHome?.__editorContext;
-      if (ready && (E.zoomMode !== 'fit' || !E.previewContentHeight)) {
-        contentHeight = Math.max(
-          contentHeight,
-          doc?.documentElement?.scrollHeight || 0,
-          doc?.body?.scrollHeight || 0,
-        );
-        E.previewContentHeight = contentHeight;
-      }
-    } catch (_) {}
-    const widthScale = availableWidth / width;
-    if (E.zoomMode === 'fit') E.zoom = clampZoom(Math.min(widthScale, availableHeight / contentHeight));
+      ),
+      widthScale = availableWidth / viewport.width,
+      heightScale = availableHeight / viewport.height;
+    if (E.zoomMode === 'fit') E.zoom = clampZoom(Math.min(1, widthScale, heightScale));
     else if (E.zoomMode === 'width') E.zoom = clampZoom(Math.min(1, widthScale));
     else if (E.zoomMode === 'actual') E.zoom = 1;
-    const scale = clampZoom(E.zoom),
-      fullPage = E.zoomMode === 'fit',
-      height = fullPage ? contentHeight : Math.max(360, availableHeight / scale),
-      wrapHeight = Math.min(fullPage ? height * scale : availableHeight, height * scale);
-    const wrap = $('[data-frame-wrap]');
-    wrap.style.width = width * scale + 'px';
-    wrap.style.height = wrapHeight + 'px';
-    E.iframe.style.width = width + 'px';
-    E.iframe.style.height = height + 'px';
-    E.iframe.style.transform = 'scale(' + scale + ')';
+    const scale = clampZoom(E.zoom);
+    wrap.style.width = viewport.width * scale + 'px';
+    wrap.style.height = viewport.height * scale + 'px';
+    E.iframe.style.width = viewport.width + 'px';
+    E.iframe.style.height = viewport.height + 'px';
+    E.iframe.style.transform = 'translateZ(0) scale(' + scale + ')';
     E.iframe.style.transformOrigin = 'top left';
     updateZoomControls();
   }
   function setZoom(mode, value) {
     E.zoomMode = mode;
     if (value !== undefined) E.zoom = clampZoom(value);
-    fit();
+    scheduleFit();
   }
   function focusSection() {
     if (!E.activeSection) return tell('ابتدا یک بخش را انتخاب کنید');
     const stage = $('.sfe-preview-stage'),
-      width = { desktop: 1180, tablet: 768, mobile: 390 }[E.device];
+      width = (DEVICE_VIEWPORTS[E.device] || DEVICE_VIEWPORTS.desktop).width;
     if (!stage) return;
     E.zoomMode = 'focus';
     E.zoom = clampZoom(Math.min(1.25, Math.max(0.55, (stage.clientWidth - 28) / width)));
@@ -654,7 +655,7 @@
         localStorage.setItem('storefront-editor-split-v1', String(E.split));
       } catch (_) {}
     }
-    requestAnimationFrame(fit);
+    scheduleFit();
   }
   function bindSplitter() {
     const separator = $('[data-splitter]');
@@ -669,16 +670,17 @@
     }
     separator.onpointerdown = (event) => {
       if (event.target.closest('button') || matchMedia('(max-width: 900px)').matches) return;
-      const workspace = $('.sfe-workspace');
+      const workspace = $('.sfe-workspace'),
+        box = workspace.getBoundingClientRect();
       separator.setPointerCapture?.(event.pointerId);
       separator.classList.add('is-dragging');
       const move = (next) => {
-        const box = workspace.getBoundingClientRect();
-        setSplit(((next.clientX - box.left) / box.width) * 100);
+        setSplit(((next.clientX - box.left) / box.width) * 100, false);
       };
       const stop = () => {
         separator.classList.remove('is-dragging');
         separator.onpointermove = separator.onpointerup = separator.onpointercancel = null;
+        setSplit(E.split, true);
       };
       separator.onpointermove = move;
       separator.onpointerup = stop;
@@ -705,7 +707,7 @@
       if (b.dataset.pane === 'sections') b.setAttribute('aria-expanded', String(E.outlineOpen));
     });
     if (E.outlineOpen) closeSearch();
-    requestAnimationFrame(fit);
+    scheduleFit();
   }
   function viewport() {
     if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
@@ -718,7 +720,14 @@
     $('[data-orientation-gate]').hidden = true;
     modalBackground(!$('[data-overlay]').hidden);
     if (wasLocked && E.orientationFocus?.isConnected) E.orientationFocus.focus({ preventScroll: true });
-    requestAnimationFrame(fit);
+    scheduleFit();
+  }
+  function scheduleViewport() {
+    cancelAnimationFrame(E.viewportFrame);
+    E.viewportFrame = requestAnimationFrame(() => {
+      E.viewportFrame = 0;
+      viewport();
+    });
   }
   function chrome(kind) {
     const p = kind === 'header' ? 'editorHeaderV1' : 'editorFooterV1',
@@ -1437,7 +1446,7 @@
   }
   function preview() {
     clearTimeout(E.previewTimer);
-    requestAnimationFrame(fit);
+    scheduleFit();
     E.previewTimer = setTimeout(() => {
       try {
         const s = E.previewVersion || (E.previewSource === 'live' ? E.published : snap());
@@ -1507,15 +1516,9 @@
               type: node.dataset.sfeType,
               visible: node.getClientRects().length > 0 && win.getComputedStyle(node).visibility !== 'hidden',
             }));
-            if (E.zoomMode !== 'fit' || !E.previewContentHeight)
-              E.previewContentHeight = Math.max(
-                600,
-                doc.documentElement?.scrollHeight || 0,
-                doc.body?.scrollHeight || 0,
-              );
             outline();
             highlight();
-            fit();
+            scheduleFit();
           });
         };
         const bind = () => {
@@ -2458,15 +2461,15 @@
     return E.promise;
   }
   window.addEventListener('resize', () => {
-    if (E.config && routeActive()) viewport();
+    if (E.config && routeActive()) scheduleViewport();
   });
-  window.addEventListener('orientationchange', viewport);
-  screen.orientation?.addEventListener('change', viewport);
-  window.visualViewport?.addEventListener('resize', viewport);
-  window.visualViewport?.addEventListener('scroll', viewport);
+  window.addEventListener('orientationchange', scheduleViewport);
+  screen.orientation?.addEventListener('change', scheduleViewport);
+  window.visualViewport?.addEventListener('resize', scheduleViewport);
+  window.visualViewport?.addEventListener('scroll', scheduleViewport);
   document.addEventListener('fullscreenchange', () => {
     updateFullscreenButton();
-    requestAnimationFrame(fit);
+    scheduleFit();
   });
   window.addEventListener('hashchange', () => {
     if (!routeActive() && E.root) {
