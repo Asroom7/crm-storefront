@@ -121,7 +121,11 @@
   const unpublished = () => (E.published ? M.diff(E.published, snap()) : []);
   function backup() {
     try {
-      if (!dirty()) return localStorage.removeItem(storageKey());
+      if (!dirty()) {
+        localStorage.removeItem(storageKey());
+        E.backupFailed = false;
+        return true;
+      }
       localStorage.setItem(
         storageKey(),
         JSON.stringify({
@@ -132,7 +136,13 @@
           snapshot: snap(),
         }),
       );
-    } catch (_) {}
+      E.backupFailed = false;
+      return true;
+    } catch (_) {
+      E.backupFailed = true;
+      status();
+      return false;
+    }
   }
   function history(group) {
     if (group && E.group?.key === group && Date.now() - E.group.at < 1200) {
@@ -966,7 +976,9 @@
   function status() {
     if (!E.root || !$('[data-save-status]')) return;
     const errors = M.validate(snap());
-    $('[data-save-status]').textContent = E.saving
+    $('[data-save-status]').textContent = E.backupFailed && dirty()
+      ? 'هشدار: ذخیره محلی ناموفق بود؛ تغییرات هنوز محفوظ نیستند'
+      : E.saving
       ? 'در حال ذخیره پیش‌نویس…'
       : E.conflict
         ? 'نسخه سرور تغییر کرده؛ کار شما محفوظ است'
@@ -997,10 +1009,10 @@
         ($('[data-action=' + a + ']').disabled = E.saving || E.publishing || E.conflict || !!errors.length),
     );
     const notice = $('[data-notice]');
-    notice.hidden = !(E.error || E.conflict || errors.length);
+    notice.hidden = !(E.error || E.conflict || errors.length || (E.backupFailed && dirty()));
     notice.innerHTML = E.conflict
       ? 'این پیش‌نویس در جای دیگری تغییر کرده است. ' + btn('conflict', 'بررسی نسخه سرور')
-      : esc(E.error || errors.join(' · ')) + (E.error ? btn('retry', 'تلاش دوباره') : '');
+      : esc(E.error || (E.backupFailed && dirty() ? 'ذخیره پشتیبان محلی ناموفق بود؛ فضای ذخیره‌سازی مرورگر را بررسی کنید' : '') || errors.join(' · ')) + (E.error ? btn('retry', 'تلاش دوباره') : '');
     if ($('[data-action=publish]')) reviewButton();
   }
   async function save(manual = true) {
