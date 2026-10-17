@@ -2107,6 +2107,7 @@
       if (reset) {
         offset = 0;
         pageItems = [];
+        drawPage();
         if (statusNode) statusNode.textContent = 'در حال دریافت محصولات…';
         if (moreButton) moreButton.hidden = true;
       }
