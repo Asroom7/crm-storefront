@@ -37,7 +37,6 @@ jobs:
         run: node --test tests/*.test.js
 
   editor-browser:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,10 +49,16 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.62.1
           npx playwright install --with-deps chromium
-      - name: Prepare the pull request baseline
+      - name: Prepare visual regression baseline
         env:
-          BASELINE_REF: ${{ github.event.pull_request.base.sha }}
-        run: git worktree add --detach ../storefront-baseline "$BASELINE_REF"
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          BASELINE_REF="${PR_BASE:-$PUSH_BASE}"
+          if [ -z "$BASELINE_REF" ] || [ "$BASELINE_REF" = "0000000000000000000000000000000000000000" ]; then
+            BASELINE_REF="$(git rev-parse HEAD^)"
+          fi
+          git worktree add --detach ../storefront-baseline "$BASELINE_REF"
       - name: Verify editor workflows and unchanged public appearance
         env:
           BASELINE_ROOT: ${{ github.workspace }}/../storefront-baseline
@@ -64,6 +69,7 @@ jobs:
           node tests/storefront-content-browser.cjs
           node tests/storefront-editor-landscape.cjs
           node tests/storefront-editor-fullscreen.cjs
+          node tests/storefront-editor-stability-pack6.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
