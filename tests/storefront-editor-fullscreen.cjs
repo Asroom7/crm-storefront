@@ -128,24 +128,37 @@ async function assertTwoColumnOrder(page) {
 
     for (const viewport of [{ width: 844, height: 390 }, { width: 1024, height: 768 }]) {
       const responsiveState = fixture(origin), responsive = await openStandalone(browser, origin, responsiveState, viewport), page = responsive.page;
-      await assertTwoColumnOrder(page);
-      await page.locator('[data-pane="preview"]').click();
-      assert.equal(await page.locator('.sfe-inspector').isVisible(), false);
-      await page.locator('[data-pane="settings"]').click();
-      assert.equal(await page.locator('.sfe-inspector').isVisible(), true);
+      if (viewport.width <= 900) {
+        await page.locator('[data-pane="settings"]').click();
+        assert.equal(await page.locator('.sfe-inspector').isVisible(), true);
+        assert.equal(await page.locator('.sfe-canvas').isVisible(), false);
+        assert.ok((await box(page, '.sfe-inspector')).width >= viewport.width - 24);
+        await page.locator('[data-pane="preview"]').click();
+        assert.equal(await page.locator('.sfe-canvas').isVisible(), true);
+        assert.equal(await page.locator('.sfe-inspector').isVisible(), false);
+        assert.ok((await box(page, '.sfe-canvas')).width >= viewport.width - 24);
+      } else {
+        await assertTwoColumnOrder(page);
+        await page.locator('[data-pane="preview"]').click();
+        assert.equal(await page.locator('.sfe-inspector').isVisible(), false);
+        await page.locator('[data-pane="settings"]').click();
+        assert.equal(await page.locator('.sfe-inspector').isVisible(), true);
+      }
       await page.locator('[data-pane="sections"]').click();
       assert.equal(await page.locator('.sfe-outline').isVisible(), true);
       await page.locator('[data-action="outline-dismiss"]').first().click();
+      await page.locator('[data-pane="preview"]').click();
       await page.waitForFunction(() => {
         const frame = document.querySelector('[data-frame-wrap]').getBoundingClientRect(), stage = document.querySelector('.sfe-preview-stage').getBoundingClientRect();
         return frame.right <= stage.right + 1 && frame.bottom <= stage.bottom + 1;
       });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(responsiveState.writes.length, 0);
       assert.deepEqual(responsive.errors, []);
       await page.screenshot({ path: path.join(output, 'fullscreen-editor-' + viewport.width + '.png'), animations: 'disabled' });
       await responsive.context.close();
     }
-    console.log('PASS landscape phone/tablet split, collapsible inspector, fit overview, no overflow and no implicit writes');
+    console.log('PASS responsive full-width mobile panes, desktop split, fit overview, no overflow and no implicit writes');
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
