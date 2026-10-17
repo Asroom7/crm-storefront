@@ -227,20 +227,20 @@
 
   function renderEditorLayout(visible, ctx) {
     const structure = visible.map(function (block) { return block.id + ':' + block.type; }).join('|');
-    const signatures = new Map(visible.map(function (block) {
-      let signature = '';
-      try { signature = JSON.stringify(block); } catch (_) {}
-      return [String(block.id), signature];
-    }));
+    const rendered = visible.map(function (block) {
+      return { block: block, html: editorSectionMarkup(block, ctx) };
+    });
+    const markup = new Map(rendered.map(function (row) { return [String(row.block.id), row.html]; }));
     let patched = !!editorPreviewState && editorPreviewState.structure === structure;
 
     if (patched) {
-      for (const block of visible) {
-        if (editorPreviewState.signatures.get(String(block.id)) === signatures.get(String(block.id))) continue;
-        const selector = '[data-editor-section="' + CSS.escape(String(block.id)) + '"]';
+      for (const row of rendered) {
+        const id = String(row.block.id);
+        if (editorPreviewState.markup.get(id) === row.html) continue;
+        const selector = '[data-editor-section="' + CSS.escape(id) + '"]';
         const current = root.querySelector(selector);
         const template = document.createElement('template');
-        template.innerHTML = editorSectionMarkup(block, ctx).trim();
+        template.innerHTML = row.html.trim();
         if (!current || template.content.childElementCount !== 1) {
           patched = false;
           break;
@@ -250,10 +250,10 @@
     }
 
     if (!patched) {
-      root.innerHTML = visible.map(function (block) { return editorSectionMarkup(block, ctx); }).join('') + footer(ctx);
+      root.innerHTML = rendered.map(function (row) { return row.html; }).join('') + footer(ctx);
     }
 
-    editorPreviewState = { structure: structure, signatures: signatures };
+    editorPreviewState = { structure: structure, markup: markup };
     bindCountdowns(ctx);
   }
 
