@@ -72,6 +72,10 @@
     previewVersion: null,
     mediaQuery: '',
     mediaKind: 'all',
+    mediaSearchTimer: 0,
+    mediaIndexLoaded: false,
+    mediaIndexLoading: false,
+    reloadMedia: null,
     modalEpoch: 0,
     previewSections: null,
     hiddenSectionsOpen: false,
@@ -117,6 +121,31 @@
   const image = (p) => p?.media?.find((m) => m.kind === 'image')?.url || p?.imageUrl || '';
   const price = (p) =>
     typeof getProductPriceLabel === 'function' ? getProductPriceLabel(p) : fa(p.price || 0) + ' تومان';
+
+  function mergeProducts(items) {
+    const map = new Map(E.products.map((item) => [Number(item.id), item]));
+    (items || []).forEach((item) => map.set(Number(item.id), item));
+    E.products = Array.from(map.values());
+  }
+  function mergeAssets(items) {
+    const map = new Map(E.assets.map((item) => [Number(item.id), item]));
+    (items || []).forEach((item) => map.set(Number(item.id), item));
+    E.assets = Array.from(map.values());
+  }
+  function ensureMediaSearchIndex() {
+    if (E.mediaIndexLoaded || E.mediaIndexLoading) return;
+    E.mediaIndexLoading = true;
+    sellerApiFetch('/storefront/media')
+      .then((items) => {
+        mergeAssets(items || []);
+        E.mediaIndexLoaded = true;
+        if (E.searchOpen) renderSearchResults();
+      })
+      .catch(() => {})
+      .finally(() => {
+        E.mediaIndexLoading = false;
+      });
+  }
   function storageKey() {
     let id = 'seller';
     try {
@@ -500,6 +529,7 @@
       clearButton = E.root?.querySelector('[data-action="search-clear"]');
     if (!input || !results) return;
     const query = input.value;
+    if (query) ensureMediaSearchIndex();
     if (clearButton) clearButton.hidden = !query;
     if (!E.searchOpen) return closeSearch();
     const quick = [
@@ -1431,7 +1461,8 @@
       reviewed = M.clone(E.review);
     reviewButton();
     const issues = [];
-    let products = E.products;
+    let products = E.products,
+      assets = E.assets;
     try {
       products = await sellerApiFetch('/products');
       E.products = products;
@@ -1441,8 +1472,18 @@
         message: 'فهرست تازه محصولات دریافت نشد؛ انتخاب‌های خود را دوباره بررسی کنید',
       });
     }
+    try {
+      assets = await sellerApiFetch('/storefront/media');
+      E.assets = assets;
+      E.mediaIndexLoaded = true;
+    } catch (_) {
+      issues.push({
+        level: 'warning',
+        message: 'فهرست تازه رسانه‌ها دریافت نشد؛ فایل‌های استفاده‌شده را دوباره بررسی کنید',
+      });
+    }
     if (epoch !== E.modalEpoch || !routeActive()) return;
-    const result = M.preflight(reviewed, { products, assets: E.assets, published: E.published });
+    const result = M.preflight(reviewed, { products, assets, published: E.published });
     issues.push(...result.issues);
     const cache = new Map(),
       queue = result.resources.slice();
@@ -1775,33 +1816,72 @@
     E.selectedProducts = (s.settings?.productIds || []).slice();
     dialog(
       'انتخاب و ترتیب محصولات',
-      `<div class="sfe-picker-tools"><input type="search" data-product-query placeholder="جستجوی محصول"><select data-category><option value="">همه دسته‌ها</option>${E.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><label class="sfe-check"><input type="checkbox" data-stock>فقط موجود</label></div><div data-picked></div><div data-products></div>`,
+      `<div class="sfe-picker-tools"><input type="search" data-product-query placeholder="جستجوی محصول"><select data-category><option value="">همه دسته‌ها</option>${E.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><label class="sfe-check"><input type="checkbox" data-stock>فقط موجود</label></div><div data-picked></div><div data-product-status class="sfe-help" role="status"></div><div data-products></div><button type="button" class="sfe-button" data-product-more hidden>نمایش محصولات بیشتر</button>`,
       btn('close', 'انصراف') + btn('apply-products', 'اعمال انتخاب', true),
     );
-    $('[data-product-query]').value = initialQuery;
-    const draw = () => {
-      const q = $('[data-product-query]').value.trim().toLowerCase(),
-        cat = $('[data-category]').value,
-        stock = $('[data-stock]').checked;
-      $('[data-picked]').innerHTML =
+    const epoch = E.modalEpoch,
+      queryInput = $('[data-product-query]'),
+      categoryInput = $('[data-category]'),
+      stockInput = $('[data-stock]'),
+      statusNode = $('[data-product-status]'),
+      listNode = $('[data-products]'),
+      moreButton = $('[data-product-more]');
+    queryInput.value = initialQuery;
+    let pageItems = [],
+      offset = 0,
+      total = 0,
+      loading = false,
+      requestId = 0,
+      searchTimer = 0,
+      dragProduct = null;
+
+    const selectedSet = () => new Set(E.selectedProducts.map(Number));
+    const productById = (id) => E.products.find((p) => Number(p.id) === Number(id));
+    const syncProductChecks = () => {
+      const selected = selectedSet();
+      $$('[data-product-id]').forEach((el) => {
+        el.checked = selected.has(Number(el.dataset.productId));
+      });
+    };
+    const drawPicked = () => {
+      const target = $('[data-picked]');
+      if (!target) return;
+      target.innerHTML =
         `<div class="sfe-label-row"><strong>ترتیب محصولات منتخب</strong><span>${fa(E.selectedProducts.length)} محصول</span></div>` +
         E.selectedProducts
           .map(
             (id, i) =>
-              `<div class="sfe-selected-row" draggable="true" data-product-drag="${i}"><span>${esc(E.products.find((p) => Number(p.id) === Number(id))?.name || 'محصول ' + id)}</span><label class="sfe-priority"><span class="sfe-sr-only">اولویت</span><input type="number" min="1" max="${E.selectedProducts.length}" data-product-priority="${i}" value="${i + 1}"></label><button type="button" data-product-move="${i}" data-direction="-1" aria-label="بالاتر">↑</button><button type="button" data-product-move="${i}" data-direction="1" aria-label="پایین‌تر">↓</button><button type="button" data-product-remove="${id}" aria-label="حذف از انتخاب">×</button></div>`,
+              `<div class="sfe-selected-row" draggable="true" data-product-drag="${i}"><span>${esc(productById(id)?.name || 'محصول ' + id)}</span><label class="sfe-priority"><span class="sfe-sr-only">اولویت</span><input type="number" min="1" max="${E.selectedProducts.length}" data-product-priority="${i}" value="${i + 1}"></label><button type="button" data-product-move="${i}" data-direction="-1" aria-label="بالاتر">↑</button><button type="button" data-product-move="${i}" data-direction="1" aria-label="پایین‌تر">↓</button><button type="button" data-product-remove="${id}" aria-label="حذف از انتخاب">×</button></div>`,
           )
           .join('');
-      const list = E.products.filter(
-        (p) =>
-          (!q || String(p.name).toLowerCase().includes(q)) &&
-          (!cat || Number(p.categoryId || p.category?.id) === Number(cat)) &&
-          (!stock || Number(p.stockQty) > 0),
+      $$('[data-product-move]').forEach(
+        (b) =>
+          (b.onclick = () => {
+            const i = Number(b.dataset.productMove),
+              to = i + Number(b.dataset.direction);
+            if (to < 0 || to >= E.selectedProducts.length) return;
+            const v = E.selectedProducts.splice(i, 1)[0];
+            E.selectedProducts.splice(to, 0, v);
+            drawPicked();
+          }),
       );
-      $('[data-products]').innerHTML = list.length
-        ? list
+      $$('[data-product-remove]').forEach(
+        (b) =>
+          (b.onclick = () => {
+            E.selectedProducts = E.selectedProducts.filter((id) => String(id) !== b.dataset.productRemove);
+            drawPicked();
+            syncProductChecks();
+          }),
+      );
+    };
+    const drawPage = () => {
+      if (!listNode) return;
+      const selected = selectedSet();
+      listNode.innerHTML = pageItems.length
+        ? pageItems
             .map(
               (p) =>
-                `<label class="sfe-product-option">${image(p) ? `<img src="${esc(image(p))}" alt="">` : ico('box')}<span><strong>${esc(p.name)}</strong><small>${esc(price(p))} · موجودی ${fa(p.stockQty || 0)}${p.isPublished === false ? ' · منتشرنشده' : ''}</small></span><input type="checkbox" data-product-id="${p.id}" ${E.selectedProducts.map(Number).includes(Number(p.id)) ? 'checked' : ''}></label>`,
+                `<label class="sfe-product-option">${image(p) ? `<img src="${esc(image(p))}" alt="" loading="lazy">` : ico('box')}<span><strong>${esc(p.name)}</strong><small>${esc(price(p))} · موجودی ${fa(p.stockQty || 0)}${p.isPublished === false ? ' · منتشرنشده' : ''}</small></span><input type="checkbox" data-product-id="${p.id}" ${selected.has(Number(p.id)) ? 'checked' : ''}></label>`,
             )
             .join('')
         : '<div class="sfe-help">محصولی با این فیلتر پیدا نشد.</div>';
@@ -1811,42 +1891,59 @@
             const id = Number(el.dataset.productId);
             E.selectedProducts = E.selectedProducts.filter((v) => Number(v) !== id);
             if (el.checked) E.selectedProducts.push(id);
-            draw();
+            drawPicked();
           }),
       );
-      $$('[data-product-move]').forEach(
-        (b) =>
-          (b.onclick = () => {
-            const i = Number(b.dataset.productMove),
-              to = i + Number(b.dataset.direction);
-            if (to < 0 || to >= E.selectedProducts.length) return;
-            const v = E.selectedProducts.splice(i, 1)[0];
-            E.selectedProducts.splice(to, 0, v);
-            draw();
-          }),
-      );
-      $$('[data-product-remove]').forEach(
-        (b) =>
-          (b.onclick = () => {
-            E.selectedProducts = E.selectedProducts.filter((id) => String(id) !== b.dataset.productRemove);
-            draw();
-          }),
-      );
+      if (statusNode)
+        statusNode.textContent = total ? `${fa(pageItems.length)} از ${fa(total)} محصول نمایش داده شده` : '';
+      if (moreButton) moreButton.hidden = pageItems.length >= total;
     };
+    const loadPage = async (reset = true) => {
+      if (loading && !reset) return;
+      const id = ++requestId;
+      loading = true;
+      if (reset) {
+        offset = 0;
+        pageItems = [];
+        if (statusNode) statusNode.textContent = 'در حال دریافت محصولات…';
+        if (moreButton) moreButton.hidden = true;
+      }
+      const params = new URLSearchParams({
+        offset: String(reset ? 0 : offset),
+        limit: '40',
+      });
+      const q = queryInput.value.trim();
+      if (q) params.set('q', q);
+      if (categoryInput.value) params.set('categoryId', categoryInput.value);
+      if (stockInput.checked) params.set('inStock', '1');
+      try {
+        const data = await sellerApiFetch('/products/picker?' + params.toString());
+        if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        mergeProducts(items);
+        pageItems = reset
+          ? items
+          : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
+        total = Number(data?.total || pageItems.length);
+        offset = pageItems.length;
+        drawPicked();
+        drawPage();
+      } catch (error) {
+        if (id === requestId && epoch === E.modalEpoch && statusNode)
+          statusNode.textContent = error.message || 'دریافت محصولات ناموفق بود';
+      } finally {
+        if (id === requestId) loading = false;
+      }
+    };
+
     $('[data-picked]').onchange = (event) => {
+      if (!event.target.hasAttribute('data-product-priority')) return;
       const index = Number(event.target.dataset.productPriority),
         to = Number(event.target.value) - 1;
-      if (
-        !event.target.hasAttribute('data-product-priority') ||
-        !Number.isInteger(to) ||
-        to < 0 ||
-        to >= E.selectedProducts.length
-      )
-        return;
+      if (!Number.isInteger(to) || to < 0 || to >= E.selectedProducts.length) return;
       E.selectedProducts.splice(to, 0, E.selectedProducts.splice(index, 1)[0]);
-      draw();
+      drawPicked();
     };
-    let dragProduct = null;
     $('[data-picked]').ondragstart = (event) => {
       const row = event.target.closest('[data-product-drag]');
       if (row) dragProduct = Number(row.dataset.productDrag);
@@ -1861,14 +1958,29 @@
           0,
           E.selectedProducts.splice(dragProduct, 1)[0],
         );
-        draw();
+        drawPicked();
       }
       dragProduct = null;
     };
-    $('[data-product-query]').oninput = draw;
-    $('[data-category]').onchange = draw;
-    $('[data-stock]').onchange = draw;
-    draw();
+    queryInput.oninput = () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadPage(true), 250);
+    };
+    categoryInput.onchange = () => loadPage(true);
+    stockInput.onchange = () => loadPage(true);
+    moreButton.onclick = () => loadPage(false);
+
+    const missing = E.selectedProducts.filter((id) => !productById(id)).slice(0, 200);
+    if (missing.length)
+      sellerApiFetch('/products/picker?ids=' + encodeURIComponent(missing.join(',')) + '&limit=200')
+        .then((data) => {
+          if (epoch !== E.modalEpoch || !routeActive()) return;
+          mergeProducts(data?.items || []);
+          drawPicked();
+        })
+        .catch(() => {});
+    drawPicked();
+    loadPage(true);
   }
   function promotions() {
     const s = active(),
@@ -1948,20 +2060,84 @@
     E.mediaQuery = initialQuery;
     dialog(
       'کتابخانه رسانه',
-      `<div class="sfe-picker-tools"><input type="search" data-media-query placeholder="جستجوی نام یا توضیح"><select data-media-kind><option value="all">همه رسانه‌ها</option><option value="image">تصاویر</option><option value="video">ویدیوها</option></select></div><label class="sfe-upload">انتخاب فایل برای آپلود<input type="file" data-media-file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label><p class="sfe-help">تصویر JPG/PNG/WebP تا ۸ مگابایت؛ فیلم MP4/WebM/MOV تا ۲۵ مگابایت.</p><div data-upload-status aria-live="polite"></div><div class="sfe-media-grid" data-media-grid>در حال دریافت رسانه‌ها…</div>`,
+      `<div class="sfe-picker-tools"><input type="search" data-media-query placeholder="جستجوی نام یا توضیح"><select data-media-kind><option value="all">همه رسانه‌ها</option><option value="image">تصاویر</option><option value="video">ویدیوها</option></select></div><label class="sfe-upload">انتخاب فایل برای آپلود<input type="file" data-media-file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label><p class="sfe-help">تصویر JPG/PNG/WebP تا ۸ مگابایت؛ فیلم MP4/WebM/MOV تا ۲۵ مگابایت.</p><div data-upload-status aria-live="polite"></div><div data-media-status class="sfe-help" role="status"></div><div class="sfe-media-grid" data-media-grid></div><button type="button" class="sfe-button" data-media-more hidden>نمایش رسانه‌های بیشتر</button>`,
     );
     E.modalBack = onCancel;
-    const epoch = E.modalEpoch;
-    $('[data-media-query]').value = initialQuery;
-    $('[data-media-kind]').value = kind;
-    $('[data-media-kind]').onchange = () => {
-      E.mediaKind = $('[data-media-kind]').value;
-      drawMedia();
+    const epoch = E.modalEpoch,
+      queryInput = $('[data-media-query]'),
+      kindInput = $('[data-media-kind]'),
+      statusNode = $('[data-media-status]'),
+      moreButton = $('[data-media-more]');
+    queryInput.value = initialQuery;
+    kindInput.value = kind;
+    let pageItems = [],
+      offset = 0,
+      total = 0,
+      loading = false,
+      requestId = 0;
+
+    const render = () => {
+      if (!$('[data-media-grid]')) return;
+      $('[data-media-grid]').innerHTML = pageItems.length
+        ? pageItems
+            .map((a) => {
+              const use = refs(a);
+              const wrongKind = E.mediaPickKind && a.kind !== E.mediaPickKind;
+              return `<article class="sfe-media-card"><div class="sfe-media-visual">${a.kind === 'video' ? `<video src="${esc(a.url)}" muted playsinline preload="metadata"></video>` : `<img src="${esc(a.url)}" alt="${esc(a.altText || '')}" loading="lazy">`}</div><strong>${esc(a.altText || (a.kind === 'video' ? 'ویدیو' : 'تصویر'))}</strong><small>${fa(Math.round((a.bytes || 0) / 1024))} KB · ${a.width && a.height ? esc(a.width + '×' + a.height) : ''}${a.duration ? ' · ' + fa(Math.round(a.duration)) + ' ثانیه' : ''}</small><small>${use.length ? 'استفاده در ' + fa(new Set(use.map((r) => r.owner)).size) + ' بخش' : 'بدون استفاده در نسخه فعلی'}</small><div>${E.mediaChoose ? btn('use-media', wrongKind ? 'نوع فایل مناسب نیست' : 'انتخاب', true, `data-id="${a.id}" ${wrongKind ? 'disabled' : ''}`) : ''}${btn('asset', 'جزئیات و استفاده‌ها', false, `data-id="${a.id}"`)}${btn('replace-media', 'جایگزین', false, `data-id="${a.id}"`)}${btn('delete-media', 'حذف', false, `data-id="${a.id}" ${use.length ? 'disabled' : ''}`)}</div></article>`;
+            })
+            .join('')
+        : '<div class="sfe-help">رسانه‌ای پیدا نشد.</div>';
+      if (statusNode)
+        statusNode.textContent = total ? `${fa(pageItems.length)} از ${fa(total)} رسانه نمایش داده شده` : '';
+      if (moreButton) moreButton.hidden = pageItems.length >= total;
     };
-    $('[data-media-query]').oninput = () => {
-      E.mediaQuery = $('[data-media-query]').value;
-      drawMedia();
+    const load = async (reset = true) => {
+      if (loading && !reset) return;
+      const id = ++requestId;
+      loading = true;
+      if (reset) {
+        offset = 0;
+        pageItems = [];
+        if (statusNode) statusNode.textContent = 'در حال دریافت رسانه‌ها…';
+        if (moreButton) moreButton.hidden = true;
+      }
+      const params = new URLSearchParams({
+        paged: '1',
+        offset: String(reset ? 0 : offset),
+        limit: '40',
+      });
+      const q = queryInput.value.trim();
+      if (q) params.set('q', q);
+      if (kindInput.value !== 'all') params.set('kind', kindInput.value);
+      try {
+        const data = await sellerApiFetch('/storefront/media?' + params.toString());
+        if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        mergeAssets(items);
+        pageItems = reset
+          ? items
+          : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
+        total = Number(data?.total || pageItems.length);
+        offset = pageItems.length;
+        render();
+      } catch (error) {
+        if (id === requestId && epoch === E.modalEpoch && statusNode)
+          statusNode.textContent = error.message || 'خطا در دریافت رسانه‌ها';
+      } finally {
+        if (id === requestId) loading = false;
+      }
     };
+    E.reloadMedia = load;
+    kindInput.onchange = () => {
+      E.mediaKind = kindInput.value;
+      load(true);
+    };
+    queryInput.oninput = () => {
+      E.mediaQuery = queryInput.value;
+      clearTimeout(E.mediaSearchTimer);
+      E.mediaSearchTimer = setTimeout(() => load(true), 250);
+    };
+    moreButton.onclick = () => load(false);
     $('[data-media-file]').onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -1972,45 +2148,22 @@
       e.target.disabled = true;
       try {
         $('[data-upload-status]').textContent = 'در حال آپلود…';
-        await upload(file);
-        E.assets = await sellerApiFetch('/storefront/media');
+        const uploaded = await upload(file);
+        mergeAssets([uploaded]);
         if (epoch !== E.modalEpoch || !routeActive()) return;
-        drawMedia();
-        $('[data-upload-status]').textContent = 'فایل آپلود شد';
+        await load(true);
+        if ($('[data-upload-status]')) $('[data-upload-status]').textContent = 'فایل آپلود شد';
       } catch (error) {
         if (epoch === E.modalEpoch && $('[data-upload-status]'))
           $('[data-upload-status]').textContent = error.message;
       } finally {
-        e.target.disabled = false;
-        e.target.value = '';
+        if (e.target.isConnected) {
+          e.target.disabled = false;
+          e.target.value = '';
+        }
       }
     };
-    try {
-      E.assets = await sellerApiFetch('/storefront/media');
-      if (epoch !== E.modalEpoch || !routeActive()) return;
-      drawMedia();
-    } catch (error) {
-      if (epoch !== E.modalEpoch || !routeActive()) return;
-      $('[data-media-grid]').innerHTML =
-        `<div role="alert">${esc(error.message)}</div>` + btn('media', 'تلاش دوباره');
-    }
-  }
-  function drawMedia() {
-    if (!$('[data-media-grid]')) return;
-    const list = E.assets.filter(
-      (a) =>
-        (E.mediaKind === 'all' || a.kind === E.mediaKind) &&
-        (!E.mediaQuery || String(a.altText || a.publicId || a.kind).includes(E.mediaQuery)),
-    );
-    $('[data-media-grid]').innerHTML = list.length
-      ? list
-          .map((a) => {
-            const use = refs(a);
-            const wrongKind = E.mediaPickKind && a.kind !== E.mediaPickKind;
-            return `<article class="sfe-media-card"><div class="sfe-media-visual">${a.kind === 'video' ? `<video src="${esc(a.url)}" muted playsinline preload="metadata"></video>` : `<img src="${esc(a.url)}" alt="${esc(a.altText || '')}">`}</div><strong>${esc(a.altText || (a.kind === 'video' ? 'ویدیو' : 'تصویر'))}</strong><small>${fa(Math.round((a.bytes || 0) / 1024))} KB · ${a.width && a.height ? esc(a.width + '×' + a.height) : ''}${a.duration ? ' · ' + fa(Math.round(a.duration)) + ' ثانیه' : ''}</small><small>${use.length ? 'استفاده در ' + fa(new Set(use.map((r) => r.owner)).size) + ' بخش' : 'بدون استفاده در نسخه فعلی'}</small><div>${E.mediaChoose ? btn('use-media', wrongKind ? 'نوع فایل مناسب نیست' : 'انتخاب', true, `data-id="${a.id}" ${wrongKind ? 'disabled' : ''}`) : ''}${btn('asset', 'جزئیات و استفاده‌ها', false, `data-id="${a.id}"`)}${btn('replace-media', 'جایگزین', false, `data-id="${a.id}"`)}${btn('delete-media', 'حذف', false, `data-id="${a.id}" ${use.length ? 'disabled' : ''}`)}</div></article>`;
-          })
-          .join('')
-      : '<div class="sfe-help">رسانه‌ای پیدا نشد.</div>';
+    load(true);
   }
   function assetDetails(a) {
     dialog(
@@ -2043,8 +2196,8 @@
           E.config = M.replaceMedia(E.config, a.url, next.url);
           E.theme = M.replaceMedia(E.theme, a.url, next.url);
         });
-        E.assets = await sellerApiFetch('/storefront/media');
-        drawMedia();
+        mergeAssets([next]);
+        if (typeof E.reloadMedia === 'function') await E.reloadMedia(true);
         tell('فایل جدید در پیش‌نویس جایگزین شد؛ فایل نسخه زنده محفوظ است');
       } catch (error) {
         tell(error.message);
@@ -2412,7 +2565,8 @@
         if (!a || refs(a).length) return;
         try {
           await sellerApiFetch('/storefront/media/' + a.id, { method: 'DELETE' });
-          media();
+          E.assets = E.assets.filter((item) => Number(item.id) !== Number(a.id));
+          media(E.mediaKind, E.mediaChoose, E.modalBack, E.mediaQuery);
         } catch (error) {
           tell(error.message);
         }
@@ -2423,7 +2577,7 @@
             method: 'PATCH',
             body: JSON.stringify({ altText: $('[data-asset-alt]').value }),
           });
-          media();
+          media(E.mediaKind, E.mediaChoose, E.modalBack, E.mediaQuery);
         } catch (error) {
           tell(error.message);
         }
@@ -2515,11 +2669,12 @@
     view.innerHTML = '<div class="sfe-loading" role="status">در حال آماده‌سازی ویرایشگر…</div>';
     E.promise = (async () => {
       try {
-        const [page, products, categories, assets] = await Promise.all([
+        const [page, productFeed, categories] = await Promise.all([
           sellerApiFetch(endpoint),
-          sellerApiFetch('/products'),
+          sellerApiFetch('/products/picker?limit=1000').catch(() =>
+            sellerApiFetch('/products').then((items) => ({ items })),
+          ),
           sellerApiFetch('/categories'),
-          sellerApiFetch('/storefront/media').catch(() => []),
         ]);
         E.page = page;
         E.config = M.clone(page.config);
@@ -2529,9 +2684,10 @@
         E.backupError = false;
         E.unpublishedCache = null;
         E.validationCache = null;
-        E.products = products || [];
+        E.products = Array.isArray(productFeed?.items) ? productFeed.items : [];
         E.categories = categories || [];
-        E.assets = assets || [];
+        E.assets = [];
+        E.mediaIndexLoaded = false;
         if (page.publishedConfig)
           E.published = M.snapshot(page.publishedConfig, page.publishedTheme || page.theme);
         else {
