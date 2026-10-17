@@ -2514,11 +2514,13 @@
     }
   });
   window.addEventListener('beforeunload', (event) => {
-    if (E.config && dirty()) {
+    if (E.config && (dirty() || E.backupTimer)) {
       clearTimeout(E.backupTimer);
       backup();
-      event.preventDefault();
-      event.returnValue = '';
+      if (dirty()) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
     }
   });
   window.addEventListener('offline', () => {
