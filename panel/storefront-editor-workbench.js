@@ -641,7 +641,7 @@
     E.zoomMode = 'focus';
     E.zoom = clampZoom(Math.min(1.25, Math.max(0.55, (stage.clientWidth - 28) / width)));
     E.lastPreviewSection = null;
-    fit();
+    scheduleFit();
     requestAnimationFrame(highlight);
   }
   function setSplit(value, persist = true) {
@@ -2152,7 +2152,7 @@
       E.previewContentHeight = 0;
       $('[data-frame-wrap]').dataset.device = E.device;
       $$('[data-device]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      fit();
+      scheduleFit();
       outline();
       return;
     }
