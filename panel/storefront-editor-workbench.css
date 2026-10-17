@@ -1222,53 +1222,6 @@ body:has(.sfe-host [data-overlay]:not([hidden])) {
 .sfe-outline-scrim {
   display: none;
 }
-.sfe-orientation-gate {
-  position: fixed;
-  inset: 0;
-  top: var(--sfe-viewport-top, 0px);
-  bottom: auto;
-  height: var(--sfe-usable-height, 100dvh);
-  z-index: 5000;
-  padding: 24px;
-  overflow: auto;
-  display: grid;
-  place-items: center;
-  background: var(--sfe-paper);
-  text-align: center;
-}
-.sfe-orientation-card {
-  max-width: 400px;
-}
-.sfe-workbench .sfe-orientation-gate svg {
-  width: 76px;
-  height: 76px;
-  color: var(--sfe-accent);
-  margin-bottom: 18px;
-}
-.sfe-workbench .sfe-orientation-gate h2 {
-  font-size: 22px;
-}
-#sfe-orientation-title:focus {
-  outline: none;
-}
-.sfe-orientation-gate p {
-  font-size: 14px;
-  line-height: 1.9;
-}
-.sfe-orientation-gate details {
-  margin: 24px 0;
-  font-size: 13px;
-  color: var(--sfe-muted);
-}
-.sfe-orientation-gate summary {
-  min-height: 44px;
-  padding: 10px;
-  cursor: pointer;
-}
-.sfe-workbench .sfe-orientation-gate .sfe-button {
-  min-height: 44px;
-  padding-inline: 22px;
-}
 @media (min-width: 1200px) {
   .sfe-mobile-nav [data-pane='sections'] {
     display: none;
