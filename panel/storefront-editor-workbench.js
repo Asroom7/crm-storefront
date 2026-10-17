@@ -85,6 +85,7 @@
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
     );
   const fa = (n) => Number(n).toLocaleString('fa-IR'),
+    state = () => ({ config: E.config, theme: E.theme }),
     snap = () => M.snapshot(E.config, E.theme),
     rows = () => E.config?.sections || [],
     active = () => rows().find((s) => s.id === E.activeSection);
@@ -126,11 +127,11 @@
   const dirty = () => !!E.server && E.dirtyState;
   const unpublished = () => {
     if (!E.published) return [];
-    if (!E.unpublishedCache) E.unpublishedCache = M.diff(E.published, snap());
+    if (!E.unpublishedCache) E.unpublishedCache = M.diff(E.published, state());
     return E.unpublishedCache;
   };
   const validation = () => {
-    if (!E.validationCache) E.validationCache = M.validate(snap());
+    if (!E.validationCache) E.validationCache = M.validate(state());
     return E.validationCache;
   };
   function writeBackup() {
@@ -188,7 +189,7 @@
     E.group = group ? { key: group, at: Date.now() } : null;
   }
   function changed(recomputeDirty = false) {
-    E.dirtyState = recomputeDirty ? !M.equal(E.server, snap()) : true;
+    E.dirtyState = recomputeDirty ? !M.equal(E.server, state()) : true;
     E.unpublishedCache = null;
     E.validationCache = null;
     E.previewVersion = null;
@@ -1072,7 +1073,7 @@
       if (manual) tell('پیش‌نویس ذخیره شده است');
       return true;
     }
-    if (M.validate(snap()).length) {
+    if (M.validate(state()).length) {
       status();
       return false;
     }
@@ -1532,7 +1533,7 @@
     scheduleFit();
     E.previewTimer = setTimeout(() => {
       try {
-        const s = E.previewVersion || (E.previewSource === 'live' ? E.published : snap());
+        const s = E.previewVersion || (E.previewSource === 'live' ? E.published : state());
         if (!s) return;
         E.iframe?.contentWindow?.postMessage(
           {
