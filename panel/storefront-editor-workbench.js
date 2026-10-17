@@ -149,7 +149,13 @@
     E.previewVersion = null;
     if ($('[data-version-bar]')) $('[data-version-bar]').hidden = true;
     E.error = '';
-    backup();
+    if (options.deferOutline) {
+      clearTimeout(E.backupTimer);
+      E.backupTimer = setTimeout(backup, 250);
+    } else {
+      clearTimeout(E.backupTimer);
+      backup();
+    }
     status();
     if (options.deferOutline) E.outlineTimer = setTimeout(outline, 120);
     else outline();
