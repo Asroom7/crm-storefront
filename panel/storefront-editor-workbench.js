@@ -1929,7 +1929,22 @@
         drawPicked();
         drawPage();
       } catch (error) {
-        if (id === requestId && epoch === E.modalEpoch && statusNode)
+        if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+        const q = queryInput.value.trim().toLowerCase(),
+          cat = categoryInput.value,
+          stockOnly = stockInput.checked,
+          cached = E.products.filter(
+            (p) =>
+              (!q || String(p.name || '').toLowerCase().includes(q)) &&
+              (!cat || Number(p.categoryId || p.category?.id) === Number(cat)) &&
+              (!stockOnly || Number(p.stockQty) > 0),
+          );
+        pageItems = cached.slice(0, 40);
+        total = cached.length;
+        offset = pageItems.length;
+        drawPicked();
+        drawPage();
+        if (statusNode && !cached.length)
           statusNode.textContent = error.message || 'دریافت محصولات ناموفق بود';
       } finally {
         if (id === requestId) loading = false;
@@ -2121,8 +2136,26 @@
         offset = pageItems.length;
         render();
       } catch (error) {
-        if (id === requestId && epoch === E.modalEpoch && statusNode)
-          statusNode.textContent = error.message || 'خطا در دریافت رسانه‌ها';
+        if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+        try {
+          const legacy = await sellerApiFetch('/storefront/media');
+          if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+          E.assets = legacy || [];
+          E.mediaIndexLoaded = true;
+          const q = queryInput.value.trim().toLowerCase(),
+            selectedKind = kindInput.value;
+          const filtered = E.assets.filter(
+            (a) =>
+              (selectedKind === 'all' || a.kind === selectedKind) &&
+              (!q || String(a.altText || a.publicId || a.kind || '').toLowerCase().includes(q)),
+          );
+          pageItems = filtered.slice(0, 40);
+          total = filtered.length;
+          offset = pageItems.length;
+          render();
+        } catch (_) {
+          if (statusNode) statusNode.textContent = error.message || 'خطا در دریافت رسانه‌ها';
+        }
       } finally {
         if (id === requestId) loading = false;
       }
