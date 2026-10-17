@@ -1072,7 +1072,8 @@
   function status() {
     if (!E.root || !$('[data-save-status]')) return;
     const errors = validation(),
-      localBackupWarning = E.backupError && dirty();
+      localBackupWarning = E.backupError && dirty(),
+      invalidInput = !!E.root.querySelector('[data-field][aria-invalid="true"]');
     $('[data-save-status]').textContent = E.saving
       ? 'در حال ذخیره پیش‌نویس…'
       : E.conflict
@@ -1081,7 +1082,9 @@
           ? localBackupWarning
             ? 'ذخیره سرور و پشتیبان محلی هر دو ناموفق‌اند'
             : 'ذخیره انجام نشد؛ نسخه محلی محفوظ است'
-          : !navigator.onLine && dirty()
+          : invalidInput
+            ? 'ورودی نامعتبر اعمال نشده است'
+            : !navigator.onLine && dirty()
             ? localBackupWarning
               ? 'آفلاین؛ ذخیره محلی مرورگر در دسترس نیست'
               : 'آفلاین؛ تغییرات در این دستگاه محفوظ است'
@@ -1100,7 +1103,9 @@
         ? 'در حال ذخیره…'
         : E.error
           ? 'ذخیره ناموفق'
-          : localBackupWarning
+          : invalidInput
+            ? 'ورودی نامعتبر'
+            : localBackupWarning
             ? 'پشتیبان محلی ناموفق'
             : dirty()
               ? 'تغییر ذخیره‌نشده'
@@ -1109,21 +1114,32 @@
     $('[data-action=redo]').disabled = !E.redo.length;
     ['save', 'review'].forEach(
       (a) =>
-        ($('[data-action=' + a + ']').disabled = E.saving || E.publishing || E.conflict || !!errors.length),
+        ($('[data-action=' + a + ']').disabled =
+          E.saving || E.publishing || E.conflict || invalidInput || !!errors.length),
     );
     const notice = $('[data-notice]');
-    notice.hidden = !(E.error || E.conflict || errors.length || localBackupWarning);
+    notice.hidden = !(E.error || E.conflict || invalidInput || errors.length || localBackupWarning);
     notice.innerHTML = E.conflict
       ? 'این پیش‌نویس در جای دیگری تغییر کرده است. ' + btn('conflict', 'بررسی نسخه سرور')
       : E.error
         ? esc(E.error) + btn('retry', 'تلاش دوباره')
-        : localBackupWarning
-          ? 'مرورگر نتوانست پشتیبان محلی این پیش‌نویس را ذخیره کند؛ تا ذخیره روی سرور صفحه را نبندید.'
-          : esc(errors.join(' · '));
+        : invalidInput
+          ? 'یک مقدار نامعتبر در فرم وجود دارد؛ تا اصلاح یا خروج از فیلد، ذخیره و انتشار انجام نمی‌شود.'
+          : localBackupWarning
+            ? 'مرورگر نتوانست پشتیبان محلی این پیش‌نویس را ذخیره کند؛ تا ذخیره روی سرور صفحه را نبندید.'
+            : esc(errors.join(' · '));
     if ($('[data-action=publish]')) reviewButton();
   }
   async function save(manual = true) {
     if (!E.config || E.saving || E.publishing || E.conflict) return false;
+    const invalidInput = E.root?.querySelector('[data-field][aria-invalid="true"]');
+    if (invalidInput) {
+      invalidInput.focus({ preventScroll: true });
+      invalidInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      status();
+      if (manual) tell('ابتدا مقدار نامعتبر را اصلاح کنید');
+      return false;
+    }
     if (!dirty()) {
       if (manual) tell('پیش‌نویس ذخیره شده است');
       return true;
