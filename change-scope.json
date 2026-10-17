@@ -1,9 +1,6 @@
 {
-  "task": "storefront-editor-performance-pack-1",
-  "allowed_locked_paths": [
-    "index.html",
-    "storefront-home.js"
-  ],
-  "user_approved_shared_change": true,
-  "note": "User explicitly approved Performance Pack 1 for storefront editor issues 1-10 and explicitly approved shared changes only to storefront-home.js plus its loader line in index.html. Shared runtime optimization is gated by editorPreview=1 so the normal live storefront rendering path, content, layout, order, data and behavior remain unchanged. Editor-local changes are limited to preview zoom/fit scheduling, iframe viewport sizing, splitter/viewport throttling, scroll/pan behavior and asset version refresh in panel/storefront-editor-workbench.js, panel/storefront-editor-workbench.css and panel/storefront-editor.html. No backend, panel core, product/order/customer data, other storefront pages, or unrelated approved sections may change."
+  "task": "storefront-editor-portrait-pack-2",
+  "allowed_locked_paths": [],
+  "user_approved_shared_change": false,
+  "note": "User explicitly requested Package 2 for storefront editor items 11-12 only: make portrait editing genuinely usable and make Preview/Settings behave as full-width mobile panes instead of a cramped side-by-side split. Changes are editor-local only in panel/storefront-editor-workbench.css plus the version query in panel/storefront-editor.html. No shared/core storefront files, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
 }
