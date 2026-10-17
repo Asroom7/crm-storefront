@@ -72,6 +72,10 @@
     mediaQuery: '',
     mediaKind: 'all',
     mediaSearchTimer: 0,
+    mediaGlobalSearchTimer: 0,
+    mediaGlobalSearchQuery: '',
+    productGlobalSearchTimer: 0,
+    productGlobalSearchQuery: '',
     mediaIndexLoaded: false,
     mediaIndexLoading: false,
     reloadMedia: null,
@@ -130,6 +134,79 @@
     const map = new Map(E.assets.map((item) => [Number(item.id), item]));
     (items || []).forEach((item) => map.set(Number(item.id), item));
     E.assets = Array.from(map.values());
+  }
+  function collectReferencedProductIds(value) {
+    const ids = new Set(),
+      seen = new Set();
+    const visit = (node, key = '') => {
+      if (node == null) return;
+      if (typeof node === 'string') {
+        const match = node.match(/product-detail\.html\?[^#]*\bid=(\d+)/i);
+        if (match) ids.add(Number(match[1]));
+        return;
+      }
+      if (typeof node !== 'object' || seen.has(node)) return;
+      seen.add(node);
+      if (Array.isArray(node)) {
+        if (/productids$/i.test(key))
+          node.forEach((id) => {
+            id = Number(id);
+            if (Number.isInteger(id) && id > 0) ids.add(id);
+          });
+        node.forEach((item) => visit(item, key));
+        return;
+      }
+      Object.entries(node).forEach(([childKey, item]) => {
+        if (/^productid$/i.test(childKey)) {
+          const id = Number(item);
+          if (Number.isInteger(id) && id > 0) ids.add(id);
+        }
+        visit(item, childKey);
+      });
+    };
+    visit(value);
+    return Array.from(ids);
+  }
+  async function fetchProductsByIds(ids) {
+    const unique = [...new Set((ids || []).map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+    for (let offset = 0; offset < unique.length; offset += 200) {
+      const chunk = unique.slice(offset, offset + 200);
+      const data = await sellerApiFetch(
+        '/products/picker?ids=' + encodeURIComponent(chunk.join(',')) + '&limit=200',
+      );
+      mergeProducts(data?.items || []);
+    }
+    return E.products;
+  }
+  function ensureProductSearch(query) {
+    const q = String(query || '').trim();
+    if (q.length < 2 || E.productGlobalSearchQuery === q) return;
+    clearTimeout(E.productGlobalSearchTimer);
+    E.productGlobalSearchTimer = setTimeout(async () => {
+      E.productGlobalSearchQuery = q;
+      try {
+        const data = await sellerApiFetch('/products/picker?q=' + encodeURIComponent(q) + '&limit=20');
+        mergeProducts(data?.items || []);
+        const input = E.root?.querySelector('[data-settings-query]');
+        if (E.searchOpen && input?.value.trim() === q) renderSearchResults();
+      } catch (_) {}
+    }, 220);
+  }
+  function ensureMediaSearch(query) {
+    const q = String(query || '').trim();
+    if (q.length < 2 || E.mediaGlobalSearchQuery === q) return;
+    clearTimeout(E.mediaGlobalSearchTimer);
+    E.mediaGlobalSearchTimer = setTimeout(async () => {
+      E.mediaGlobalSearchQuery = q;
+      try {
+        const data = await sellerApiFetch(
+          '/storefront/media?paged=1&q=' + encodeURIComponent(q) + '&limit=20',
+        );
+        mergeAssets(data?.items || []);
+        const input = E.root?.querySelector('[data-settings-query]');
+        if (E.searchOpen && input?.value.trim() === q) renderSearchResults();
+      } catch (_) {}
+    }, 220);
   }
   function ensureMediaSearchIndex() {
     if (E.mediaIndexLoaded || E.mediaIndexLoading) return;
