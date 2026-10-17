@@ -175,7 +175,12 @@
       const data = await sellerApiFetch(
         '/products/picker?ids=' + encodeURIComponent(chunk.join(',')) + '&limit=200',
       );
-      mergeProducts(data?.items || []);
+      const items = Array.isArray(data)
+        ? data.filter((item) => chunk.includes(Number(item.id)))
+        : Array.isArray(data?.items)
+          ? data.items
+          : [];
+      mergeProducts(items);
     }
     return E.products;
   }
@@ -187,7 +192,12 @@
       E.productGlobalSearchQuery = q;
       try {
         const data = await sellerApiFetch('/products/picker?q=' + encodeURIComponent(q) + '&limit=20');
-        mergeProducts(data?.items || []);
+        const items = Array.isArray(data)
+          ? data.filter((item) => String(item.name || '').toLowerCase().includes(q.toLowerCase())).slice(0, 20)
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+        mergeProducts(items);
         const input = E.root?.querySelector('[data-settings-query]');
         if (E.searchOpen && input?.value.trim() === q) renderSearchResults();
       } catch (_) {}
@@ -203,7 +213,18 @@
         const data = await sellerApiFetch(
           '/storefront/media?paged=1&q=' + encodeURIComponent(q) + '&limit=20',
         );
-        mergeAssets(data?.items || []);
+        const items = Array.isArray(data)
+          ? data
+              .filter((item) =>
+                String(item.altText || item.publicId || item.kind || '')
+                  .toLowerCase()
+                  .includes(q.toLowerCase()),
+              )
+              .slice(0, 20)
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+        mergeAssets(items);
         const input = E.root?.querySelector('[data-settings-query]');
         if (E.searchOpen && input?.value.trim() === q) renderSearchResults();
       } catch (_) {}
@@ -2081,12 +2102,25 @@
       try {
         const data = await sellerApiFetch('/products/picker?' + params.toString());
         if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
-        const items = Array.isArray(data?.items) ? data.items : [];
+        const legacy = Array.isArray(data),
+          query = queryInput.value.trim().toLowerCase(),
+          category = categoryInput.value,
+          stockOnly = stockInput.checked,
+          source = legacy ? data : Array.isArray(data?.items) ? data.items : [],
+          filtered = legacy
+            ? source.filter(
+                (p) =>
+                  (!query || String(p.name || '').toLowerCase().includes(query)) &&
+                  (!category || Number(p.categoryId || p.category?.id) === Number(category)) &&
+                  (!stockOnly || Number(p.stockQty) > 0),
+              )
+            : source,
+          items = legacy ? filtered.slice(reset ? 0 : offset, (reset ? 0 : offset) + 40) : filtered;
         mergeProducts(items);
         pageItems = reset
           ? items
           : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
-        total = Number(data?.total || pageItems.length);
+        total = legacy ? filtered.length : Number(data?.total || pageItems.length);
         offset = pageItems.length;
         drawPicked();
         drawPage();
@@ -2152,7 +2186,12 @@
       sellerApiFetch('/products/picker?ids=' + encodeURIComponent(missing.join(',')) + '&limit=200')
         .then((data) => {
           if (epoch !== E.modalEpoch || !routeActive()) return;
-          mergeProducts(data?.items || []);
+          const items = Array.isArray(data)
+            ? data.filter((item) => missing.includes(Number(item.id)))
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          mergeProducts(items);
           drawPicked();
         })
         .catch(() => {});
@@ -2289,12 +2328,27 @@
       try {
         const data = await sellerApiFetch('/storefront/media?' + params.toString());
         if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
-        const items = Array.isArray(data?.items) ? data.items : [];
+        const legacy = Array.isArray(data),
+          query = queryInput.value.trim().toLowerCase(),
+          selectedKind = kindInput.value,
+          source = legacy ? data : Array.isArray(data?.items) ? data.items : [],
+          filtered = legacy
+            ? source.filter(
+                (a) =>
+                  (selectedKind === 'all' || a.kind === selectedKind) &&
+                  (!query ||
+                    String(a.altText || a.publicId || a.kind || '')
+                      .toLowerCase()
+                      .includes(query)),
+              )
+            : source,
+          items = legacy ? filtered.slice(reset ? 0 : offset, (reset ? 0 : offset) + 40) : filtered;
         mergeAssets(items);
+        if (legacy) E.mediaIndexLoaded = true;
         pageItems = reset
           ? items
           : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
-        total = Number(data?.total || pageItems.length);
+        total = legacy ? filtered.length : Number(data?.total || pageItems.length);
         offset = pageItems.length;
         render();
       } catch (error) {
@@ -2479,12 +2533,14 @@
             '&limit=40',
         );
         if (id !== requestId || sectionId !== E.activeSection || epoch !== E.modalEpoch || !routeActive()) return;
-        const items = Array.isArray(data?.items) ? data.items : [];
+        const legacy = Array.isArray(data),
+          source = legacy ? data.filter((item) => item.kind === 'video') : Array.isArray(data?.items) ? data.items : [],
+          items = legacy ? source.slice(reset ? 0 : offset, (reset ? 0 : offset) + 40) : source;
         mergeAssets(items);
         pageItems = reset
           ? items
           : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
-        total = Number(data?.total || pageItems.length);
+        total = legacy ? source.length : Number(data?.total || pageItems.length);
         offset = pageItems.length;
         drawOrder();
         drawGrid();
