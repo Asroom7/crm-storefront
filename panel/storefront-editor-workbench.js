@@ -316,13 +316,14 @@
     E.group = group ? { key: group, at: Date.now() } : null;
   }
   function changed(recomputeDirty = false) {
+    const wasDirty = dirty();
     E.dirtyState = recomputeDirty ? !M.equal(E.server, state()) : true;
     E.unpublishedCache = null;
     E.validationCache = null;
     E.previewVersion = null;
     if ($('[data-version-bar]')) $('[data-version-bar]').hidden = true;
     E.error = '';
-    backup();
+    backup(wasDirty !== dirty());
     scheduleChangedUi();
     preview();
     clearTimeout(E.timer);
