@@ -4,6 +4,9 @@
 
   const root = document.getElementById('storefront-home-root');
   if (!root) return;
+  let editorPreview = false;
+  try { editorPreview = new URLSearchParams(window.location.search).get('editorPreview') === '1'; } catch (_) {}
+  let editorPreviewState = null;
 
   const REQUESTED = [
     { id: 'search', type: 'search', enabled: true, content: {}, settings: {} },
@@ -211,9 +214,57 @@
     countdownTimer = setInterval(update, 1000);
   }
 
+  function editorSectionMarkup(block, ctx) {
+    let html = '';
+    try { html = registry[block.type](block, ctx) || ''; }
+    catch (error) { console.error(error); return ''; }
+    if (!editorPreview || !html || /\bdata-editor-section=/.test(html)) return html;
+    return html.replace(
+      /^(\s*<[a-zA-Z][^\s/>]*)/,
+      '$1 data-editor-section="' + escapeHtml(block.id) + '" data-editor-section-type="' + escapeHtml(block.type) + '"'
+    );
+  }
+
+  function renderEditorLayout(visible, ctx) {
+    const structure = visible.map(function (block) { return block.id + ':' + block.type; }).join('|');
+    const signatures = new Map(visible.map(function (block) {
+      let signature = '';
+      try { signature = JSON.stringify(block); } catch (_) {}
+      return [String(block.id), signature];
+    }));
+    let patched = !!editorPreviewState && editorPreviewState.structure === structure;
+
+    if (patched) {
+      for (const block of visible) {
+        if (editorPreviewState.signatures.get(String(block.id)) === signatures.get(String(block.id))) continue;
+        const selector = '[data-editor-section="' + CSS.escape(String(block.id)) + '"]';
+        const current = root.querySelector(selector);
+        const template = document.createElement('template');
+        template.innerHTML = editorSectionMarkup(block, ctx).trim();
+        if (!current || template.content.childElementCount !== 1) {
+          patched = false;
+          break;
+        }
+        current.replaceWith(template.content.firstElementChild);
+      }
+    }
+
+    if (!patched) {
+      root.innerHTML = visible.map(function (block) { return editorSectionMarkup(block, ctx); }).join('') + footer(ctx);
+    }
+
+    editorPreviewState = { structure: structure, signatures: signatures };
+    bindCountdowns(ctx);
+  }
+
   function renderLayout(sections, ctx) {
     const normalized = normalizeSections(sections);
-    const html = normalized.filter(function (block) { return block.enabled !== false; }).map(function (block) {
+    const visible = normalized.filter(function (block) { return block.enabled !== false; });
+    if (editorPreview) {
+      renderEditorLayout(visible, ctx);
+      return;
+    }
+    const html = visible.map(function (block) {
       try { return registry[block.type](block, ctx) || ''; }
       catch (error) { console.error(error); return ''; }
     }).join('') + footer(ctx);
@@ -262,6 +313,7 @@
 
   window.addEventListener('message', function (event) {
     if (event.origin !== location.origin || !event.data || event.data.type !== 'storefront-preview-config' || !lastContext) return;
+    if (editorPreview && window.StorefrontHome && window.StorefrontHome.editorCustomizations) return;
     applyTheme(event.data.theme || DEFAULT_THEME);
     renderLayout(event.data.config && event.data.config.sections ? event.data.config.sections : REQUESTED, lastContext);
   });
