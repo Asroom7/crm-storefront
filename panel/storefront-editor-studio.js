@@ -536,9 +536,9 @@
       if (el.disabled) return;
       el.disabled = true;
       try {
-        const products = await sellerApiFetch('/products');
+        const feed = await sellerApiFetch('/products/picker?limit=1000');
         if (!current()) return;
-        K.E.products = products;
+        K.E.products = Array.isArray(feed?.items) ? feed.items : [];
       } finally {
         if (el.isConnected) el.disabled = false;
       }
