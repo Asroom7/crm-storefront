@@ -486,7 +486,7 @@ html[data-theme='dark'] .sfe-workbench {
   width: 100%;
   min-height: 30px;
 }
-.sfe-field input[aria-invalid='true'] {
+.sfe-field :is(input, select, textarea)[aria-invalid='true'] {
   border-color: #c54d5e;
 }
 .sfe-field [data-field-error]:empty {
@@ -890,6 +890,8 @@ html[data-theme='dark'] .sfe-workbench {
   max-width: none;
   max-height: none;
   object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
 }
 .sfe-crop-stage [data-crop-frame] {
   position: absolute;
