@@ -355,7 +355,7 @@
       )
       .join('')}</div>${btn('media', 'کتابخانه رسانه‌ها')}</section><section class="sfe-drawer-group"><h3>مدیریت و نسخه‌ها</h3><div class="sfe-drawer-actions">${btn('versions', 'تاریخچه و نسخه‌های ذخیره‌شده')}${btn('fullscreen', 'تمام‌صفحه')}${btn('back', 'بازگشت به پنل مدیریت')}</div></section></div></aside><button type="button" class="sfe-outline-scrim" data-action="outline-dismiss" aria-label="بستن منوی اصلی"></button><main class="sfe-canvas"><div class="sfe-canvas-bar"><div class="sfe-preview-title"><strong>پیش‌نمایش زنده</strong><span data-preview-label>${E.previewSource === 'live' ? 'نسخه منتشرشده' : 'پیش‌نویس'}</span></div><div class="sfe-preview-modes"><div class="sfe-segment" aria-label="نسخه پیش‌نمایش">${['draft', 'live'].map((source, i) => `<button type="button" data-preview-source="${source}" aria-pressed="${source === E.previewSource}">${['پیش‌نویس', 'نسخه منتشرشده'][i]}</button>`).join('')}</div><div class="sfe-segment" aria-label="حالت تعامل">${['edit', 'view'].map((mode, i) => `<button type="button" data-preview-mode="${mode}" aria-pressed="${mode === E.previewMode}">${['انتخاب برای ویرایش', 'مشاهده'][i]}</button>`).join('')}</div></div><div class="sfe-zoom-tools" aria-label="کنترل بزرگ‌نمایی"><button type="button" data-action="zoom-out" aria-label="کوچک‌نمایی">${ico('minus')}</button><output data-zoom-value aria-live="polite">۱۰۰٪</output><button type="button" data-action="zoom-in" aria-label="بزرگ‌نمایی">${ico('plus')}</button>${['fit', 'width', 'actual'].map((mode, i) => `<button type="button" data-zoom-mode="${mode}" aria-pressed="${mode === E.zoomMode}">${['نمای کلی', 'عرض قاب', '۱۰۰٪'][i]}</button>`).join('')}<button type="button" data-action="focus-section">تمرکز روی بخش</button></div></div><div data-version-bar class="sfe-version-preview" hidden></div><div class="sfe-preview-stage"><div class="sfe-frame-wrap" data-frame-wrap data-device="${E.device}"><iframe data-preview-frame title="پیش‌نمایش فروشگاه" src="../index.html?editorPreview=1&editorBuild=20261016-studio"></iframe></div></div></main><div class="sfe-splitter" data-splitter role="separator" aria-label="تغییر اندازه پیش‌نمایش و تنظیمات" aria-orientation="vertical" aria-valuemin="45" aria-valuemax="75" aria-valuenow="${E.split}" tabindex="0"><button type="button" data-action="reset-split" title="بازگشت به اندازه پیش‌فرض" aria-label="بازگشت اندازه ستون‌ها به حالت پیش‌فرض">⋮</button></div><aside class="sfe-inspector" aria-label="تنظیمات بخش انتخاب‌شده"><div data-inspector></div></aside></div>
     <footer class="sfe-statusbar"><span data-save-status aria-live="polite"></span><span data-publish-status aria-live="polite"></span></footer><div class="sfe-dialog-overlay" data-overlay hidden><section class="sfe-dialog" role="dialog" aria-modal="true" aria-labelledby="sfe-dialog-title"><header><h3 id="sfe-dialog-title"></h3>${btn('close', '×', false, 'aria-label="بستن"')}</header><div data-dialog-body></div><footer data-dialog-footer></footer></section></div>
-    <section class="sfe-orientation-gate" data-orientation-gate aria-labelledby="sfe-orientation-title" hidden><div class="sfe-orientation-card"><svg viewBox="0 0 80 80" fill="none" aria-hidden="true"><rect x="17" y="25" width="46" height="29" rx="5" stroke="currentColor" stroke-width="3"/><path d="M24 18a23 23 0 0138 3M62 12v9h-9M56 61a23 23 0 01-38-3M18 67v-9h9" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2 id="sfe-orientation-title" tabindex="-1">برای ویرایش، صفحه را افقی کن</h2><p>گوشی یا تبلت را بچرخان؛ در رایانه، پنجره را عریض‌تر کن.</p><small>فرم باز و تغییراتت حفظ می‌شوند.</small><details><summary>صفحه نمی‌چرخد؟</summary><p>قفل چرخش گوشی را خاموش کن و دوباره دستگاه را بچرخان.</p></details>${btn('back', 'بازگشت به پنل')}</div></section></div>`;
+    </div>`;
     E.iframe = $('[data-preview-frame]');
     $('[data-storefront-workbench]').style.setProperty('--sfe-preview-pct', E.split + '%');
     $('[data-section-query]').value = E.sectionQuery;
@@ -2318,24 +2318,54 @@
       `<div class="sfe-crop-stage"><img data-crop-img alt="تصویر برای برش"><div data-crop-frame></div></div><label class="sfe-field">قالب<select data-crop-ratio><option value="1.7777777778">دسکتاپ ۱۶:۹</option><option value="0.8">موبایل ۴:۵</option><option value="1">مربع ۱:۱</option></select></label><label class="sfe-field">بزرگ‌نمایی<input data-crop-zoom type="range" min="1" max="3" step="0.01" value="1"></label><label class="sfe-field">افقی<input data-crop-x type="range" min="-100" max="100" value="0"></label><label class="sfe-field">عمودی<input data-crop-y type="range" min="-100" max="100" value="0"></label>`,
       btn('close', 'انصراف') + btn('crop-save', 'ساخت و انتخاب تصویر', true),
     );
-    const img = $('[data-crop-img]');
+    const img = $('[data-crop-img]'),
+      stage = $('.sfe-crop-stage'),
+      frame = $('[data-crop-frame]');
+    let cropFrame = 0,
+      frameWidth = 0,
+      frameHeight = 0,
+      baseWidth = 0,
+      baseHeight = 0;
+
     img.crossOrigin = 'anonymous';
-    const draw = () => {
-      const r = Number($('[data-crop-ratio]').value),
-        z = Number($('[data-crop-zoom]').value),
-        w = Math.min($('.sfe-crop-stage').clientWidth * 0.85, 260),
-        h = Math.min(w / r, 220),
-        frame = $('[data-crop-frame]');
-      frame.style.width = h * r + 'px';
-      frame.style.height = h + 'px';
-      const scale = Math.max((h * r) / (img.naturalWidth || 1), h / (img.naturalHeight || 1)) * z;
-      img.style.width = img.naturalWidth * scale + 'px';
-      img.style.height = img.naturalHeight * scale + 'px';
-      img.style.transform = `translate(${(Number($('[data-crop-x]').value) / 100) * Math.max(0, (img.naturalWidth * scale - h * r) / 2)}px,${(Number($('[data-crop-y]').value) / 100) * Math.max(0, (img.naturalHeight * scale - h) / 2)}px)`;
+
+    const measure = () => {
+      const ratio = Number($('[data-crop-ratio]').value),
+        available = Math.min(stage.clientWidth * 0.85, 260),
+        height = Math.min(available / ratio, 220);
+      frameWidth = height * ratio;
+      frameHeight = height;
+      frame.style.width = frameWidth + 'px';
+      frame.style.height = frameHeight + 'px';
+      const scale = Math.max(
+        frameWidth / (img.naturalWidth || 1),
+        frameHeight / (img.naturalHeight || 1),
+      );
+      baseWidth = img.naturalWidth * scale;
+      baseHeight = img.naturalHeight * scale;
+      img.style.width = baseWidth + 'px';
+      img.style.height = baseHeight + 'px';
     };
-    img.onload = draw;
+
+    const draw = (remeasure = false) => {
+      cancelAnimationFrame(cropFrame);
+      cropFrame = requestAnimationFrame(() => {
+        cropFrame = 0;
+        if (!img.isConnected || !frame.isConnected) return;
+        if (remeasure || !frameWidth || !frameHeight) measure();
+        const zoom = Number($('[data-crop-zoom]').value),
+          x = Number($('[data-crop-x]').value) / 100,
+          y = Number($('[data-crop-y]').value) / 100,
+          maxX = Math.max(0, (baseWidth * zoom - frameWidth) / 2),
+          maxY = Math.max(0, (baseHeight * zoom - frameHeight) / 2);
+        img.style.transform = `translate(${x * maxX}px,${y * maxY}px) scale(${zoom})`;
+      });
+    };
+
+    img.onload = () => draw(true);
     img.src = url;
-    $$('[data-crop-ratio],[data-crop-zoom],[data-crop-x],[data-crop-y]').forEach((el) => (el.oninput = draw));
+    $('[data-crop-ratio]').oninput = () => draw(true);
+    $('[data-crop-zoom],[data-crop-x],[data-crop-y]').forEach((el) => (el.oninput = () => draw(false)));
   }
   async function saveCrop() {
     const img = $('[data-crop-img]');
