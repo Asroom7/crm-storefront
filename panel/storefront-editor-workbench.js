@@ -49,7 +49,6 @@
     previewMode: 'edit',
     previewSource: 'draft',
     split: 65,
-    orientationLocked: false,
     undo: [],
     redo: [],
     group: null,
@@ -264,14 +263,15 @@
     return E.activeSection?.startsWith('__') || active()?.type === 'footer' ? E.theme : active();
   }
   function applyField(el) {
-    if (el.dataset.field === '__note') return;
+    if (el.dataset.field === '__note') return true;
     const target = owner();
-    if (!target) return;
+    if (!target) return true;
     const error = el.closest('.sfe-field')?.querySelector('[data-field-error]');
     if (!el.checkValidity() || (el.dataset.field.endsWith('ctaUrl') && !M.safeUrl(el.value))) {
-      if (error) error.textContent = 'مقدار معتبر وارد کنید';
+      if (error) error.textContent = 'این مقدار معتبر نیست و اعمال یا ذخیره نمی‌شود';
       el.setAttribute('aria-invalid', 'true');
-      return;
+      status();
+      return false;
     }
     if (error) error.textContent = '';
     el.removeAttribute('aria-invalid');
@@ -284,7 +284,10 @@
             : Number(el.value)
           : el.value;
     if (el.type === 'datetime-local') value = value ? new Date(value).toISOString() : null;
-    if (M.equal(M.getPath(target, el.dataset.field), value)) return;
+    if (M.equal(M.getPath(target, el.dataset.field), value)) {
+      status();
+      return true;
+    }
     history(E.activeSection + ':' + el.dataset.field);
     M.setPath(target, el.dataset.field, value);
     if (active()?.type === 'campaign' && el.dataset.field === 'settings.startsAt') {
@@ -302,6 +305,32 @@
     const output = el.parentElement.querySelector('output');
     if (output) output.textContent = fa(value);
     changed();
+    return true;
+  }
+  function restoreInvalidField(el) {
+    if (!el?.matches?.('[data-field][aria-invalid="true"]') || el.dataset.field === '__note') return false;
+    const target = owner();
+    if (!target) return false;
+    const value = M.getPath(target, el.dataset.field);
+    if (el.type === 'checkbox') {
+      el.checked = !!value;
+    } else if (el.type === 'datetime-local') {
+      if (!value) el.value = '';
+      else {
+        const date = new Date(value);
+        el.value = Number.isNaN(date.getTime())
+          ? ''
+          : new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      }
+    } else {
+      el.value = value == null ? '' : String(value);
+    }
+    const error = el.closest('.sfe-field')?.querySelector('[data-field-error]');
+    if (error) error.textContent = '';
+    el.removeAttribute('aria-invalid');
+    tell('مقدار نامعتبر اعمال نشد و مقدار قبلی حفظ شد');
+    status();
+    return true;
   }
   function mount(view) {
     E.previewObserver?.disconnect();
@@ -349,7 +378,9 @@
       if (routeActive() && e.target.matches('[data-field]')) applyField(e.target);
     };
     view.onfocusout = (e) => {
-      if (e.target.matches('[data-field]')) E.group = null;
+      if (!e.target.matches('[data-field]')) return;
+      restoreInvalidField(e.target);
+      E.group = null;
     };
     bindSplitter();
     outline();
@@ -802,13 +833,7 @@
     if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
     E.root.style.setProperty('--sfe-usable-height', (window.visualViewport?.height || innerHeight) + 'px');
     E.root.style.setProperty('--sfe-viewport-top', (window.visualViewport?.offsetTop || 0) + 'px');
-    const wasLocked = E.orientationLocked;
-    E.orientationLocked = false;
-    const root = $('[data-storefront-workbench]');
-    root.dataset.orientationLocked = 'false';
-    $('[data-orientation-gate]').hidden = true;
     modalBackground(!$('[data-overlay]').hidden);
-    if (wasLocked && E.orientationFocus?.isConnected) E.orientationFocus.focus({ preventScroll: true });
     scheduleFit();
   }
   function scheduleViewport() {
@@ -1176,10 +1201,8 @@
     overlay.querySelector('button,input,select,textarea')?.focus({ preventScroll: true });
   }
   function modalBackground(inert) {
-    $$('.sfe-workbench > *').forEach((node) => {
-      node.inert = node.matches('[data-orientation-gate]')
-        ? !E.orientationLocked
-        : node.matches('[data-overlay]') ? E.orientationLocked : inert || E.orientationLocked;
+    $('.sfe-workbench > *').forEach((node) => {
+      node.inert = node.matches('[data-overlay]') ? false : inert;
     });
   }
   function close() {
@@ -1202,11 +1225,6 @@
   }
   function requestExit() {
     if (!dirty()) return goBack();
-    if (E.orientationLocked) {
-      backup(true);
-      if (window.confirm('تغییرات ذخیره‌نشده داری. از ویرایشگر خارج می‌شوی؟')) goBack();
-      return;
-    }
     dialog(
       'خروج از ویرایشگر',
       '<p>بخشی از تغییرات هنوز روی سرور ذخیره نشده است. می‌توانی آن‌ها را ذخیره کنی یا به ویرایش ادامه بدهی.</p>',
@@ -2363,7 +2381,6 @@
     if (E.searchOpen && !event.target.closest('.sfe-global-search')) closeSearch();
     const b = event.target.closest('button');
     if (!b || !E.root.contains(b)) return;
-    if (E.orientationLocked && !b.closest('[data-orientation-gate]')) return;
     if (b.dataset.action === 'outline-dismiss') {
       pane(E.pane);
       $('[data-pane="sections"]').focus({ preventScroll: true });
@@ -2792,19 +2809,6 @@
   });
   document.addEventListener('keydown', (event) => {
     if (!E.config || !routeActive() || !$('[data-overlay]')) return;
-    if (E.orientationLocked) {
-      if ((event.ctrlKey || event.metaKey) && ['k', 's', 'z', 'y'].includes(event.key.toLowerCase())) event.preventDefault();
-      if (event.key === 'Tab') {
-        const list = $$('[data-orientation-gate] button,[data-orientation-gate] summary');
-        const first = list[0], last = list[list.length - 1];
-        if (event.shiftKey && (document.activeElement === first || document.activeElement.id === 'sfe-orientation-title')) {
-          event.preventDefault(); last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault(); first?.focus();
-        }
-      }
-      return;
-    }
     if (E.searchOpen) {
       const results = $$('[data-settings-results] .sfe-search-result'),
         current = results.indexOf(document.activeElement);
