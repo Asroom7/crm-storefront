@@ -93,6 +93,8 @@
       minus: '<path d="M5 12h14"/>',
       expand: '<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',
       close: '<path d="m6 6 12 12M18 6 6 18"/>',
+      chevR: '<path d="m15 18-6-6 6-6"/>',
+      box: '<path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Zm8 4v10"/>',
     };
     return local[n]
       ? `<svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round">${local[n]}</svg>`

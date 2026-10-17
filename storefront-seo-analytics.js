@@ -202,6 +202,7 @@ function storedId(storage,key,prefix){
   }
 }
 function analyticsAllowed(){
+  if(new URLSearchParams(window.location.search).has('editorPreview'))return false;
   return String(navigator.doNotTrack||window.doNotTrack||'')!=='1';
 }
 function visitorId(){

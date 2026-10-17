@@ -15,7 +15,7 @@ async function openStandalone(browser, origin, state, viewport) {
   await setup(page, state);
   await page.goto(origin + '/new/panel/index.html#/settings');
   const link = page.locator('[data-storefront-editor-link]');
-  await link.waitFor();
+  await link.waitFor({ timeout: 60000 });
   assert.match(await link.getAttribute('href'), /storefront-editor\.html#\/storefront-editor$/);
   await link.click();
   await page.locator('[data-storefront-workbench]').waitFor();
@@ -23,6 +23,9 @@ async function openStandalone(browser, origin, state, viewport) {
     () => window.StorefrontEditorComplete.state.iframe?.contentWindow?.StorefrontHome?.__editorContext,
   );
   assert.match(new URL(page.url()).pathname, /\/panel\/storefront-editor\.html$/);
+  assert.equal(await page.locator('script[src*="customer-crm-features"]').count(), 0);
+  assert.equal(await page.locator('script[src*="analytics-dashboard"]').count(), 0);
+  assert.equal(await page.locator('.topbar,.bottom-nav').count(), 0);
   return { context, page, errors };
 }
 async function assertTwoColumnOrder(page) {
