@@ -169,9 +169,15 @@
       clearTimeout(E.backupTimer);
       backup();
     }
-    status();
-    if (options.deferOutline) E.outlineTimer = setTimeout(outline, 120);
-    else outline();
+    if (options.deferOutline) {
+      clearTimeout(E.statusTimer);
+      E.statusTimer = setTimeout(status, 120);
+      E.outlineTimer = setTimeout(outline, 120);
+    } else {
+      clearTimeout(E.statusTimer);
+      status();
+      outline();
+    }
     preview();
     clearTimeout(E.timer);
     if (!E.conflict) E.timer = setTimeout(() => save(false), 1000);
