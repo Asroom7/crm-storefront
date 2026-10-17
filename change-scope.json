@@ -1,6 +1,6 @@
 {
-  "task": "storefront-editor-state-pack-3",
+  "task": "storefront-editor-picker-media-pack-4",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "User explicitly requested Package 3 for storefront editor items 13-18 only: reduce per-keystroke editor work, reduce repeated full snapshot/equality work, debounce local draft backup, surface local-storage backup failures accurately, coalesce preview mutation observer work, and finish splitter drag throttling. Changes are editor-local only in panel/storefront-editor-workbench.js, panel/storefront-editor-model.js and the asset version query in panel/storefront-editor.html. No shared/core storefront files, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
+  "note": "User explicitly requested Package 4 for storefront editor items 19-25 and then explicitly approved the required shared backend work. Frontend changes are editor-local only in panel/storefront-editor-workbench.js, panel/storefront-editor-studio.js and the asset version query in panel/storefront-editor.html. Backend shared changes are limited to src/routes/products.js and src/routes/storefront.js to add lightweight/paginated seller-only picker/media reads while preserving all existing API behavior for callers that do not use the new query/route. No schema/database change, no public storefront layout/content change, no panel core change, and no product/order/customer/media data mutation is allowed."
 }
