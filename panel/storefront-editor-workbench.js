@@ -2455,8 +2455,7 @@
     input.click();
   }
   async function videos(resume = false) {
-    const sectionId = E.activeSection,
-      epoch = E.modalEpoch;
+    const sectionId = E.activeSection;
     if (!resume) {
       E.selectedVideos = (active()?.settings?.videoUrls || []).slice();
       E.selectedPosters = M.clone(active()?.settings?.videoPosters || {});
@@ -2466,6 +2465,7 @@
       '<div data-video-order></div><div class="sfe-picker-status" data-video-status>در حال دریافت ویدیوها…</div><div class="sfe-media-grid" data-video-grid></div><button type="button" class="sfe-button" data-video-more hidden>نمایش ویدیوهای بیشتر</button>',
       btn('close', 'انصراف') + btn('apply-videos', 'اعمال انتخاب', true),
     );
+    const epoch = E.modalEpoch;
     let pageItems = [],
       offset = 0,
       total = 0,
