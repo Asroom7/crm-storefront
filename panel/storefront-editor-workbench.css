@@ -383,8 +383,11 @@ html[data-theme='dark'] .sfe-workbench {
   padding: 10px;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .sfe-frame-wrap {
   width: 100%;
@@ -1799,6 +1802,7 @@ body:has(.sfe-host [data-overlay]:not([hidden])) {
 }
 .sfe-workbench[data-zoom-mode='fit'] .sfe-preview-stage {
   justify-content: center;
+  overflow: hidden;
 }
 .sfe-frame-wrap {
   position: relative;
@@ -1806,12 +1810,14 @@ body:has(.sfe-host [data-overlay]:not([hidden])) {
   max-width: none;
   min-width: 1px;
   direction: ltr;
-  transition: width 120ms ease, height 120ms ease;
+  contain: layout paint;
 }
 .sfe-frame-wrap iframe {
   position: absolute;
   top: 0;
   left: 0;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 .sfe-workbench[data-preview-mode='view'] .sfe-preview-title > span::after {
   content: ' · حالت مشاهده';
