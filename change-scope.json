@@ -1,6 +1,6 @@
 {
-  "task": "storefront-editor-portrait-pack-2",
+  "task": "storefront-editor-state-pack-3",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "User explicitly requested Package 2 for storefront editor items 11-12 only: make portrait editing genuinely usable and make Preview/Settings behave as full-width mobile panes instead of a cramped side-by-side split. Changes are editor-local only in panel/storefront-editor-workbench.css plus the version query in panel/storefront-editor.html. No shared/core storefront files, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
+  "note": "User explicitly requested Package 3 for storefront editor items 13-18 only: reduce per-keystroke editor work, reduce repeated full snapshot/equality work, debounce local draft backup, surface local-storage backup failures accurately, coalesce preview mutation observer work, and finish splitter drag throttling. Changes are editor-local only in panel/storefront-editor-workbench.js, panel/storefront-editor-model.js and the asset version query in panel/storefront-editor.html. No shared/core storefront files, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
 }
