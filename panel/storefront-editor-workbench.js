@@ -717,12 +717,25 @@
       if (event.target.closest('button') || matchMedia('(max-width: 900px)').matches) return;
       const workspace = $('.sfe-workspace'),
         box = workspace.getBoundingClientRect();
+      let splitFrame = 0,
+        latestX = null;
+      const applyMove = () => {
+        splitFrame = 0;
+        if (latestX === null) return;
+        const x = latestX;
+        latestX = null;
+        setSplit(((x - box.left) / box.width) * 100, false);
+      };
       separator.setPointerCapture?.(event.pointerId);
       separator.classList.add('is-dragging');
       const move = (next) => {
-        setSplit(((next.clientX - box.left) / box.width) * 100, false);
+        latestX = next.clientX;
+        if (!splitFrame) splitFrame = requestAnimationFrame(applyMove);
       };
-      const stop = () => {
+      const stop = (next) => {
+        if (typeof next?.clientX === 'number') latestX = next.clientX;
+        if (splitFrame) cancelAnimationFrame(splitFrame);
+        applyMove();
         separator.classList.remove('is-dragging');
         separator.onpointermove = separator.onpointerup = separator.onpointercancel = null;
         setSplit(E.split, true);
@@ -1576,7 +1589,8 @@
             '[data-sfe-section]{scroll-margin-top:80px!important}[data-sfe-selected]{outline:2px solid #7354c9!important;outline-offset:-2px;position:relative!important}[data-sfe-selected]::before{content:attr(data-sfe-selected-label);position:absolute!important;z-index:2147483646!important;top:4px!important;right:4px!important;background:#7354c9!important;color:#fff!important;border-radius:6px!important;padding:4px 8px!important;font:600 11px/1.5 Tahoma,sans-serif!important;pointer-events:none!important}';
           doc.head.appendChild(style);
         }
-        let outlineFrame = 0;
+        let outlineFrame = 0,
+          bindFrame = 0;
         const sync = () => {
           cancelAnimationFrame(outlineFrame);
           outlineFrame = requestAnimationFrame(() => {
@@ -1621,6 +1635,13 @@
           });
           sync();
         };
+        const scheduleBind = () => {
+          cancelAnimationFrame(bindFrame);
+          bindFrame = requestAnimationFrame(() => {
+            bindFrame = 0;
+            bind();
+          });
+        };
         if (!root.dataset.sfeBridge) {
           root.dataset.sfeBridge = '1';
           doc.addEventListener(
@@ -1635,11 +1656,11 @@
             },
             true,
           );
-          E.previewObserver = new MutationObserver(bind);
-          win.addEventListener('storefront:home-ready', bind);
+          E.previewObserver = new MutationObserver(scheduleBind);
+          win.addEventListener('storefront:home-ready', scheduleBind);
           win.addEventListener('resize', sync);
         }
-        bind();
+        scheduleBind();
         preview();
       } catch (_) {}
     };
@@ -2568,7 +2589,7 @@
   });
   window.addEventListener('offline', () => {
     if (E.config) {
-      backup();
+      backup(true);
       status();
     }
   });
