@@ -1,8 +1,9 @@
 {
   "task": "storefront-editor-fullscreen-studio-shell",
   "allowed_locked_paths": [
+    "index.html",
     "panel/index.html"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly requested a dedicated fullscreen storefront editor with a fixed left live preview and right inspector, top search, essential toolbar, right-side hamburger menu, adjustable 65/35 split, independent scrolling, fit/width/100 percent/manual zoom and focus-on-section controls. The existing landscape gate, drafts, section positions and all editor capabilities remain in place. panel/index.html only updates editor asset versions. Public storefront source, backend, stable/backup branches and production content/data remain untouched; all writes in tests are mocked."
+  "note": "User explicitly requested a dedicated fullscreen storefront editor with a fixed left live preview and right inspector, top search, essential toolbar, right-side hamburger menu, adjustable 65/35 split, independent scrolling, fit/width/100 percent/manual zoom and focus-on-section controls. The existing landscape gate, drafts, section positions and all editor capabilities remain in place. panel/index.html only updates editor asset versions. index.html only refreshes the analytics asset so editorPreview can suppress analytics writes; normal public analytics and the public storefront appearance/content remain unchanged. Backend, stable/backup branches and production content/data remain untouched; all writes in tests are mocked."
 }
