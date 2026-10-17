@@ -61,8 +61,13 @@
     iframe: null,
     timer: 0,
     previewTimer: 0,
+    backupTimer: 0,
+    uiTimer: 0,
     fitFrame: 0,
     viewportFrame: 0,
+    dirtyState: false,
+    backupError: false,
+    unpublishedCache: null,
     previewVersion: null,
     mediaQuery: '',
     mediaKind: 'all',
@@ -117,11 +122,21 @@
     } catch (_) {}
     return M.backupKey(id);
   }
-  const dirty = () => E.server && !M.equal(E.server, snap());
-  const unpublished = () => (E.published ? M.diff(E.published, snap()) : []);
-  function backup() {
+  const dirty = () => !!E.server && E.dirtyState;
+  const unpublished = () => {
+    if (!E.published) return [];
+    if (!E.unpublishedCache) E.unpublishedCache = M.diff(E.published, snap());
+    return E.unpublishedCache;
+  };
+  function writeBackup() {
+    clearTimeout(E.backupTimer);
+    E.backupTimer = 0;
     try {
-      if (!dirty()) return localStorage.removeItem(storageKey());
+      if (!dirty()) {
+        localStorage.removeItem(storageKey());
+        E.backupError = false;
+        return true;
+      }
       localStorage.setItem(
         storageKey(),
         JSON.stringify({
@@ -132,7 +147,30 @@
           snapshot: snap(),
         }),
       );
-    } catch (_) {}
+      E.backupError = false;
+      return true;
+    } catch (_) {
+      E.backupError = true;
+      return false;
+    }
+  }
+  function backup(immediate = false) {
+    if (immediate) return writeBackup();
+    clearTimeout(E.backupTimer);
+    E.backupTimer = setTimeout(() => {
+      writeBackup();
+      if (E.root?.isConnected && routeActive()) status();
+    }, 300);
+    return true;
+  }
+  function scheduleChangedUi() {
+    clearTimeout(E.uiTimer);
+    E.uiTimer = setTimeout(() => {
+      E.uiTimer = 0;
+      if (!E.root?.isConnected || !routeActive()) return;
+      status();
+      outline();
+    }, 80);
   }
   function history(group) {
     if (group && E.group?.key === group && Date.now() - E.group.at < 1200) {
@@ -144,13 +182,14 @@
     E.redo = [];
     E.group = group ? { key: group, at: Date.now() } : null;
   }
-  function changed() {
+  function changed(recomputeDirty = false) {
+    E.dirtyState = recomputeDirty ? !M.equal(E.server, snap()) : true;
+    E.unpublishedCache = null;
     E.previewVersion = null;
     if ($('[data-version-bar]')) $('[data-version-bar]').hidden = true;
     E.error = '';
     backup();
-    status();
-    outline();
+    scheduleChangedUi();
     preview();
     clearTimeout(E.timer);
     if (!E.conflict) E.timer = setTimeout(() => save(false), 1000);
@@ -170,7 +209,7 @@
     E.config = s.config;
     E.theme = s.theme;
     E.group = null;
-    changed();
+    changed(true);
     inspector();
   }
   function field(text, path, value, type = 'text', attr = '') {
