@@ -161,7 +161,10 @@
     E.error = '';
     if (options.deferOutline) {
       clearTimeout(E.backupTimer);
-      E.backupTimer = setTimeout(backup, 250);
+      E.backupTimer = setTimeout(() => {
+        backup();
+        status();
+      }, 250);
     } else {
       clearTimeout(E.backupTimer);
       backup();
@@ -2506,6 +2509,7 @@
   });
   window.addEventListener('beforeunload', (event) => {
     if (E.config && dirty()) {
+      clearTimeout(E.backupTimer);
       backup();
       event.preventDefault();
       event.returnValue = '';
