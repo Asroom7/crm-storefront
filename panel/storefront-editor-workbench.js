@@ -711,23 +711,13 @@
     if (!E.root?.isConnected || !routeActive() || !$('[data-storefront-workbench]')) return;
     E.root.style.setProperty('--sfe-usable-height', (window.visualViewport?.height || innerHeight) + 'px');
     E.root.style.setProperty('--sfe-viewport-top', (window.visualViewport?.offsetTop || 0) + 'px');
-    const touch = navigator.maxTouchPoints > 0;
-    const type = screen.orientation?.type;
-    const physicalPortrait = touch && type
-      ? type.startsWith('portrait')
-      : touch && typeof window.orientation === 'number'
-        ? Math.abs(window.orientation) % 180 === 0
-        : touch && screen.width <= screen.height;
-    const locked = physicalPortrait || innerWidth <= innerHeight;
     const wasLocked = E.orientationLocked;
-    if (locked && !wasLocked) E.orientationFocus = document.activeElement;
-    E.orientationLocked = locked;
+    E.orientationLocked = false;
     const root = $('[data-storefront-workbench]');
-    root.dataset.orientationLocked = String(locked);
-    $('[data-orientation-gate]').hidden = !locked;
+    root.dataset.orientationLocked = 'false';
+    $('[data-orientation-gate]').hidden = true;
     modalBackground(!$('[data-overlay]').hidden);
-    if (locked && !wasLocked) $('#sfe-orientation-title').focus({ preventScroll: true });
-    else if (!locked && wasLocked && E.orientationFocus?.isConnected) E.orientationFocus.focus({ preventScroll: true });
+    if (wasLocked && E.orientationFocus?.isConnected) E.orientationFocus.focus({ preventScroll: true });
     requestAnimationFrame(fit);
   }
   function chrome(kind) {
