@@ -1,6 +1,6 @@
 {
-  "task": "storefront-editor-ux-cleanup-pack-5",
+  "task": "storefront-editor-stability-pack-6",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "User explicitly requested Package 5 for storefront editor items 26-29 only. Item 26 (sensible minimum zoom) is already satisfied by the locked Package 1 baseline and will only be regression-checked. Changes are editor-local only: clarify/revert invalid field input so unsaved invalid values cannot be mistaken for saved state; optimize cropper interaction scheduling; remove obsolete orientation-gate DOM/state/keyboard/CSS left behind after portrait editing was unlocked. Allowed implementation files are panel/storefront-editor-workbench.js, panel/storefront-editor-workbench.css, and the asset version query in panel/storefront-editor.html. No shared/core storefront runtime, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
+  "note": "User explicitly requested Package 6 only: stability coverage for the storefront editor, including Playwright browser checks, responsive portrait regression coverage, zoom/performance guards and visual regression against the previous/base revision. Changes are test/CI-only in tests/*.cjs and .github/workflows/code-check.yml. No production editor/runtime CSS/JS/HTML, live storefront, backend, panel core, data, products, orders, customers, media or other approved sections may change."
 }
