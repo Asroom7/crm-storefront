@@ -64,6 +64,7 @@
     uiTimer: 0,
     fitFrame: 0,
     viewportFrame: 0,
+    responsiveFrame: 0,
     dirtyState: false,
     backupError: false,
     unpublishedCache: null,
@@ -819,6 +820,43 @@
     E.zoomMode = mode;
     if (value !== undefined) E.zoom = clampZoom(value);
     scheduleFit();
+  }
+  function resetPreviewResponsiveStyles() {
+    const frame = E.iframe;
+    if (!frame?.contentDocument || !frame.contentWindow) return;
+    try {
+      const doc = frame.contentDocument;
+      doc.querySelectorAll('[data-sfe-section],[data-editor-section]').forEach((node) => {
+        ['background', 'color', 'padding-top', 'padding-bottom', 'font-size'].forEach((property) =>
+          node.style.removeProperty(property),
+        );
+        node
+          .querySelectorAll('h1,h2,h3,p,strong,.sf-section-head>a,.sf-category-showcase-head>a')
+          .forEach((child) => child.style.removeProperty('color'));
+        node
+          .querySelectorAll(
+            '.sf-product-scroll,.sf-video-grid,.sf-video-demo,.sf-category-showcase-grid,.sf-category-grid',
+          )
+          .forEach((grid) => {
+            ['gap', 'display', 'grid-auto-flow', 'grid-template-columns'].forEach((property) =>
+              grid.style.removeProperty(property),
+            );
+          });
+        node.querySelectorAll('.sf-product-card,.sf-video-card,.sf-category-showcase-card').forEach((card) =>
+          card.style.removeProperty('border-radius'),
+        );
+      });
+      frame.contentWindow.StorefrontHome?.editorCustomizations?.apply?.();
+    } catch (_) {}
+  }
+  function schedulePreviewResponsiveRefresh() {
+    cancelAnimationFrame(E.responsiveFrame);
+    E.responsiveFrame = requestAnimationFrame(() => {
+      E.responsiveFrame = requestAnimationFrame(() => {
+        E.responsiveFrame = 0;
+        resetPreviewResponsiveStyles();
+      });
+    });
   }
   function focusSection() {
     if (!E.activeSection) return tell('ابتدا یک بخش را انتخاب کنید');
@@ -2628,6 +2666,7 @@
       $('[data-frame-wrap]').dataset.device = E.device;
       $$('[data-device]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       scheduleFit();
+      schedulePreviewResponsiveRefresh();
       outline();
       return;
     }
