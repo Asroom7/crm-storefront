@@ -1578,12 +1578,22 @@
     let products = E.products,
       assets = E.assets;
     try {
-      products = await sellerApiFetch('/products');
-      E.products = products;
+      const referencedIds = collectReferencedProductIds(reviewed);
+      if (referencedIds.length) await fetchProductsByIds(referencedIds);
+      products = referencedIds.length
+        ? referencedIds
+            .map((id) => E.products.find((p) => Number(p.id) === Number(id)))
+            .filter(Boolean)
+        : [];
+      if (products.length !== referencedIds.length)
+        issues.push({
+          level: 'warning',
+          message: 'بعضی محصولات استفاده‌شده در پیش‌نویس پیدا نشدند؛ انتخاب‌ها را دوباره بررسی کنید',
+        });
     } catch (_) {
       issues.push({
         level: 'warning',
-        message: 'فهرست تازه محصولات دریافت نشد؛ انتخاب‌های خود را دوباره بررسی کنید',
+        message: 'محصولات استفاده‌شده برای بررسی دریافت نشدند؛ انتخاب‌های خود را دوباره بررسی کنید',
       });
     }
     try {
@@ -2359,26 +2369,21 @@
       E.selectedVideos = (active()?.settings?.videoUrls || []).slice();
       E.selectedPosters = M.clone(active()?.settings?.videoPosters || {});
     }
-    try {
-      E.assets = await sellerApiFetch('/storefront/media');
-      if (sectionId !== E.activeSection || epoch !== E.modalEpoch || !routeActive()) return;
-    } catch (error) {
-      return tell(error.message);
-    }
     dialog(
       'انتخاب و ترتیب ویدیوها',
-      `<div data-video-order></div><div class="sfe-media-grid">${
-        E.assets
-          .filter((a) => a.kind === 'video')
-          .map(
-            (a) =>
-              `<label class="sfe-video-option"><video src="${esc(a.url)}" muted playsinline preload="metadata"></video><span>${esc(a.altText || 'ویدیو')} · ${fa(Math.round(a.duration || 0))} ثانیه</span><input type="checkbox" data-video-url="${esc(a.url)}" ${E.selectedVideos.includes(a.url) ? 'checked' : ''}></label>`,
-          )
-          .join('') || '<div class="sfe-help">ابتدا ویدیو در کتابخانه آپلود کنید.</div>'
-      }</div>`,
+      '<div data-video-order></div><div class="sfe-picker-status" data-video-status>در حال دریافت ویدیوها…</div><div class="sfe-media-grid" data-video-grid></div><button type="button" class="sfe-button" data-video-more hidden>نمایش ویدیوهای بیشتر</button>',
       btn('close', 'انصراف') + btn('apply-videos', 'اعمال انتخاب', true),
     );
-    const draw = () => {
+    let pageItems = [],
+      offset = 0,
+      total = 0,
+      loading = false,
+      requestId = 0;
+    const grid = $('[data-video-grid]'),
+      statusNode = $('[data-video-status]'),
+      moreButton = $('[data-video-more]');
+    const drawOrder = () => {
+      if (!$('[data-video-order]')) return;
       $('[data-video-order]').innerHTML = E.selectedVideos
         .map(
           (u, i) =>
@@ -2393,19 +2398,68 @@
             if (to < 0 || to >= E.selectedVideos.length) return;
             const v = E.selectedVideos.splice(i, 1)[0];
             E.selectedVideos.splice(to, 0, v);
-            draw();
+            drawOrder();
           }),
       );
     };
-    $$('[data-video-url]').forEach(
-      (el) =>
-        (el.onchange = () => {
-          E.selectedVideos = E.selectedVideos.filter((u) => u !== el.dataset.videoUrl);
-          if (el.checked) E.selectedVideos.push(el.dataset.videoUrl);
-          draw();
-        }),
-    );
-    draw();
+    const drawGrid = () => {
+      if (!grid) return;
+      grid.innerHTML = pageItems.length
+        ? pageItems
+            .map(
+              (a) =>
+                `<label class="sfe-video-option"><video src="${esc(a.url)}" muted playsinline preload="metadata"></video><span>${esc(a.altText || 'ویدیو')} · ${fa(Math.round(a.duration || 0))} ثانیه</span><input type="checkbox" data-video-url="${esc(a.url)}" ${E.selectedVideos.includes(a.url) ? 'checked' : ''}></label>`,
+            )
+            .join('')
+        : '<div class="sfe-help">ابتدا ویدیو در کتابخانه آپلود کنید.</div>';
+      $$('[data-video-url]').forEach(
+        (el) =>
+          (el.onchange = () => {
+            E.selectedVideos = E.selectedVideos.filter((u) => u !== el.dataset.videoUrl);
+            if (el.checked) E.selectedVideos.push(el.dataset.videoUrl);
+            drawOrder();
+          }),
+      );
+      if (statusNode)
+        statusNode.textContent = total ? `${fa(pageItems.length)} از ${fa(total)} ویدیو نمایش داده شده` : '';
+      if (moreButton) moreButton.hidden = pageItems.length >= total;
+    };
+    const load = async (reset = true) => {
+      if (loading && !reset) return;
+      const id = ++requestId;
+      loading = true;
+      if (reset) {
+        pageItems = [];
+        offset = 0;
+        if (statusNode) statusNode.textContent = 'در حال دریافت ویدیوها…';
+        if (moreButton) moreButton.hidden = true;
+      }
+      try {
+        const data = await sellerApiFetch(
+          '/storefront/media?paged=1&kind=video&offset=' +
+            String(reset ? 0 : offset) +
+            '&limit=40',
+        );
+        if (id !== requestId || sectionId !== E.activeSection || epoch !== E.modalEpoch || !routeActive()) return;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        mergeAssets(items);
+        pageItems = reset
+          ? items
+          : pageItems.concat(items.filter((item) => !pageItems.some((row) => Number(row.id) === Number(item.id))));
+        total = Number(data?.total || pageItems.length);
+        offset = pageItems.length;
+        drawOrder();
+        drawGrid();
+      } catch (error) {
+        if (id !== requestId || epoch !== E.modalEpoch || !routeActive()) return;
+        if (statusNode) statusNode.textContent = error.message || 'دریافت ویدیوها ناموفق بود';
+      } finally {
+        if (id === requestId) loading = false;
+      }
+    };
+    if (moreButton) moreButton.onclick = () => load(false);
+    drawOrder();
+    load(true);
   }
   function crop(url, path) {
     E.crop = { url, path };
