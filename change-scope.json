@@ -1,6 +1,6 @@
 {
-  "task": "storefront-editor-picker-media-pack-4",
+  "task": "storefront-editor-ux-cleanup-pack-5",
   "allowed_locked_paths": [],
   "user_approved_shared_change": false,
-  "note": "User explicitly requested Package 4 for storefront editor items 19-25 and then explicitly approved the required shared backend work. Frontend changes are editor-local only in panel/storefront-editor-workbench.js, panel/storefront-editor-studio.js and the asset version query in panel/storefront-editor.html. Backend shared changes are limited to src/routes/products.js and src/routes/storefront.js to add lightweight/paginated seller-only picker/media reads while preserving all existing API behavior for callers that do not use the new query/route. No schema/database change, no public storefront layout/content change, no panel core change, and no product/order/customer/media data mutation is allowed."
+  "note": "User explicitly requested Package 5 for storefront editor items 26-29 only. Item 26 (sensible minimum zoom) is already satisfied by the locked Package 1 baseline and will only be regression-checked. Changes are editor-local only: clarify/revert invalid field input so unsaved invalid values cannot be mistaken for saved state; optimize cropper interaction scheduling; remove obsolete orientation-gate DOM/state/keyboard/CSS left behind after portrait editing was unlocked. Allowed implementation files are panel/storefront-editor-workbench.js, panel/storefront-editor-workbench.css, and the asset version query in panel/storefront-editor.html. No shared/core storefront runtime, backend, panel app core, live storefront layout/content, data, media, products, orders, customers, or unrelated approved sections may change."
 }
