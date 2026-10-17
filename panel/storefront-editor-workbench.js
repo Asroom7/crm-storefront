@@ -1335,7 +1335,7 @@
     overlay.querySelector('button,input,select,textarea')?.focus({ preventScroll: true });
   }
   function modalBackground(inert) {
-    $('.sfe-workbench > *').forEach((node) => {
+    $$('.sfe-workbench > *').forEach((node) => {
       node.inert = node.matches('[data-overlay]') ? false : inert;
     });
   }
