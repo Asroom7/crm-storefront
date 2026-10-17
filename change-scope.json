@@ -1,9 +1,9 @@
 {
-  "task": "storefront-editor-fullscreen-studio-shell",
+  "task": "storefront-editor-performance-pack-1",
   "allowed_locked_paths": [
     "index.html",
-    "panel/index.html"
+    "storefront-home.js"
   ],
   "user_approved_shared_change": true,
-  "note": "User explicitly requested a dedicated fullscreen storefront editor with a fixed left live preview and right inspector, top search, essential toolbar, right-side hamburger menu, adjustable 65/35 split, independent scrolling, fit/width/100 percent/manual zoom and focus-on-section controls. The existing landscape gate, drafts, section positions and all editor capabilities remain in place. panel/index.html only updates editor asset versions. index.html only refreshes the analytics asset so editorPreview can suppress analytics writes; normal public analytics and the public storefront appearance/content remain unchanged. Backend, stable/backup branches and production content/data remain untouched; all writes in tests are mocked."
+  "note": "User explicitly approved Performance Pack 1 for storefront editor issues 1-10 and explicitly approved shared changes only to storefront-home.js plus its loader line in index.html. Shared runtime optimization is gated by editorPreview=1 so the normal live storefront rendering path, content, layout, order, data and behavior remain unchanged. Editor-local changes are limited to preview zoom/fit scheduling, iframe viewport sizing, splitter/viewport throttling, scroll/pan behavior and asset version refresh in panel/storefront-editor-workbench.js, panel/storefront-editor-workbench.css and panel/storefront-editor.html. No backend, panel core, product/order/customer data, other storefront pages, or unrelated approved sections may change."
 }
