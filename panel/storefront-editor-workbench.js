@@ -68,6 +68,7 @@
     dirtyState: false,
     backupError: false,
     unpublishedCache: null,
+    validationCache: null,
     previewVersion: null,
     mediaQuery: '',
     mediaKind: 'all',
@@ -128,6 +129,10 @@
     if (!E.unpublishedCache) E.unpublishedCache = M.diff(E.published, snap());
     return E.unpublishedCache;
   };
+  const validation = () => {
+    if (!E.validationCache) E.validationCache = M.validate(snap());
+    return E.validationCache;
+  };
   function writeBackup() {
     clearTimeout(E.backupTimer);
     E.backupTimer = 0;
@@ -185,6 +190,7 @@
   function changed(recomputeDirty = false) {
     E.dirtyState = recomputeDirty ? !M.equal(E.server, snap()) : true;
     E.unpublishedCache = null;
+    E.validationCache = null;
     E.previewVersion = null;
     if ($('[data-version-bar]')) $('[data-version-bar]').hidden = true;
     E.error = '';
@@ -996,7 +1002,7 @@
   }
   function status() {
     if (!E.root || !$('[data-save-status]')) return;
-    const errors = M.validate(snap()),
+    const errors = validation(),
       localBackupWarning = E.backupError && dirty();
     $('[data-save-status]').textContent = E.saving
       ? 'در حال ذخیره پیش‌نویس…'
