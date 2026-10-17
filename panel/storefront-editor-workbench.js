@@ -1064,7 +1064,7 @@
       return false;
     }
     if (!navigator.onLine) {
-      backup();
+      backup(true);
       status();
       return false;
     }
@@ -1098,6 +1098,7 @@
         E.dirtyState = true;
       }
       E.unpublishedCache = null;
+      E.validationCache = null;
       backup(true);
       if (manual) tell('پیش‌نویس ذخیره شد');
       return true;
@@ -1158,7 +1159,7 @@
   function requestExit() {
     if (!dirty()) return goBack();
     if (E.orientationLocked) {
-      backup();
+      backup(true);
       if (window.confirm('تغییرات ذخیره‌نشده داری. از ویرایشگر خارج می‌شوی؟')) goBack();
       return;
     }
@@ -1480,11 +1481,17 @@
       E.page = p;
       E.server = M.snapshot(p.config, p.theme);
       E.published = M.snapshot(p.publishedConfig || p.config, p.publishedTheme || p.theme);
-      if (M.equal(reviewed, snap())) {
+      const unchangedSinceReview = M.equal(reviewed, snap());
+      if (unchangedSinceReview) {
         E.config = M.clone(p.config);
         E.theme = M.clone(p.theme);
+        E.dirtyState = false;
+      } else {
+        E.dirtyState = true;
       }
-      backup();
+      E.unpublishedCache = null;
+      E.validationCache = null;
+      backup(true);
       if (epoch === E.modalEpoch && routeActive()) close();
       tell('نسخه جدید منتشر شد');
     } catch (error) {
@@ -2263,8 +2270,13 @@
       },
       'discard-exit': () => {
         clearTimeout(E.timer);
+        clearTimeout(E.backupTimer);
+        clearTimeout(E.uiTimer);
         E.config = M.clone(E.server.config);
         E.theme = M.clone(E.server.theme);
+        E.dirtyState = false;
+        E.unpublishedCache = null;
+        E.validationCache = null;
         E.undo = [];
         E.redo = [];
         localStorage.removeItem(storageKey());
@@ -2432,16 +2444,19 @@
       conflict,
       'load-remote': () => {
         const local = snap();
-        backup();
+        backup(true);
         E.page = E.remote;
         E.server = M.snapshot(E.remote.config, E.remote.theme);
         E.config = M.clone(E.remote.config);
         E.theme = M.clone(E.remote.theme);
+        E.dirtyState = false;
+        E.unpublishedCache = null;
+        E.validationCache = null;
         E.conflict = false;
         E.error = '';
         E.undo = [local];
         E.redo = [];
-        backup();
+        backup(true);
         close();
         outline();
         inspector();
@@ -2488,6 +2503,10 @@
         E.config = M.clone(page.config);
         E.theme = M.clone(page.theme);
         E.server = snap();
+        E.dirtyState = false;
+        E.backupError = false;
+        E.unpublishedCache = null;
+        E.validationCache = null;
         E.products = products || [];
         E.categories = categories || [];
         E.assets = assets || [];
@@ -2542,7 +2561,7 @@
   });
   window.addEventListener('beforeunload', (event) => {
     if (E.config && dirty()) {
-      backup();
+      backup(true);
       event.preventDefault();
       event.returnValue = '';
     }
