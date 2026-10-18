@@ -810,11 +810,13 @@
     if (!E.root) return;
     const root = $('[data-storefront-workbench]'),
       output = $('[data-zoom-value]');
-    if (root) root.dataset.zoomMode = E.zoomMode;
-    if (output) output.textContent = fa(Math.round(E.zoom * 100)) + '٪';
-    $$('button[data-zoom-mode]').forEach((button) =>
-      button.setAttribute('aria-pressed', String(button.dataset.zoomMode === E.zoomMode)),
-    );
+    if (root && root.dataset.zoomMode !== E.zoomMode) root.dataset.zoomMode = E.zoomMode;
+    const zoomLabel = fa(Math.round(E.zoom * 100)) + '٪';
+    if (output && output.textContent !== zoomLabel) output.textContent = zoomLabel;
+    $('button[data-zoom-mode]').forEach((button) => {
+      const pressed = String(button.dataset.zoomMode === E.zoomMode);
+      if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
+    });
     const out = $('[data-action="zoom-out"]'),
       inside = $('[data-action="zoom-in"]');
     if (out) out.disabled = E.zoom <= MIN_ZOOM + 0.001;
@@ -848,12 +850,18 @@
     else if (E.zoomMode === 'width') E.zoom = clampZoom(Math.min(1, widthScale));
     else if (E.zoomMode === 'actual') E.zoom = 1;
     const scale = clampZoom(E.zoom);
-    wrap.style.width = viewport.width * scale + 'px';
-    wrap.style.height = viewport.height * scale + 'px';
-    E.iframe.style.width = viewport.width + 'px';
-    E.iframe.style.height = viewport.height + 'px';
-    E.iframe.style.transform = 'translateZ(0) scale(' + scale + ')';
-    E.iframe.style.transformOrigin = 'top left';
+    const wrapWidth = viewport.width * scale + 'px';
+    const wrapHeight = viewport.height * scale + 'px';
+    const frameWidth = viewport.width + 'px';
+    const frameHeight = viewport.height + 'px';
+    const transform = 'translateZ(0) scale(' + scale + ')';
+    // Avoid repeating style writes when resize/zoom events resolve to the same scale.
+    if (wrap.style.width !== wrapWidth) wrap.style.width = wrapWidth;
+    if (wrap.style.height !== wrapHeight) wrap.style.height = wrapHeight;
+    if (E.iframe.style.width !== frameWidth) E.iframe.style.width = frameWidth;
+    if (E.iframe.style.height !== frameHeight) E.iframe.style.height = frameHeight;
+    if (E.iframe.style.transform !== transform) E.iframe.style.transform = transform;
+    if (E.iframe.style.transformOrigin !== 'top left') E.iframe.style.transformOrigin = 'top left';
     updateZoomControls();
   }
   function setZoom(mode, value) {
