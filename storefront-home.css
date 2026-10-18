@@ -140,3 +140,36 @@ body{background:var(--sf-bg);color:var(--sf-ink)}
 @media(max-width:700px){.sf-container{width:min(calc(100% - 24px),var(--sf-container))}.header-top{padding:9px 12px;min-height:56px}.header-top .icon{min-width:38px;height:38px}.header-top .logo{font-size:18px}.sf-search-block{padding-top:14px}.sf-search-form{height:54px;border-radius:16px}.sf-search-form button{width:50px}.sf-search-form input{font-size:13.5px}.sf-chip-strip{padding-top:10px}.sf-nav-chip{padding:7px 12px;font-size:11px}.sf-hero{padding-top:12px}.sf-hero-panel{min-height:470px;grid-template-columns:1fr;padding:28px 24px 22px;border-radius:26px}.sf-hero h1{font-size:34px;line-height:1.4;letter-spacing:-1px}.sf-hero p{font-size:12.5px;line-height:1.95}.sf-hero-actions{margin-top:20px}.sf-btn{min-height:44px;font-size:12px}.sf-hero-art{min-height:190px;margin-top:8px}.sf-hero-orb.orb-one{width:190px;height:190px}.sf-hero-orb.orb-two{width:110px;height:110px}.sf-hero-product-frame{width:160px;aspect-ratio:4/5;border-radius:34px}.sf-hero-product-frame img{padding:11px}.sf-hero-monogram{width:140px;height:175px;font-size:70px}.sf-section{padding-top:38px}.sf-section-head{align-items:center;margin-bottom:14px}.sf-section-head h2{font-size:20px}.sf-section-head p{font-size:11px}.sf-section-head>a{font-size:11px}.sf-category-grid{gap:10px}.sf-category-card{grid-template-columns:1fr;min-height:0;padding:9px}.sf-category-visual{height:132px}.sf-category-copy{padding:9px 4px 6px}.sf-category-copy strong{font-size:12.5px}.sf-category-copy span{font-size:9.5px}.sf-product-card{flex-basis:72vw;max-width:265px}.sf-video-grid{display:flex;overflow-x:auto;gap:11px;scrollbar-width:none}.sf-video-grid::-webkit-scrollbar{display:none}.sf-video-card{flex:0 0 82vw;max-width:320px}.sf-support-wrap{padding-top:40px}.sf-support-banner{grid-template-columns:auto 1fr;padding:20px 18px;gap:13px;border-radius:22px}.sf-support-banner>a{grid-column:1/-1;justify-content:center}.sf-support-icon{width:48px;height:48px;border-radius:15px}.sf-support-banner h2{font-size:16px}.sf-trust{grid-template-columns:1fr;padding-top:20px;padding-bottom:38px;gap:8px}.sf-footer{padding-top:32px}.sf-footer-inner{gap:24px}.sf-footer-links{grid-template-columns:1fr;gap:0}.sf-footer-links details{border-top:1px solid rgba(255,255,255,.09);padding:0}.sf-footer-links summary{position:relative;margin:0;padding:13px 0;cursor:pointer}.sf-footer-links summary::after{content:'+';position:absolute;left:2px;color:#8f858b}.sf-footer-links details[open] summary::after{content:'−'}.sf-footer-links a{padding:6px 4px 6px 0}.sf-footer-contact{display:grid;grid-template-columns:1fr 1fr}.sf-footer-contact a{min-width:0}.sf-footer-bottom{display:block;line-height:2}.sf-footer-bottom a{display:block;margin-top:4px}.sf-skeleton-hero{height:460px}.sf-skeleton-row{grid-template-columns:1fr 1fr;gap:10px}.sf-skeleton-row span:nth-child(3){display:none}}
 @media(max-width:390px){.sf-hero-panel{padding-inline:18px}.sf-hero h1{font-size:30px}.sf-category-visual{height:112px}.sf-product-card{flex-basis:78vw}.sf-footer-contact{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.sf-product-card,.sf-category-card,.sf-btn,.header-top .icon{transition:none}.sf-skeleton::after{animation:none}}
+
+
+/* Lilac outline buttons — storefront editor preview and customer-facing home */
+#storefront-home-root .sf-btn,
+#storefront-home-root .btn-dark,
+#storefront-home-root .btn-outline,
+#storefront-home-root .hero-secondary,
+#storefront-home-root button,
+#storefront-home-root [role="button"] {
+  border: 1.5px solid #B99AE8 !important;
+  border-radius: 14px;
+  color: #65449A;
+  background-color: #F7F2FF;
+  box-shadow: 0 3px 10px rgba(137, 100, 190, 0.10);
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+#storefront-home-root .sf-btn:hover,
+#storefront-home-root .btn-dark:hover,
+#storefront-home-root .btn-outline:hover,
+#storefront-home-root .hero-secondary:hover,
+#storefront-home-root button:hover,
+#storefront-home-root [role="button"]:hover {
+  border-color: #9B78D2 !important;
+  background-color: #EDE2FF;
+  color: #51327F;
+  box-shadow: 0 5px 14px rgba(137, 100, 190, 0.17);
+}
+#storefront-home-root .sf-btn:focus-visible,
+#storefront-home-root button:focus-visible,
+#storefront-home-root [role="button"]:focus-visible {
+  outline: 3px solid rgba(185, 154, 232, .35);
+  outline-offset: 2px;
+}
