@@ -3,54 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ورود به پنل مدیریت</title>
+  <meta name="theme-color" content="#fffdfc">
+  <title>ورود آزمایشی | Lumière</title>
   <link rel="stylesheet" href="style.css">
   <script src="api.js"></script>
+  <style>
+    .demo-gate{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(circle at 50% 8%,rgba(212,83,126,.08),transparent 34%),#fffdfc}
+    .demo-card{width:min(100%,410px);padding:34px 27px 27px;text-align:center;border:1px solid #f0e6e2;border-radius:22px;background:#fff;box-shadow:0 18px 55px rgba(38,33,92,.07)}
+    .demo-brand{color:#26215c;font:800 34px/1.2 Georgia,serif;letter-spacing:-.7px;margin-bottom:8px}
+    .demo-subtitle{color:#a19aa0;font-size:12px;margin-bottom:29px}
+    .demo-symbol{width:56px;height:56px;display:grid;place-items:center;margin:0 auto 18px;border-radius:17px;color:#fff;font-size:24px;background:linear-gradient(145deg,#1a6560,#0b3f3e);box-shadow:0 9px 22px rgba(11,63,62,.18)}
+    .demo-title{color:#26215c;font-size:18px;font-weight:800;margin:0 0 9px}
+    .demo-message{color:#858087;font-size:12px;line-height:2;margin:0}
+    .demo-spinner{width:23px;height:23px;margin:22px auto 0;border:2px solid #e9e2e8;border-top-color:#17615c;border-radius:50%;animation:demo-spin .8s linear infinite}
+    @keyframes demo-spin{to{transform:rotate(360deg)}}
+    .demo-error{display:none;margin-top:19px;padding:13px 14px;border:1px solid #f1d7d8;border-radius:12px;background:#fff6f5;color:#a34b50;font-size:11px;line-height:2;text-align:right;overflow-wrap:anywhere}
+    .demo-actions{display:none;gap:9px;margin-top:15px}
+    .demo-actions button,.demo-actions a{flex:1;min-height:43px;display:grid;place-items:center;border:1px solid #e9e3e0;border-radius:11px;background:#fff;color:#55505a;text-decoration:none;font:inherit;font-size:11px;cursor:pointer}
+    .demo-actions button{border-color:#0b4745;background:#0b4745;color:#fff}
+    .demo-note{margin-top:21px;color:#b3adb0;font-size:10px;line-height:1.9}
+    @media(max-width:420px){.demo-card{padding:30px 20px 24px}.demo-brand{font-size:31px}}
+  </style>
 </head>
-<body class="admin-body">
-  <section class="admin-login-block">
-    <div class="admin-login-logo">Lumière</div>
-    <div class="admin-login-tag">پنل مدیریت یکپارچه</div>
-    <form class="auth-form" id="admin-login-form">
-      <p id="auth-error" style="color:#c0392b; display:none; margin-bottom:10px;"></p>
-      <label for="phone">شماره موبایل</label>
-      <input type="tel" inputmode="numeric" autocomplete="tel" id="phone" placeholder="09xxxxxxxxx" required>
-      <label for="password">رمز عبور</label>
-      <input type="password" autocomplete="current-password" id="password" placeholder="رمز عبور خود را وارد کنید" required>
-      <button id="admin-login-btn" class="btn-dark btn-full" type="submit">ورود به پنل</button>
-    </form>
-    <p class="admin-login-switch">مشتری هستید؟ <a href="index.html">بازگشت به فروشگاه</a></p>
-  </section>
+<body>
+  <main class="demo-gate">
+    <section class="demo-card" aria-live="polite">
+      <div class="demo-brand">Lumière</div>
+      <div class="demo-subtitle">پنل مدیریت یکپارچه</div>
+      <div class="demo-symbol" aria-hidden="true">L</div>
+      <h1 class="demo-title" id="demo-title">در حال ورود به پنل</h1>
+      <p class="demo-message" id="demo-message">در حال اتصال به فضای آزمایشی…</p>
+      <div class="demo-spinner" id="demo-spinner" role="status" aria-label="در حال بارگذاری"></div>
+      <div class="demo-error" id="demo-error" role="alert"></div>
+      <div class="demo-actions" id="demo-actions">
+        <button type="button" id="demo-retry">تلاش دوباره</button>
+        <a href="index.html">بازگشت به فروشگاه</a>
+      </div>
+      <p class="demo-note">حالت نمونه اولیه · فضای آزمایشی جدا از حساب‌های فروشندگان</p>
+    </section>
+  </main>
 
   <script>
-    if (getSellerSession()) window.location.replace('panel/index.html');
+    (function () {
+      var title = document.getElementById('demo-title');
+      var message = document.getElementById('demo-message');
+      var spinner = document.getElementById('demo-spinner');
+      var errorBox = document.getElementById('demo-error');
+      var actions = document.getElementById('demo-actions');
+      var retryButton = document.getElementById('demo-retry');
+      var busy = false;
 
-    var form = document.getElementById('admin-login-form');
-    var loginBtn = document.getElementById('admin-login-btn');
-    var errorBox = document.getElementById('auth-error');
-
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      errorBox.style.display = 'none';
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'در حال ورود...';
-
-      apiFetch('/auth/seller/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          phone: document.getElementById('phone').value.trim(),
-          password: document.getElementById('password').value
-        })
-      }).then(function (data) {
-        saveSellerSession(data.token, data.seller);
-        window.location.href = 'panel/index.html';
-      }).catch(function (err) {
-        errorBox.textContent = err.message;
+      function showFailure(error) {
+        spinner.style.display = 'none';
+        title.textContent = 'ورود آزمایشی فعال نیست';
+        message.textContent = 'سرور هنوز اجازه ساخت نشست آزمایشی را نداده یا سرویس بک‌اند در دسترس نیست.';
+        var status = error && error.status ? ' (کد ' + error.status + ')' : '';
+        var detail = error && error.message ? error.message : 'خطای ناشناخته';
+        errorBox.textContent = detail + status;
         errorBox.style.display = 'block';
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'ورود به پنل';
-      });
-    });
+        actions.style.display = 'flex';
+      }
+
+      function enterDemo() {
+        if (busy) return;
+        busy = true;
+        spinner.style.display = 'block';
+        errorBox.style.display = 'none';
+        actions.style.display = 'none';
+        title.textContent = 'در حال ورود به پنل';
+        message.textContent = 'در حال اتصال به فضای آزمایشی…';
+
+        if (typeof getSellerSession === 'function' && getSellerSession()) {
+          window.location.replace('panel/index.html');
+          return;
+        }
+
+        apiFetch('/auth/seller/demo-session', { method: 'POST', body: JSON.stringify({}) })
+          .then(function (data) {
+            if (!data || !data.token || !data.seller) throw new Error('پاسخ نشست آزمایشی از سرور کامل نیست');
+            saveSellerSession(data.token, data.seller);
+            title.textContent = 'ورود موفق بود';
+            message.textContent = 'در حال انتقال به پنل مدیریت…';
+            window.location.replace('panel/index.html');
+          })
+          .catch(function (error) {
+            busy = false;
+            showFailure(error);
+          });
+      }
+
+      retryButton.addEventListener('click', enterDemo);
+      enterDemo();
+    })();
   </script>
 </body>
 </html>
